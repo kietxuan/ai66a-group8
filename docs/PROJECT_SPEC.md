@@ -46,7 +46,7 @@ Task có thể gồm:
 - start_time
 - end_time
 - priority
-- category
+- category_id
 - status
 
 Người dùng có thể:
@@ -85,13 +85,15 @@ Chatbot hỗ trợ:
 AI không trực tiếp thao tác database.
 
 ### 5.5 Conflict Detection
-Khi create/update thời gian task:
+Khi create/update thời gian task, backend kiểm tra conflict ngay ở Task API:
 - kiểm tra overlap với task hiện có;
 - thông báo task bị conflict;
 - cho user chọn:
   - đổi thời gian;
   - hủy;
   - vẫn tiếp tục.
+
+Conflict detection core nằm trong Week 3 Task API. Week 4 xử lý flow ở Todo List, Week 7 xử lý flow qua chatbot và Week 8 kiểm thử/hardening.
 
 ### 5.6 Dashboard — Optional
 Chỉ thực hiện nếu còn thời gian:
@@ -141,14 +143,21 @@ MVP gồm:
 - AI integration: Gemini API + Structured Output / Function Calling.
 - Authentication: JWT access token trong HttpOnly cookie + bcrypt.
 - Refresh token: không nằm trong MVP.
+- Python: 3.11.
+- Backend persistence: SQLAlchemy 2 + Alembic + psycopg.
 - Testing: Vitest + React Testing Library + pytest + HTTPX/FastAPI TestClient; Postman/REST Client cho manual API testing.
 - Deployment: Render cho frontend/backend và Neon cho PostgreSQL.
 - Project duration: 10 tuần, tương ứng 10 phase.
 
-## 10. Remaining Design Details
-Các chi tiết sau chưa cần chốt ở blueprint tổng thể và có thể được xác định ở tuần implementation tương ứng:
-- enum/value set chính xác của priority/status;
-- timezone handling;
-- conversation history retention;
-- request/response error schema chi tiết;
-- ORM/database library nếu nhóm chưa chọn.
+## 10. Final MVP Decisions
+- ID database là integer identity.
+- Email user là unique và được normalize lowercase.
+- `priority`: `low`, `medium`, `high`; mặc định `medium`.
+- `status`: `pending`, `completed`; mặc định `pending`.
+- `category_id` là optional.
+- `task_date` bắt buộc; start/end time phải cùng có hoặc cùng không có.
+- Timezone ứng dụng là `Asia/Ho_Chi_Minh`.
+- Conflict boundary bằng nhau không bị xem là overlap.
+- Conflict response dùng HTTP `409` và request flag `allow_conflict`.
+- Không pagination trong MVP.
+- Không lưu conversation history trong MVP.

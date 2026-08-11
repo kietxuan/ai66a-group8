@@ -8,18 +8,18 @@ Chuyển project description hiện tại thành specification đủ rõ để b
 - Có đề bài/rubric môn học nếu giảng viên cung cấp.
 
 ## Tasks
-- [ ] Review project scope và MVP.
-- [ ] Xác nhận Todo List + Calendar + Chatbot là core.
-- [ ] Review wireframe/UI direction.
-- [ ] Review database entities: Users, Categories, Tasks, Conversations, Messages.
-- [ ] Review REST API.
-- [ ] Xác nhận PostgreSQL setup cho Week 2.
-- [ ] Xác nhận FastAPI + Uvicorn setup cho Week 2.
-- [ ] Xác nhận auth design: JWT access token + HttpOnly cookie + bcrypt.
-- [ ] Chuẩn bị Google Gemini API project/key cho chatbot ở Week 6.
-- [ ] Xác nhận test stack: Vitest + React Testing Library + pytest + HTTPX/FastAPI TestClient.
-- [ ] Xác nhận deployment targets: Render + Neon.
-- [ ] Xác nhận roadmap 10 tuần = 10 phase.
+- [x] Review project scope và MVP.
+- [x] Xác nhận Todo List + Calendar + Chatbot là core.
+- [x] Review wireframe/UI direction trong `docs/UI_DIRECTION.md`.
+- [x] Review database entities và chốt schema MVP.
+- [x] Review REST API và chốt response/error contract.
+- [x] Xác nhận PostgreSQL, SQLAlchemy, Alembic và psycopg cho Week 2.
+- [x] Xác nhận FastAPI + Uvicorn setup cho Week 2.
+- [x] Xác nhận auth design: JWT access token + HttpOnly cookie + bcrypt.
+- [x] Ghi nhận Gemini API access sẽ chuẩn bị ở Week 6.
+- [x] Xác nhận test stack: Vitest + React Testing Library + pytest + HTTPX/FastAPI TestClient.
+- [x] Xác nhận deployment targets: Render + Neon.
+- [x] Xác nhận roadmap 10 tuần = 10 phase.
 
 ## Frontend
 - Xác định màn hình tối thiểu:
@@ -35,7 +35,7 @@ Chuyển project description hiện tại thành specification đủ rõ để b
 
 ## Database
 - Review fields và relationships.
-- Ghi các constraint còn thiếu thành TBD thay vì tự đoán.
+- Các constraint MVP đã được chốt trong `DATABASE.md`.
 
 ## Tests / Validation
 - Kiểm tra consistency giữa PROJECT_SPEC, ARCHITECTURE, DATABASE, API_SPEC và ROADMAP.
@@ -44,6 +44,7 @@ Chuyển project description hiện tại thành specification đủ rõ để b
 - Không còn quyết định quan trọng nào chặn Week 2.
 - Roadmap phù hợp lịch môn học.
 - Scope MVP được hiểu thống nhất.
+- UI direction, database schema và API contract đã được ghi thành tài liệu.
 - `PROGRESS.md` được cập nhật.
 
 ## Do Not Implement Yet

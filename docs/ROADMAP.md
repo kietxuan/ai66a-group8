@@ -16,28 +16,50 @@ Nguồn: Phase 1.
 Deliverable:
 - specification/architecture/database/API đủ rõ để bắt đầu build.
 
-## Week 2 — Backend & Database Foundation
+## Week 2 — Authentication & Backend Foundation
 Nguồn: Phase 2.
 - Setup Python + FastAPI + Uvicorn.
+- Thiết lập cấu hình môi trường.
 - Kết nối database.
-- Tạo schema/migration cơ bản.
-- CRUD API cho task.
+- Tạo schema/migration cho Users.
+- Register, Login, Logout.
+- Hash password bằng bcrypt.
+- JWT access token trong HttpOnly cookie.
+- Authentication dependency/middleware.
+- Cấu hình CORS/credentials.
+- Setup frontend shell và Register/Login UI tối thiểu.
+- Kết nối auth UI với backend bằng credentials.
 
 Deliverable:
-- Backend chạy được và task CRUD hoạt động ở API level.
+- Authentication flow hoạt động và authenticated user đã sẵn sàng trước khi xây dựng Task CRUD.
 
-## Week 3 — Todo List
+## Week 3 — Backend & Database Task Foundation
 Nguồn: Phase 3.
+- Tạo schema/migration cho Categories và Tasks.
+- Implement Task CRUD API.
+- Scope mọi task query/update/delete theo authenticated user.
+- Validate dữ liệu task.
+- Chuẩn bị search/filter theo scope.
+- Detect overlap khi create/update task có start/end time.
+- Trả HTTP 409 và thông tin task conflict.
+- Hỗ trợ `allow_conflict=true` để user tiếp tục sau cảnh báo.
+
+Deliverable:
+- Authenticated user có thể thao tác Task CRUD qua REST API.
+
+## Week 4 — Todo List
+Nguồn: Phase 4.
+- Setup/hoàn thiện React frontend.
 - Todo List UI.
 - Kết nối frontend-backend.
 - Create/Edit/Delete/Complete.
 - Search & Filter.
 
 Deliverable:
-- User có thể quản lý task qua giao diện Todo List.
+- Authenticated user có thể quản lý task qua giao diện Todo List.
 
-## Week 4 — Calendar
-Nguồn: Phase 4.
+## Week 5 — Calendar
+Nguồn: Phase 5.
 - Tích hợp FullCalendar.
 - Month/Week/Day view.
 - Hiển thị task theo ngày/giờ.
@@ -45,18 +67,6 @@ Nguồn: Phase 4.
 
 Deliverable:
 - Task hiện đúng trên calendar và cập nhật đồng bộ.
-
-## Week 5 — Authentication
-Nguồn: Phase 5.
-- Register.
-- Login.
-- Logout.
-- Xác thực user.
-- Cách ly dữ liệu theo user.
-- Hash password.
-
-Deliverable:
-- Mỗi user chỉ thấy và quản lý task của chính mình.
 
 ## Week 6 — AI Chatbot Foundation
 Nguồn: Phase 6.
@@ -84,15 +94,15 @@ Nguồn: Phase 7.
 Deliverable:
 - Core task management có thể thực hiện qua ngôn ngữ tự nhiên.
 
-## Week 8 — Advanced Features
+## Week 8 — Conflict Detection Hardening & Optional Features
 Nguồn: Phase 8.
 Ưu tiên:
-1. Conflict Detection.
+1. Kiểm thử và hoàn thiện conflict detection.
 2. Dashboard nếu còn thời gian.
 3. Statistics nếu còn thời gian.
 
 Deliverable bắt buộc cho MVP:
-- Conflict detection khi create/update thời gian.
+- Conflict flow ổn định ở UI và chatbot, bao gồm các edge case về overlap.
 
 Optional:
 - Dashboard/Statistics.
@@ -124,10 +134,10 @@ Deliverable:
 
 ```text
 Planning
-  -> Backend/DB
-      -> Todo List
-          -> Calendar
-              -> Authentication
+  -> Authentication/Backend foundation
+      -> Task CRUD/Database
+          -> Todo List
+              -> Calendar
                   -> Chatbot foundation
                       -> Chatbot task actions
                           -> Conflict/optional advanced

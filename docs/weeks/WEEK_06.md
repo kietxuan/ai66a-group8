@@ -17,7 +17,7 @@ Tạo chatbot có thể hiểu user request và trả structured action cho back
 - [ ] Structured Output hoặc Function/Tool Calling.
 - [ ] Backend validate structured output.
 - [ ] Thiết kế response khi thiếu thông tin.
-- [ ] Lưu Conversations/Messages nếu quyết định giữ history theo schema.
+- [ ] Chatbot MVP hoạt động stateless, không lưu Conversations/Messages vào database.
 
 ## Core Rule
 AI không trực tiếp thao tác database.

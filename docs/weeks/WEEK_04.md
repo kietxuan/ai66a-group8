@@ -1,32 +1,53 @@
-# WEEK 04 — CALENDAR
+# WEEK 04 — TODO LIST
 
 ## Objective
-Hiển thị cùng dữ liệu task dưới dạng Calendar.
+Authenticated user có thể quản lý task qua giao diện Todo List.
 
 ## Prerequisites
-- Todo List và task API ổn định.
+- Week 2 Authentication & Backend Foundation complete.
+- Week 3 Task CRUD API hoạt động.
 
 ## Tasks
-- [ ] Tích hợp FullCalendar.
-- [ ] Month View.
-- [ ] Week View.
-- [ ] Day View.
-- [ ] Convert task thành calendar event.
-- [ ] Khi create/update/delete task, calendar phản ánh thay đổi.
-- [ ] Todo List và Calendar dùng cùng backend data.
+- [ ] Hoàn thiện React frontend cho Todo List.
+- [ ] Hiển thị danh sách task.
+- [ ] Create task form.
+- [ ] Edit task.
+- [ ] Delete task.
+- [ ] Mark complete.
+- [ ] Hiển thị Today/Tomorrow/Upcoming/Completed/Pending nếu phù hợp UI.
+- [ ] Search & Filter theo scope: task_date/status/priority/category_id.
+
+## Frontend
+Task fields theo spec:
+- title
+- description
+- task_date
+- start_time
+- end_time
+- priority
+- category_id
+- status
+
+Frontend phải gửi credentials khi gọi các protected API.
+
+## Backend
+- Hoàn thiện filter/query cần cho frontend.
+- Không thay đổi API contract tùy tiện.
+- Giữ ownership isolation theo authenticated user.
 
 ## Tests / Validation
-- Task đúng ngày/giờ.
-- Edit thời gian -> calendar cập nhật.
-- Delete -> event biến mất.
-- Complete -> trạng thái hiển thị nhất quán theo UI design.
+- CRUD từ UI.
+- Refresh page vẫn lấy đúng dữ liệu.
+- Search/filter trả kết quả đúng.
+- User chỉ nhìn thấy task của mình.
 
 ## Definition of Done
-- Calendar hiển thị task đúng.
-- Không có nguồn dữ liệu calendar tách riêng.
-- Todo List và Calendar đồng bộ.
+- Core Todo List usable.
+- Create/Edit/Delete/Complete hoạt động end-to-end.
+- Search/filter cơ bản hoạt động.
 - `PROGRESS.md` cập nhật.
 
 ## Do Not Implement Yet
-- Không implement full chatbot.
-- Không ưu tiên Dashboard.
+- Không làm Calendar.
+- Không làm chatbot task actions.
+- Dashboard vẫn optional/later.

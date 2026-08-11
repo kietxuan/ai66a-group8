@@ -1,20 +1,20 @@
-# WEEK 08 — CONFLICT DETECTION & OPTIONAL ADVANCED FEATURES
+# WEEK 08 — CONFLICT DETECTION HARDENING & OPTIONAL FEATURES
 
 ## Objective
-Hoàn thiện conflict detection. Chỉ làm Dashboard/Statistics nếu còn thời gian.
+Kiểm thử và hoàn thiện conflict flow đã có từ Week 3. Chỉ làm Dashboard/Statistics nếu còn thời gian.
 
 ## Prerequisites
 - Create/update task bằng UI và chatbot hoạt động.
 
-## Priority 1 — Conflict Detection
-- [ ] Detect overlap khi create task.
-- [ ] Detect overlap khi update date/time.
+## Priority 1 — Conflict Hardening
+- [ ] Kiểm thử overlap khi create task.
+- [ ] Kiểm thử overlap khi update date/time.
 - [ ] Trả task conflict và khoảng thời gian liên quan.
-- [ ] Cho user chọn:
+- [ ] Hoàn thiện flow cho user chọn:
   - thay đổi thời gian;
   - hủy;
   - vẫn tiếp tục.
-- [ ] Hỗ trợ flow này ở Todo UI và chatbot.
+- [ ] Đảm bảo flow hoạt động ở Todo UI và chatbot.
 
 ## Priority 2 — Optional Dashboard
 Nếu còn thời gian:
@@ -37,6 +37,7 @@ Chỉ làm sau MVP và conflict detection.
 - User vẫn chọn continue.
 
 ## Definition of Done
-- Conflict detection hoạt động cho create/update.
+- Conflict detection core từ Week 3 được kiểm thử ổn định.
+- Todo UI và chatbot xử lý đúng cảnh báo/continue/cancel.
 - Optional features không làm ảnh hưởng MVP.
 - `PROGRESS.md` cập nhật.

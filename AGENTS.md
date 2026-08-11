@@ -24,6 +24,8 @@ Trước khi code, đọc các file liên quan:
 - `docs/ARCHITECTURE.md`
 - `docs/DATABASE.md`
 - `docs/API_SPEC.md`
+- `docs/UI_DIRECTION.md`
+- `docs/01_SETUP.md`
 - `docs/ROADMAP.md`
 - `docs/PROGRESS.md`
 - file tuần hiện tại trong `docs/weeks/`
@@ -62,7 +64,8 @@ Nếu code hiện tại và tài liệu mâu thuẫn:
 
 Stack đã chốt:
 - Frontend: HTML, CSS, JavaScript, React.js
-- Backend: Python, FastAPI, Uvicorn
+- Backend: Python 3.11, FastAPI, Uvicorn
+- Persistence: SQLAlchemy 2, Alembic, psycopg
 - Database: PostgreSQL
 - Calendar: FullCalendar
 - AI provider: Google Gemini API

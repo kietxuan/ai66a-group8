@@ -13,8 +13,9 @@ Database
 ```
 
 Frontend dự kiến dùng React.js.
-Backend dùng Python + FastAPI, chạy bằng Uvicorn.
+Backend dùng Python 3.11 + FastAPI, chạy bằng Uvicorn.
 Database: **PostgreSQL**.
+Persistence layer: SQLAlchemy 2 + Alembic + psycopg.
 
 ## 2. Main Frontend Areas
 Dựa trên scope hiện tại, frontend cần các khu vực chính:
@@ -90,13 +91,16 @@ AI không:
 {
   "action": "create_task",
   "title": "Học React",
-  "date": "2026-08-11",
+  "task_date": "2026-08-11",
   "start_time": "19:00",
-  "end_time": "21:00"
+  "end_time": "21:00",
+  "priority": "medium",
+  "category_id": null,
+  "allow_conflict": false
 }
 ```
 
-Schema chính xác sẽ được chốt khi implement chatbot.
+Structured action dùng field và response contract đã chốt trong `API_SPEC.md`.
 
 ## 7. Backend Action Functions
 Các function/service logic chính dự kiến:

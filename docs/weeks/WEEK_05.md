@@ -1,39 +1,37 @@
-# WEEK 05 — AUTHENTICATION
+# WEEK 05 — CALENDAR
 
 ## Objective
-Có tài khoản người dùng và cách ly dữ liệu theo user.
+Hiển thị cùng dữ liệu task dưới dạng Calendar cho authenticated user.
 
 ## Prerequisites
-- Backend, database và core task flow đã hoạt động.
+- Week 2 Authentication & Backend Foundation complete.
+- Week 3 Task CRUD API ổn định.
+- Week 4 Todo List hoạt động.
 
 ## Tasks
-- [ ] Register.
-- [ ] Login.
-- [ ] Logout.
-- [ ] Hash password.
-- [ ] JWT access-token authentication middleware.
-- [ ] Lưu JWT trong HttpOnly cookie.
-- [ ] Cấu hình CORS/credentials đúng cho frontend-backend.
-- [ ] Task queries scope theo current user.
-- [ ] Category/conversation data scope theo current user khi có.
-- [ ] Frontend auth state và protected flow.
-
-## Security Checks
-- Không lưu password plain text.
-- Không lưu JWT access token vào localStorage trong thiết kế chính của project.
-- User A không đọc/update/delete task của User B.
-- Unauthenticated request bị xử lý đúng.
+- [ ] Tích hợp FullCalendar.
+- [ ] Month View.
+- [ ] Week View.
+- [ ] Day View.
+- [ ] Convert task thành calendar event.
+- [ ] Gọi protected task API với credentials.
+- [ ] Khi create/update/delete task, calendar phản ánh thay đổi.
+- [ ] Todo List và Calendar dùng cùng backend data.
 
 ## Tests / Validation
-- Register/login/logout.
-- Wrong credentials.
-- Cross-user authorization.
-- Protected task endpoints.
+- Task đúng ngày/giờ.
+- Edit thời gian -> calendar cập nhật.
+- Delete -> event biến mất.
+- Complete -> trạng thái hiển thị nhất quán theo UI design.
+- User chỉ xem được calendar event từ task của mình.
 
 ## Definition of Done
-- Mỗi user chỉ thấy/quản lý dữ liệu của mình.
-- Authentication flow hoạt động end-to-end.
+- Calendar hiển thị task đúng.
+- Không có nguồn dữ liệu calendar tách riêng.
+- Todo List và Calendar đồng bộ.
+- Authentication/ownership vẫn được giữ khi truy cập task.
 - `PROGRESS.md` cập nhật.
 
 ## Do Not Implement Yet
-- Không làm AI destructive actions trước khi backend auth/ownership ổn định.
+- Không implement full chatbot.
+- Không ưu tiên Dashboard.

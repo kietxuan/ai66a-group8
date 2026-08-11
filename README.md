@@ -14,13 +14,16 @@ Xây dựng một web quản lý công việc cá nhân kết hợp:
 - `docs/ARCHITECTURE.md`: kiến trúc hệ thống và luồng chatbot.
 - `docs/DATABASE.md`: thiết kế PostgreSQL.
 - `docs/API_SPEC.md`: REST API dự kiến.
+- `docs/UI_DIRECTION.md`: wireframe/UI direction cho MVP.
+- `docs/01_SETUP.md`: hướng dẫn setup local.
 - `docs/ROADMAP.md`: roadmap 10 tuần.
 - `docs/PROGRESS.md`: file theo dõi tiến độ.
 - `docs/weeks/WEEK_XX.md`: công việc chi tiết từng tuần.
 
 ## Technology Decisions
 - Frontend: React.js + HTML/CSS/JavaScript
-- Backend: Python + FastAPI + Uvicorn
+- Backend: Python 3.11 + FastAPI + Uvicorn
+- Persistence: SQLAlchemy 2 + Alembic + psycopg
 - Database: **PostgreSQL**
 - Calendar: FullCalendar
 - LLM provider: **Google Gemini API**
