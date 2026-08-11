@@ -14,9 +14,10 @@ Chuyển project description hiện tại thành specification đủ rõ để b
 - [ ] Review database entities: Users, Categories, Tasks, Conversations, Messages.
 - [ ] Review REST API.
 - [ ] Xác nhận PostgreSQL setup cho Week 2.
+- [ ] Xác nhận FastAPI + Uvicorn setup cho Week 2.
 - [ ] Xác nhận auth design: JWT access token + HttpOnly cookie + bcrypt.
 - [ ] Chuẩn bị Google Gemini API project/key cho chatbot ở Week 6.
-- [ ] Xác nhận test stack: Vitest + React Testing Library + Supertest.
+- [ ] Xác nhận test stack: Vitest + React Testing Library + pytest + HTTPX/FastAPI TestClient.
 - [ ] Xác nhận deployment targets: Render + Neon.
 - [ ] Xác nhận roadmap 10 tuần = 10 phase.
 

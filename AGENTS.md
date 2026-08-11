@@ -62,14 +62,14 @@ Nếu code hiện tại và tài liệu mâu thuẫn:
 
 Stack đã chốt:
 - Frontend: HTML, CSS, JavaScript, React.js
-- Backend: Node.js, Express.js
+- Backend: Python, FastAPI, Uvicorn
 - Database: PostgreSQL
 - Calendar: FullCalendar
 - AI provider: Google Gemini API
 - AI model: Gemini 2.5 Flash
 - AI integration: Gemini API + Structured Output / Function Calling
 - Authentication: JWT access token trong HttpOnly cookie + bcrypt
-- Testing: Vitest + React Testing Library + Supertest
+- Testing: Vitest + React Testing Library + pytest + HTTPX/FastAPI TestClient
 - Deployment: Render (frontend/backend) + Neon PostgreSQL
 
 Giữ kiến trúc chính:

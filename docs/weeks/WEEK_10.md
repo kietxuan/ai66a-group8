@@ -9,7 +9,7 @@
 
 ## Tasks
 - [ ] Deploy React frontend lên Render Static Site.
-- [ ] Deploy Express backend lên Render Web Service.
+- [ ] Deploy FastAPI backend chạy bằng Uvicorn lên Render Web Service.
 - [ ] Deploy/configure PostgreSQL trên Neon.
 - [ ] Cấu hình environment variables.
 - [ ] Kiểm tra frontend gọi đúng backend production.

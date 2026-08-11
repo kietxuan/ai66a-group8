@@ -13,7 +13,7 @@ Database
 ```
 
 Frontend dự kiến dùng React.js.
-Backend dự kiến dùng Node.js + Express.js.
+Backend dùng Python + FastAPI, chạy bằng Uvicorn.
 Database: **PostgreSQL**.
 
 ## 2. Main Frontend Areas
@@ -152,7 +152,7 @@ AI dùng để hiểu intent và trích xuất dữ liệu; backend vẫn là n�
 ## 12. Testing Stack
 - Vitest: test runner chính.
 - React Testing Library: frontend/component behavior.
-- Supertest: Express REST API.
+- pytest + HTTPX/FastAPI TestClient: kiểm thử REST API của FastAPI.
 - Postman hoặc REST Client: manual API verification.
 
 ## 13. Deployment Architecture
@@ -164,7 +164,7 @@ Render Static Site
     |
 HTTPS
     |
-Express Backend
+FastAPI Backend
     |
 Render Web Service
     |
@@ -184,11 +184,13 @@ frontend/
   chat/
 
 backend/
-  routes/
-  controllers/
+  main.py
+  routers/
+  schemas/
+  models/
   services/
-  middleware/
-  data-or-repositories/
+  dependencies/
+  repositories/
 ```
 
 Không coi cấu trúc folder này là requirement bắt buộc nếu framework setup thực tế dùng convention khác.

@@ -9,7 +9,7 @@ Kiểm tra toàn bộ MVP theo các flow chính và sửa lỗi.
 ## Tooling
 - Vitest: test runner.
 - React Testing Library: frontend.
-- Supertest: backend/API.
+- pytest + HTTPX/FastAPI TestClient: backend/API.
 - Postman hoặc REST Client: manual API checks.
 
 ## Test Areas

@@ -11,10 +11,11 @@
 
 ## Technology Decisions
 - [x] Database: PostgreSQL.
+- [x] Backend: Python + FastAPI + Uvicorn.
 - [x] LLM provider/model: Google Gemini API + Gemini 2.5 Flash.
 - [x] AI integration: Gemini API + Structured Output / Function Calling.
 - [x] Authentication: JWT access token trong HttpOnly cookie + bcrypt; không refresh token trong MVP.
-- [x] Testing: Vitest + React Testing Library + Supertest; Postman/REST Client cho manual testing.
+- [x] Testing: Vitest + React Testing Library + pytest + HTTPX/FastAPI TestClient; Postman/REST Client cho manual testing.
 - [x] Deployment: Render frontend/backend + Neon PostgreSQL.
 - [x] Project duration: 10 tuần = 10 phase.
 

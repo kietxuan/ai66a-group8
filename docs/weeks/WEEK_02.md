@@ -8,7 +8,8 @@ Có backend + database chạy được và CRUD API cơ bản cho task.
 - Database engine đã chốt.
 
 ## Tasks
-- [ ] Initialize Node.js + Express backend.
+- [ ] Initialize Python + FastAPI backend.
+- [ ] Thiết lập Uvicorn để chạy development server.
 - [ ] Thiết lập cấu hình môi trường.
 - [ ] Kết nối database.
 - [ ] Tạo schema/migration cho dữ liệu cần thiết để task CRUD chạy.
@@ -17,6 +18,8 @@ Có backend + database chạy được và CRUD API cơ bản cho task.
 - [ ] Chuẩn bị query filter nền tảng nếu phù hợp.
 
 ## Backend
+
+- FastAPI application và router structure.
 - POST /api/tasks
 - GET /api/tasks
 - GET /api/tasks/:id

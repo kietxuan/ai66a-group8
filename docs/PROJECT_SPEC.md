@@ -141,7 +141,7 @@ MVP gồm:
 - AI integration: Gemini API + Structured Output / Function Calling.
 - Authentication: JWT access token trong HttpOnly cookie + bcrypt.
 - Refresh token: không nằm trong MVP.
-- Testing: Vitest + React Testing Library + Supertest; Postman/REST Client cho manual API testing.
+- Testing: Vitest + React Testing Library + pytest + HTTPX/FastAPI TestClient; Postman/REST Client cho manual API testing.
 - Deployment: Render cho frontend/backend và Neon cho PostgreSQL.
 - Project duration: 10 tuần, tương ứng 10 phase.
 

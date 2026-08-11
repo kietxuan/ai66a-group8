@@ -18,7 +18,7 @@ Deliverable:
 
 ## Week 2 — Backend & Database Foundation
 Nguồn: Phase 2.
-- Setup Node.js + Express.
+- Setup Python + FastAPI + Uvicorn.
 - Kết nối database.
 - Tạo schema/migration cơ bản.
 - CRUD API cho task.

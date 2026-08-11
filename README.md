@@ -20,7 +20,7 @@ Xây dựng một web quản lý công việc cá nhân kết hợp:
 
 ## Technology Decisions
 - Frontend: React.js + HTML/CSS/JavaScript
-- Backend: Node.js + Express.js
+- Backend: Python + FastAPI + Uvicorn
 - Database: **PostgreSQL**
 - Calendar: FullCalendar
 - LLM provider: **Google Gemini API**
@@ -31,7 +31,7 @@ Xây dựng một web quản lý công việc cá nhân kết hợp:
 - Testing:
   - **Vitest**
   - **React Testing Library**
-  - **Supertest**
+  - **pytest + HTTPX/FastAPI TestClient**
   - **Postman hoặc REST Client** cho manual API testing
 - Deployment:
   - **Render Static Site** cho frontend
