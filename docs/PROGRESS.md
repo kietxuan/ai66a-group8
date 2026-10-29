@@ -11,7 +11,10 @@
 - 45cf886 là baseline planning trước implementation. Đợt bàn giao Git theo yêu cầu user 29/10 được ghi bên dưới; commit thực tế xem Git log/remote. Chưa có release online HTTPS/URL; push source không đồng nghĩa đã deploy.
 - Current improvement tracking: [107 mục + AI bắt buộc](IMPROVEMENT_STATUS_2026-10-21.md), giữ audit gốc như bằng chứng trước sửa. Sau giờ trống: **247 backend / 57 frontend tests pass**, production build pass, Groq parser 7/7 + browser nhiều lượt thật pass; xem amendment bên dưới. 200/53 và HTTP smoke 25/25 là checkpoint UI trước tính năng mới, không coi smoke cũ là bằng chứng giờ trống. Next: nhóm review/commit/push/remote CI và người có quyền deploy/HTTPS smoke, thử thiết bị thật.
 
-## Chuẩn bị bàn giao Git / clone setup — 2026-10-29
+## Bàn giao Git / clone setup — 2026-10-29
+
+- Commit implementation **e359278e4b8838ae3235dee8b4c57cf5196d4605** đã push thành công lên origin/main; `git ls-remote origin refs/heads/main` xác nhận đúng SHA. Không force push, working tree sạch ngay sau push. Ghi chú này là bổ sung bàn giao, không đổi source nghiệp vụ.
+- GitHub Actions đã tạo [run 40819516766](https://github.com/kietxuan/ai66a-group8/actions/runs/40819516766), trạng thái quan sát đầu tiên in_progress; không đánh dấu CI pass trước conclusion thực tế. Render/Neon/HTTPS và thiết bị vật lý vẫn OPEN.
 
 - User cho phép commit/push các file cần thiết để nhóm clone chạy được. Remote origin=https://github.com/kietxuan/ai66a-group8.git, nhánh main; fetch xác minh HEAD và origin/main cùng baseline trước khi stage, không force push hoặc thay remote.
 - Bao gồm source backend/frontend, migrations, tests, dependency pins/lockfiles, scripts, CI/deploy config, docs và evidence/ảnh đang được docs tham chiếu (~1,25MB). Ghi nhận việc bỏ các Dockerfile/compose/API/schema placeholder rỗng từ implementation; không xóa file local mới trong lượt này.
@@ -21,7 +24,8 @@
 - Export Git index vào `.local/publish-snapshot-20261029` ignored: không .env/.venv/node_modules/dist/pgdata. Backend tests **247 passed / 2 warnings, 63,43s** từ source snapshot, dùng packages Python venv hiện hữu và riêng PostgreSQL todo_app_test. Frontend npm ci từ lock sạch cài 164 packages, **57 tests pass, 5,86s**. Đây là source-only validation, không claim fresh Python install/physical machine/Linux/online smoke.
 - Fresh npm ci/audit phát hiện hai moderate entries ở Vitest/@vitest/mocker 4.1.11: [manual mock injection](https://github.com/vitest-dev/vitest/security/advisories/GHSA-qxg6-89mg-rqv8) và [Windows traversal](https://github.com/vitest-dev/vitest/security/advisories/GHSA-xp26-3454-mjgp). Upstream xác nhận bản vá backport 4.1.12. Chỉ pin Vitest 4.1.12 và các package cùng family trong lockfile, không audit fix --force/nâng major hoặc runtime deps. npm ci + audit sau vá **0 vulnerabilities**, tests mới **57 passed, 6,14s**. Không bảo đảm advisory tương lai không xuất hiện.
 - pip check không broken requirements; compileall và document checker 27/0, Git diff whitespace pass. Warnings npm transitive whatwg-encoding và esbuild allow-scripts không bị suppress/đổi policy; tests/build exit code là bằng chứng, không chỉ log installing. Starlette/AnyIO deprecations vẫn known issue.
-- Các check này không đóng remote CI/Render/Neon/HTTPS/physical-phone gate; không cấp release SHA hoặc URL giả. Chưa triển khai cloud hoặc chia sẻ secrets. Kết quả push cần xác nhận bằng remote ref sau khi lệnh push thành công.
+- Sau vá, snapshot chạy lại npm ci từ lockfile cuối: 0 npm vulnerabilities, **57 tests pass, 5,72s**, **production build pass 2m53s** với Vitest 4.1.12. Snapshot build trước vá dev-tool pass 3m02s; CSS/main/lazy Calendar giữ cùng hash với working-tree build. Không có thay đổi runtime dependency; không suy rộng npm audit sang toàn bộ backend. Thư mục validation giữ local trong .local ignored, không chứa .env/key/database; PostgreSQL đã khởi động phục vụ test được giữ running, không mở app/LAN/cloud.
+- Các check này không đóng Render/Neon/HTTPS/physical-phone gate; không cấp URL deploy giả. Chưa triển khai cloud hoặc chia sẻ secrets. Chỉ các commit/source đã push được xác nhận qua remote Git; đây không phải online product release.
 
 ## Gợi ý giờ trống — user amendment 2026-10-22
 
