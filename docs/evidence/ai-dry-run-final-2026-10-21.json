@@ -1,0 +1,30 @@
+{
+  "run": "7a7e075e48",
+  "started_at": "2026-10-21T11:44:43.617785+07:00",
+  "finished_at": "2026-10-21T11:48:17.199006+07:00",
+  "mode": "dry-run",
+  "base_url": "http://127.0.0.1:8001",
+  "live_provider": true,
+  "configured_target": "Groq/openai/gpt-oss-20b",
+  "ai_requests": 8,
+  "passed": 14,
+  "checks": [
+    "two synthetic users authenticated",
+    "dry-run all-day understood without mutation",
+    "dry-run all-day fields",
+    "dry-run all-day database unchanged",
+    "dry-run relative-date-duration understood without mutation",
+    "dry-run relative-date-duration fields",
+    "dry-run relative-date-duration database unchanged",
+    "missing date asks clarification",
+    "follow-up keeps draft",
+    "timed intent missing end never becomes all-day",
+    "unknown category asks before write",
+    "category-only follow-up preserves create intent",
+    "unsupported bulk action refused",
+    "all dry-run requests left tasks unchanged"
+  ],
+  "failure": null,
+  "cleanup_errors": [],
+  "note": "Synthetic users retained; their tasks removed. No database reset. No credentials in report."
+}

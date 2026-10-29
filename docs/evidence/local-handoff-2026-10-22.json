@@ -1,0 +1,40 @@
+{
+  "handoff_date": "2026-10-22",
+  "scope": "Local improvement handoff, not an online release",
+  "source_changed_during_final_resume": false,
+  "prior_final_verification": {
+    "run_date": "2026-10-21",
+    "backend": {"passed": 170, "dependency_warnings": 2, "duration_seconds": 56.32, "database": "dedicated PostgreSQL test database"},
+    "frontend": {"passed": 41, "files": 6, "duration_seconds": 4.26},
+    "production_build": {"passed": true, "vite": "6.4.4", "duration": "3m50s", "main_asset": "index-DgMrNl4y.js", "calendar_asset": "CalendarView-FbPh5tZj.js"},
+    "real_ai_execution_report": "ai-improvements-execution-2026-10-21.json",
+    "nlu_regression_report": "nlu-regression-v2-2026-10-21.json",
+    "nlu_holdout_report": "nlu-holdout-2026-10-21.json"
+  },
+  "final_resume_checks": {
+    "ready": "HTTP success; existing single-worker local server retained",
+    "http_smoke": {"passed": 25, "live_ai": false, "cleanup_errors": [], "synthetic_accounts_retained": true, "run_tasks_cleaned": true, "database_reset": false},
+    "documents": {"checked": 26, "errors": []},
+    "compileall": "pass",
+    "pip_check": "No broken requirements found",
+    "git_diff_check": "pass; LF/CRLF notices only",
+    "browser": {
+      "expired_login": "Expired session required re-login; no pending action executed",
+      "fresh_real_ai_request": "Synthetic title-only create request asked for date; one Groq call",
+      "cancel_draft": "Start another request returned cancellation message; reload and context recovery did not restore abandoned draft",
+      "task_list": "Only previously saved QA task present; no draft task created",
+      "mobile_viewport": {"width": 390, "document_client_width": 375, "document_scroll_width": 375},
+      "calendar_clean_tab": "Existing QA task rendered; no warn/error console entries in new tab",
+      "screenshots": ["../screenshots/improved-todo-mobile-final-2026-10-22.jpg", "../screenshots/improved-chat-cancel-draft-2026-10-22.jpg"]
+    }
+  },
+  "audit_status_counts": {"local": 87, "partial": 14, "external": 5, "deferred": 1, "total": 107},
+  "limitations": [
+    "No full 40/40 NLU rerun after all-day guard; measured regression remains 39/40 and holdout 12/12",
+    "Scores describe sampled parser plus backend guard behavior, not universal model accuracy",
+    "No physical Android/iOS or screen-reader certification",
+    "No Render/Neon deployment, remote Linux CI, HTTPS release URL or release commit",
+    "Owner must rotate exposed Groq key before public use",
+    "Working tree remains uncommitted; no commit, push or cloud deployment performed"
+  ]
+}

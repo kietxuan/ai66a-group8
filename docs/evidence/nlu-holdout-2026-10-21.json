@@ -1,0 +1,405 @@
+{
+  "suite": "Vietnamese task semantics v1 / holdout",
+  "policy_sha256": "5736c5c87c3eda3f23a45971b275aa206d2485c88e8cb19b089784a7a16361ca",
+  "time": "2026-10-21T19:47:25.282497+07:00",
+  "scope": "Live parsing + deterministic guards only; not database execution or a universal-language guarantee",
+  "planned": 12,
+  "executed": 12,
+  "passed": 12,
+  "pass_rate": 1.0,
+  "target": 0.95,
+  "results": [
+    {
+      "id": "heldout-morning",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "reference": "last_task",
+        "fields": {
+          "title": "Ôn Địa",
+          "task_date": "2026-10-23",
+          "start_time": "07:00",
+          "end_time": "09:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "reference": "last_task",
+        "fields": {
+          "title": "Ôn Địa",
+          "task_date": "2026-10-22",
+          "start_time": "07:00",
+          "end_time": "09:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2096,
+          "completion_tokens": 217,
+          "total_tokens": 2313
+        }
+      }
+    },
+    {
+      "id": "heldout-ninety-minutes",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Luyện đọc",
+          "task_date": "2026-10-22",
+          "start_time": "18:30",
+          "end_time": "20:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Luyện đọc",
+          "task_date": "2026-10-22",
+          "start_time": "18:30",
+          "end_time": "20:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2093,
+          "completion_tokens": 144,
+          "total_tokens": 2237
+        }
+      }
+    },
+    {
+      "id": "heldout-date",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Gọi điện cho mẹ",
+          "task_date": "2026-10-21",
+          "start_time": null,
+          "end_time": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Gọi điện cho mẹ",
+          "task_date": "2026-10-21",
+          "start_time": null,
+          "end_time": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2089,
+          "completion_tokens": 120,
+          "total_tokens": 2209
+        }
+      }
+    },
+    {
+      "id": "heldout-category-filter",
+      "failed_fields": [],
+      "action": {
+        "action": "get_tasks",
+        "fields": {},
+        "filters": {
+          "task_date": "2026-10-22",
+          "status": "pending",
+          "category_name": "Cá nhân"
+        },
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "get_tasks",
+        "fields": {},
+        "filters": {
+          "task_date": "2026-10-22",
+          "status": "pending",
+          "category_name": "Cá nhân"
+        },
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2088,
+          "completion_tokens": 102,
+          "total_tokens": 2190
+        }
+      }
+    },
+    {
+      "id": "heldout-ordinal-first",
+      "failed_fields": [],
+      "action": {
+        "action": "complete_task",
+        "task_id": 101,
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "complete_task",
+        "task_id": 101,
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2211,
+          "completion_tokens": 128,
+          "total_tokens": 2339
+        }
+      }
+    },
+    {
+      "id": "heldout-last-priority",
+      "failed_fields": [],
+      "action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "reference": "last_task",
+        "fields": {
+          "priority": "low"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "reference": "last_task",
+        "fields": {
+          "priority": "low"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2171,
+          "completion_tokens": 84,
+          "total_tokens": 2255
+        }
+      }
+    },
+    {
+      "id": "heldout-change-note",
+      "failed_fields": [],
+      "action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "fields": {
+          "description": "Làm chương 4"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "fields": {
+          "description": "Làm chương 4"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2094,
+          "completion_tokens": 96,
+          "total_tokens": 2190
+        }
+      }
+    },
+    {
+      "id": "heldout-remove-description",
+      "failed_fields": [],
+      "action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "fields": {
+          "description": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "fields": {
+          "description": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2092,
+          "completion_tokens": 87,
+          "total_tokens": 2179
+        }
+      }
+    },
+    {
+      "id": "heldout-missing-target",
+      "failed_fields": [],
+      "action": {
+        "action": "clarify",
+        "fields": {},
+        "filters": {},
+        "missing_fields": [
+          "task"
+        ]
+      },
+      "raw_action": {
+        "action": "clarify",
+        "fields": {},
+        "filters": {},
+        "missing_fields": [
+          "task"
+        ]
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2085,
+          "completion_tokens": 49,
+          "total_tokens": 2134
+        }
+      }
+    },
+    {
+      "id": "heldout-end-later",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Lịch họp",
+          "task_date": "2026-10-22",
+          "start_time": "10:00"
+        },
+        "filters": {},
+        "missing_fields": [
+          "end_time"
+        ]
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Lịch họp",
+          "task_date": "2026-10-22",
+          "start_time": "10:00"
+        },
+        "filters": {},
+        "missing_fields": [
+          "end_time"
+        ]
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2095,
+          "completion_tokens": 176,
+          "total_tokens": 2271
+        }
+      }
+    },
+    {
+      "id": "heldout-no-date-duration",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "reference": "last_task",
+        "fields": {
+          "title": "Lịch tập gym"
+        },
+        "filters": {},
+        "missing_fields": [
+          "task_date",
+          "start_time",
+          "end_time"
+        ]
+      },
+      "raw_action": {
+        "action": "create_task",
+        "reference": "last_task",
+        "fields": {
+          "title": "Lịch tập gym"
+        },
+        "filters": {},
+        "missing_fields": [
+          "task_date",
+          "start_time",
+          "end_time"
+        ]
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2084,
+          "completion_tokens": 148,
+          "total_tokens": 2232
+        }
+      }
+    },
+    {
+      "id": "heldout-bulk-colloquial",
+      "failed_fields": [],
+      "action": {
+        "action": "unsupported",
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "unsupported",
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2081,
+          "completion_tokens": 62,
+          "total_tokens": 2143
+        }
+      }
+    }
+  ]
+}

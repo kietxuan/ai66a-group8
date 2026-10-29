@@ -1,0 +1,55 @@
+{
+  "date": "2026-10-22",
+  "scope": "User-authorized ZIP-inspired UI redesign and browser-local Light/Dark preference; no new business features",
+  "frontend_tests": {"passed": 53, "files": 8, "seconds": 4.60},
+  "backend_tests": {"passed": 200, "warnings": 2, "seconds": 64.12, "database": "separate PostgreSQL test database"},
+  "production_build": {
+    "status": "pass", "duration": "3m29s", "css_kb": 25.56,
+    "main_js_kb": 232.22, "lazy_calendar_js_kb": 337.81,
+    "assets": ["index-Cq8D5xVr.css", "index-nfPOLcI8.js", "CalendarView-Bb9MoHm0.js"]
+  },
+  "http_smoke": {"passed": 25, "live_ai": false, "cleanup_errors": []},
+  "theme_bootstrap": "FastAPI serves theme-init.js as JavaScript; index loads it before application assets",
+  "browser_verified": [
+    "Login/logout/register presentation; no additional auth methods or security claims",
+    "Timed task created as 08:00-12:00 Vietnam time with existing category",
+    "All-day, completed and long task title presentation",
+    "Theme switching preserves auth/task/chat draft and task time; preference survives reload",
+    "Priority filter, delete cancellation, complete/reopen",
+    "Calendar Month/Week/Day; event opens shared form; dirty Escape close preserves draft",
+    "Theme applies to Calendar, native form controls and dialogs",
+    "Short chat viewport keeps composer above bottom navigation",
+    "Final QA browser console has no warnings/errors"
+  ],
+  "responsive_measurements": [
+    {"viewport": "320x740", "views": ["todo", "todo filters expanded", "calendar", "chat", "register"], "horizontal_page_overflow": false},
+    {"viewport": "390x844", "views": ["todo", "calendar week/day", "chat"], "horizontal_page_overflow": false},
+    {"viewport": "768x1024", "views": ["todo", "calendar"], "horizontal_page_overflow": false},
+    {"viewport": "1366x900", "views": ["auth", "todo", "calendar", "editor panel"], "horizontal_page_overflow": false},
+    {"viewport": "390x500", "view": "compact chat", "input_bottom": 271.66, "bottom_navigation_top": 431.64, "horizontal_page_overflow": false}
+  ],
+  "other_checks": {
+    "mobile_input_font": "16px",
+    "pip_check": "pass",
+    "compileall_app": "pass",
+    "document_checker": {"documents": 26, "errors": []},
+    "git_diff_check": "pass; repository CRLF notices only",
+    "groq_key_pattern_in_frontend_source_public_dist": "no matches; not a comprehensive secrets certification"
+  },
+  "failures_and_repairs": [
+    "Sandbox denied Vitest temporary cache rename before tests; escalated rerun passed without disabling tests",
+    "Bootstrap test harness initially read a Vite-rewritten HTTP asset URL; switched to reading the source file in frontend test cwd",
+    "Mobile chat composer was below fold and partly behind navigation on short viewports; compact visualViewport presentation fixed measured overlap"
+  ],
+  "cleanup": {"qa_tasks_deleted": 3, "qa_account_retained": true, "development_database_reset": false, "owned_vite_uvicorn_stopped": true, "postgres_restarted_and_readiness_verified": true, "qa_task_count_after_restart": 0, "browser_viewport_reset": true},
+  "backend_implementation_changed": false,
+  "dependencies_added_or_upgraded": false,
+  "live_groq_called": false,
+  "remote_ci_or_cloud_deploy": false,
+  "known_limits": [
+    "No physical Android/iPhone or native keyboard/screen-reader verification; viewport resizing is not a physical-device test",
+    "Existing Passlib bcrypt metadata warning and two backend test deprecations remain",
+    "Prior live AI evidence is unchanged; this UI run does not assert new model/NLU quality",
+    "Remote CI, Render/Neon and HTTPS release gates remain open"
+  ]
+}

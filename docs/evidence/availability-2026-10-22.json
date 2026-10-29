@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-22",
+  "feature": "Read-only AI free-time suggestions; direct user amendment",
+  "provider": "Groq",
+  "model": "openai/gpt-oss-20b",
+  "scope": "One explicit day, duration and same-day window; backend-owned availability snapshot, no booking",
+  "automated": {
+    "backend": {"passed":247,"warnings":2,"seconds":113.01,"command":"python -X utf8 -m pytest -o addopts= -q --tb=short -x","database":"Separate guarded PostgreSQL _test only","provider":"mock"},
+    "frontend": {"passed":57,"files":8,"seconds":5.68,"command":"npm test -- --run"},
+    "interval_oracle": {"random_cases":250,"seed":815,"comparison":"Independent minute-grid greedy scheduler"},
+    "build": {"passed":true,"duration":"5m22s","css":"index-DE7SoFzz.css","css_bytes":26229,"main":"index-D2LMlo5a.js","main_bytes":233788,"calendar":"CalendarView-BIxxTNtL.js","calendar_bytes":337806},
+    "compileall":true,"pip_check":"No broken requirements found","document_check":{"documents":27,"errors":[]},"diff_whitespace":true
+  },
+  "live_parser_runs": [
+    {"run":"initial","source":".local/nlu-availability-2026-10-22.json","planned":6,"executed":6,"passed":5,"failed_case":"free-last-criteria","error":"AI_INVALID_OUTPUT","provider_status":400,"kind":"structured_output_rejected"},
+    {"run":"prompt-only-v2","source":".local/nlu-availability-v2-2026-10-22.json","planned":6,"executed":6,"passed":5,"failed_case":"free-last-criteria","error":"AI_INVALID_OUTPUT","provider_status":400,"kind":"structured_output_rejected"},
+    {"run":"enum-and-backend-reference-v3","source":".local/nlu-availability-v3-2026-10-22.json","planned":6,"executed":6,"passed":6},
+    {"run":"final-reference-gate","source":".local/nlu-availability-final-2026-10-22.json","time":"2026-10-22T19:43:15.289994+07:00","planned":7,"executed":7,"passed":7,"policy_sha256":"f54c0b375b41e786a3823b08c7c3e224d8ea373099b4de8a5b6ab210e1c54cc1","all_reported_models_match":true,
+      "cases":[
+        {"id":"free-full","passed":true,"action":"suggest_free_slots","reference":null,"duration":90,"window":"08:00-18:00","tokens":3303},
+        {"id":"free-no-accents","passed":true,"action":"suggest_free_slots","reference":null,"duration":120,"window":"08:00-12:00","tokens":3299},
+        {"id":"free-missing","passed":true,"action":"suggest_free_slots","missing":["task_date","duration_minutes","start_time","end_time"],"tokens":3227},
+        {"id":"free-followup","passed":true,"action":"suggest_free_slots","duration":90,"window":"08:00-18:00","tokens":3329,"note":"Raw model used last_availability; live-draft merge is validated separately by API/browser, not this parser-only check"},
+        {"id":"free-last-criteria","passed":true,"action":"suggest_free_slots","reference":"last_availability","duration":30,"window":"08:00-18:00","tokens":3320},
+        {"id":"legacy-create-after-schema","passed":true,"action":"create_task","time":"19:00-20:30","tokens":3296},
+        {"id":"free-ui-chip","passed":true,"action":"suggest_free_slots","reference":null,"duration":90,"window":"08:00-18:00","tokens":3272}
+      ]}
+  ],
+  "failures_and_fixes": [
+    "Sandbox denied PostgreSQL/cache access; baseline rerun outside sandbox passed, no database reset outside _test",
+    "Groq generated a legitimate last_availability reference outside the old enum: strict schema rejected it; added a separate closed read-only reference and scoped backend resolution",
+    "Browser full query was tagged as previous-search reference with no memory; safe clarification, no task change; explicit new-search reference gate added and exact UI phrase checked",
+    "Model may tag active-draft follow-up as completed-search memory; backend now prioritizes authenticated live-draft criteria, tested with and without memory",
+    "RAM corrected criteria serialized back to JSON-safe draft before further provider calls",
+    "Mobile repeated explanation and per-slot duration reduced after visual QA; limits/warnings retained"
+  ],
+  "browser_final": {
+    "mode":"FastAPI serving final Vite production build, local loopback",
+    "account":"Existing synthetic UI QA account; no new account in this feature turn",
+    "live_sequence":["Ngày mai tôi muốn tìm giờ trống.","clarification: duration_minutes/start_time/end_time","90 phút, tìm từ 08:00 đến 18:00 nhé.","availability"],
+    "date":"2026-10-23","duration_minutes":90,"slots":["08:00-09:30","09:30-11:00","11:00-12:30"],"has_more":true,
+    "theme_switch_preserves_result":true,"console_warn_error":[],"qa_task_count_before":0,"qa_task_count_after":0,
+    "viewports":[
+      {"width":1366,"height":900,"client_width":1351,"scroll_width":1351},
+      {"width":390,"height":844,"client_width":375,"scroll_width":375,"input_bottom":621.48,"nav_top":775.64},
+      {"width":320,"height":740,"client_width":305,"scroll_width":305,"input_bottom":480.09,"nav_top":671.64},
+      {"width":390,"height":500,"client_width":375,"scroll_width":375,"input_bottom":261.66,"nav_top":431.64,"compact":true}
+    ],
+    "screenshots":["docs/screenshots/availability-desktop-dark-2026-10-22.png","docs/screenshots/availability-mobile-light-2026-10-22.png","docs/screenshots/availability-mobile-dark-2026-10-22.png"]
+  },
+  "teardown":{"qa_logged_out":true,"viewport_reset":true,"qa_tab_closed":true,"owned_uvicorn_stopped":true,"preexisting_postgresql_preserved":true,"task_deletions":0,"new_main_database_accounts":0},
+  "not_verified":["Physical Android/iOS and keyboard","Remote CI","Render/Neon/HTTPS release","Universal natural-language comprehension"],
+  "unchanged":["API endpoint structure","Database schema/migrations","Dependencies","Provider/model/key","CSRF/authentication","Task conflict/write service"]
+}

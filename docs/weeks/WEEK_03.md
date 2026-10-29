@@ -1,63 +1,67 @@
-# WEEK 03 — BACKEND & DATABASE TASK FOUNDATION
+# WEEK 03 — TASK API, CATEGORIES & CONFLICT CORE
+
+
+## Checkpoint implementation — 2026-10-05
+
+[x] dưới đây chỉ xác nhận item local/mock đã có evidence, không tự xác nhận DoD toàn tuần hoặc gate cloud. Task/category/conflict/migration tests và HTTP smoke hai user trên PostgreSQL local pass. Không dùng SQLite hoặc reset development DB; chi tiết ACCEPTANCE. Xem [ACCEPTANCE](../ACCEPTANCE.md), [PROGRESS](../PROGRESS.md) và [DEMO](../DEMO.md).
 
 ## Objective
-Authenticated user có thể tạo và quản lý task qua REST API.
+
+Authenticated task API đầy đủ trên PostgreSQL, dùng làm nền chung cho Todo/Calendar/chatbot.
 
 ## Prerequisites
-- Week 2 Authentication & Backend Foundation complete.
-- Authentication dependency hoạt động.
-- Database đã kết nối.
 
-## Tasks
-- [ ] Tạo schema/migration cho Categories và Tasks.
-- [ ] Tạo Pydantic schemas cho task request/response.
-- [ ] Implement Create task.
-- [ ] Implement Read/list task.
-- [ ] Implement Get task by id.
-- [ ] Implement Update task.
-- [ ] Implement Delete task.
-- [ ] Implement Mark completed/status update.
-- [ ] Scope mọi query/update/delete theo current authenticated user.
-- [ ] Validate dữ liệu task cơ bản.
-- [ ] Chuẩn bị search/filter theo date/status/priority/category.
-- [ ] Detect overlap khi create task có start/end time.
-- [ ] Detect overlap khi update date/time.
-- [ ] Trả HTTP 409 và thông tin task conflict.
-- [ ] Hỗ trợ `allow_conflict=true` để tiếp tục sau cảnh báo.
+Week 2 auth/me/current_user, migration Users, test database và checks pass. Đọc DATABASE/API_SPEC và kiểm tra prerequisite thật trước implement.
 
-## Backend
-- POST `/api/tasks`
-- GET `/api/tasks`
-- GET `/api/tasks/{id}`
-- PUT `/api/tasks/{id}`
-- DELETE `/api/tasks/{id}`
-- PATCH `/api/tasks/{id}/status`
-- Không thay đổi API contract tùy tiện.
+## Tasks theo thứ tự
 
-## Database
-- Tasks phải có `user_id` để xác định owner.
-- Categories phải có `user_id` để xác định owner.
-- Task query phải luôn filter theo authenticated user.
-- Todo List và Calendar sẽ dùng chung Task data source.
+### 1. Schema và category
 
-## Tests / Validation
-- Kiểm tra CRUD bằng Postman, REST Client hoặc pytest + HTTPX/FastAPI TestClient.
-- Kiểm tra invalid input cơ bản.
-- Kiểm tra task của User A không bị User B truy cập.
-- Kiểm tra database update đúng.
-- Kiểm tra route parameter dùng `{id}` theo FastAPI convention.
-- Kiểm tra không overlap, partial overlap và task nằm trong task khác.
+- [x] Migration Categories/Tasks với FK, length/enum/time CHECK, timestamps và indexes tối thiểu.
+- [x] Backfill ba category mặc định cho user đã tạo Week 2, idempotent.
+- [x] Từ tuần này register tạo user + defaults trong cùng transaction.
+- [x] GET /api/categories scoped theo user; không CRUD category API/UI.
+- [x] Tạo data fixtures/demo bằng tài khoản test/development riêng, không seed tài khoản/secret vào production tự động.
+
+### 2. Task service và REST
+
+- [x] Schema create/full PUT/status; reject extras/user_id/id/timestamps; defaults và HH:MM đúng API.
+- [x] Backend gán user_id; kiểm tra category cùng owner.
+- [x] POST/list/get/PUT/delete/PATCH status; hard delete; 204 bodyless.
+- [x] List AND filters search/status/priority/category/ngày/khoảng ngày inclusive; sort ổn định.
+- [x] Full PUT không nhận status; status endpoint completed/pending/no-op.
+- [x] Một task service được tái sử dụng, không nhét mọi nghiệp vụ vào router.
+
+### 3. Conflict transaction
+
+- [x] Pending-only, cùng user/day, có đủ giờ; completed/all-day không chặn.
+- [x] Core overlap strict inequalities; update loại chính task.
+- [x] Check create, đổi date/time pending, completed -> pending; không check title-only edit.
+- [x] 409 TASK_CONFLICT kèm đúng conflicting_tasks; rollback chưa ghi.
+- [x] allow_conflict=true explicit request override, không bỏ validation/ownership.
+- [x] Khóa hàng User trong transaction trước conflict query + write; các đường ghi lịch cùng policy.
+- [x] Không dùng exclusion constraint vì cho phép override.
+
+## Acceptance tests
+
+- CRUD happy path và invalid enum/title/date/time; past date được phép.
+- Cả hai time=null hợp lệ; thiếu một time, end<=start, giây khác 0, 24:00 bị từ chối.
+- User A không list/get/update/delete/status task B; không create/update bằng category B.
+- GET categories chỉ defaults của current user; user cũ được backfill, user mới có defaults; không duplicate seed.
+- List search case-insensitive, nhiều filter AND, date range inclusive, from>to và date+range -> 422.
+- PUT bỏ optional fields reset đúng default; status không bị thay bởi PUT.
+- Conflict partial overlap/containment/equal ranges -> 409; adjacent/no-time/completed/khác user/ngày không conflict.
+- Update time không tự conflict; reopen conflict đúng; complete giảm task chặn lịch.
+- Override ghi được nhưng sai schema/category vẫn lỗi; request 409 không tạo record.
+- Hai request lịch trùng chạy đồng thời với allow_conflict=false: tối đa một request thành công, request còn lại 409.
+- Migration upgrade từ Week 2 có dữ liệu và database rỗng; tests thực trên PostgreSQL.
 
 ## Definition of Done
-- Backend Task CRUD chạy được.
-- Mọi task endpoint yêu cầu authentication.
-- User chỉ thao tác được task của mình.
-- Conflict detection core hoạt động ở Task API.
-- API behavior được ghi nhận.
-- `PROGRESS.md` cập nhật.
+
+Task/category contract và conflict service qua automated tests; API manual smoke bằng ít nhất hai user. Backend tests pass; frontend auth/build không regress.
+
+PROGRESS ghi modules, migration IDs, commands/results, known issues/deviation. Chưa đánh dấu Todo UI hoàn thành.
 
 ## Do Not Implement Yet
-- Không làm Todo List UI.
-- Không làm Calendar.
-- Không làm AI Chatbot.
-- Không làm Dashboard.
+
+Không Calendar/chatbot; không CRUD category/pagination/notification. Không để Week 8 mới viết conflict core.

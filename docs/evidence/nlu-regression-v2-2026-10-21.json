@@ -1,0 +1,1286 @@
+{
+  "suite": "Vietnamese task semantics v1 / regression",
+  "policy_sha256": "5736c5c87c3eda3f23a45971b275aa206d2485c88e8cb19b089784a7a16361ca",
+  "time": "2026-10-21T19:43:04.658572+07:00",
+  "scope": "Live parsing + deterministic guards only; not database execution or a universal-language guarantee",
+  "planned": 40,
+  "executed": 40,
+  "passed": 39,
+  "pass_rate": 0.975,
+  "target": 0.95,
+  "results": [
+    {
+      "id": "noon",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Ôn Sinh",
+          "task_date": "2026-10-22",
+          "start_time": "08:00",
+          "end_time": "12:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Ôn Sinh",
+          "task_date": "2026-10-22",
+          "start_time": "08:00",
+          "end_time": "12:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2093,
+          "completion_tokens": 127,
+          "total_tokens": 2220
+        }
+      }
+    },
+    {
+      "id": "noon-no-accents",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Học Ly",
+          "task_date": "2026-10-22",
+          "start_time": "08:00",
+          "end_time": "12:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Học Ly",
+          "task_date": "2026-10-22",
+          "start_time": "08:00",
+          "end_time": "12:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2088,
+          "completion_tokens": 136,
+          "total_tokens": 2224
+        }
+      }
+    },
+    {
+      "id": "evening-24h",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Tập đàn",
+          "task_date": "2026-10-23",
+          "start_time": "20:00",
+          "end_time": "22:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Tập đàn",
+          "task_date": "2026-10-23",
+          "start_time": "20:00",
+          "end_time": "22:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2086,
+          "completion_tokens": 193,
+          "total_tokens": 2279
+        }
+      }
+    },
+    {
+      "id": "afternoon",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Lịch tập vẽ",
+          "task_date": "2026-10-22",
+          "start_time": "14:00",
+          "end_time": "17:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Lịch tập vẽ",
+          "task_date": "2026-10-22",
+          "start_time": "14:00",
+          "end_time": "17:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2091,
+          "completion_tokens": 140,
+          "total_tokens": 2231
+        }
+      }
+    },
+    {
+      "id": "duration-words",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Luyện Nghe",
+          "task_date": "2026-10-22",
+          "start_time": "09:00",
+          "end_time": "11:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Luyện Nghe",
+          "task_date": "2026-10-22",
+          "start_time": "09:00",
+          "end_time": "11:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2085,
+          "completion_tokens": 162,
+          "total_tokens": 2247
+        }
+      }
+    },
+    {
+      "id": "duration-minutes",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Đọc tài liệu",
+          "task_date": "2026-10-22",
+          "start_time": "14:15",
+          "end_time": "15:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Đọc tài liệu",
+          "task_date": "2026-10-22",
+          "start_time": "14:15",
+          "end_time": "15:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2094,
+          "completion_tokens": 138,
+          "total_tokens": 2232
+        }
+      }
+    },
+    {
+      "id": "half-hour",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Học Anh",
+          "task_date": "2026-10-22",
+          "start_time": "08:30",
+          "end_time": "10:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Học Anh",
+          "task_date": "2026-10-22",
+          "start_time": "08:30",
+          "end_time": "10:00"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2089,
+          "completion_tokens": 139,
+          "total_tokens": 2228
+        }
+      }
+    },
+    {
+      "id": "early-hours",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Đọc truyện",
+          "task_date": "2026-10-22",
+          "start_time": "00:30",
+          "end_time": "01:30"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Đọc truyện",
+          "task_date": "2026-10-22",
+          "start_time": "00:30",
+          "end_time": "01:30"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2089,
+          "completion_tokens": 138,
+          "total_tokens": 2227
+        }
+      }
+    },
+    {
+      "id": "all-day",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "reference": "last_task",
+        "fields": {
+          "title": "Nộp báo cáo",
+          "task_date": "2026-10-23",
+          "start_time": null,
+          "end_time": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "reference": "last_task",
+        "fields": {
+          "title": "Nộp báo cáo",
+          "task_date": "2026-10-22",
+          "start_time": null,
+          "end_time": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2089,
+          "completion_tokens": 128,
+          "total_tokens": 2217
+        }
+      }
+    },
+    {
+      "id": "past-date",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Ghi nhật ký",
+          "task_date": "2026-10-20",
+          "start_time": null,
+          "end_time": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Ghi nhật ký",
+          "task_date": "2026-10-20",
+          "start_time": null,
+          "end_time": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2086,
+          "completion_tokens": 128,
+          "total_tokens": 2214
+        }
+      }
+    },
+    {
+      "id": "missing-date",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Ôn đại số"
+        },
+        "filters": {},
+        "missing_fields": [
+          "task_date"
+        ]
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Ôn đại số"
+        },
+        "filters": {},
+        "missing_fields": [
+          "task_date"
+        ]
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2082,
+          "completion_tokens": 82,
+          "total_tokens": 2164
+        }
+      }
+    },
+    {
+      "id": "missing-end",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Học sử",
+          "task_date": "2026-10-22",
+          "start_time": "09:00"
+        },
+        "filters": {},
+        "missing_fields": [
+          "end_time"
+        ]
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Học sử",
+          "task_date": "2026-10-22",
+          "start_time": "09:00"
+        },
+        "filters": {},
+        "missing_fields": [
+          "end_time"
+        ]
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2093,
+          "completion_tokens": 138,
+          "total_tokens": 2231
+        }
+      }
+    },
+    {
+      "id": "ambiguous-time",
+      "failed_fields": [],
+      "action": {
+        "action": "clarify",
+        "fields": {},
+        "filters": {},
+        "missing_fields": [
+          "start_time"
+        ]
+      },
+      "raw_action": {
+        "action": "clarify",
+        "fields": {},
+        "filters": {},
+        "missing_fields": [
+          "start_time"
+        ]
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2091,
+          "completion_tokens": 52,
+          "total_tokens": 2143
+        }
+      }
+    },
+    {
+      "id": "ambiguous-week",
+      "failed_fields": [],
+      "action": {
+        "action": "clarify",
+        "reference": "last_task",
+        "fields": {},
+        "filters": {},
+        "missing_fields": [
+          "task_date"
+        ]
+      },
+      "raw_action": {
+        "action": "clarify",
+        "reference": "last_task",
+        "fields": {},
+        "filters": {},
+        "missing_fields": [
+          "task_date"
+        ]
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2095,
+          "completion_tokens": 54,
+          "total_tokens": 2149
+        }
+      }
+    },
+    {
+      "id": "date-followup",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "reference": "last_task",
+        "fields": {
+          "title": "Ôn đại số",
+          "task_date": "2026-10-23"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "reference": "last_task",
+        "fields": {
+          "title": "Ôn đại số",
+          "task_date": "2026-10-23"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2097,
+          "completion_tokens": 178,
+          "total_tokens": 2275
+        }
+      }
+    },
+    {
+      "id": "category-followup",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Tập thể dục",
+          "task_date": "2026-10-22",
+          "category_name": "Cá nhân"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Tập thể dục",
+          "task_date": "2026-10-22",
+          "category_name": "Cá nhân"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2109,
+          "completion_tokens": 127,
+          "total_tokens": 2236
+        }
+      }
+    },
+    {
+      "id": "last-category",
+      "failed_fields": [],
+      "action": {
+        "action": "update_task",
+        "reference": "last_task",
+        "fields": {
+          "category_name": "Cá nhân"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "update_task",
+        "reference": "last_task",
+        "fields": {
+          "category_name": "Cá nhân"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2168,
+          "completion_tokens": 195,
+          "total_tokens": 2363
+        }
+      }
+    },
+    {
+      "id": "last-description",
+      "failed_fields": [],
+      "action": {
+        "action": "update_task",
+        "task_id": 103,
+        "task_query": "Ôn toán",
+        "reference": "last_task",
+        "fields": {
+          "description": "mang máy tính"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "update_task",
+        "task_id": 103,
+        "task_query": "Ôn toán",
+        "reference": "last_task",
+        "fields": {
+          "description": "mang máy tính"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2173,
+          "completion_tokens": 113,
+          "total_tokens": 2286
+        }
+      }
+    },
+    {
+      "id": "last-complete",
+      "failed_fields": [],
+      "action": {
+        "action": "complete_task",
+        "task_id": 103,
+        "reference": "last_task",
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "complete_task",
+        "task_id": 103,
+        "reference": "last_task",
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2171,
+          "completion_tokens": 82,
+          "total_tokens": 2253
+        }
+      }
+    },
+    {
+      "id": "all-day-selector",
+      "failed_fields": [
+        "action",
+        "task_query",
+        "filters.all_day"
+      ],
+      "action": {
+        "action": "unsupported",
+        "reference": "recent_results",
+        "fields": {},
+        "filters": {},
+        "missing_fields": [
+          "task"
+        ]
+      },
+      "raw_action": {
+        "action": "unsupported",
+        "reference": "recent_results",
+        "fields": {},
+        "filters": {},
+        "missing_fields": [
+          "task"
+        ]
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2202,
+          "completion_tokens": 92,
+          "total_tokens": 2294
+        }
+      }
+    },
+    {
+      "id": "all-day-reference",
+      "failed_fields": [],
+      "action": {
+        "action": "delete_task",
+        "task_query": "Ngủ",
+        "reference": "recent_results",
+        "fields": {},
+        "filters": {
+          "all_day": true
+        },
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "delete_task",
+        "task_query": "Ngủ",
+        "reference": "recent_results",
+        "fields": {},
+        "filters": {
+          "all_day": true
+        },
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2205,
+          "completion_tokens": 169,
+          "total_tokens": 2374
+        }
+      }
+    },
+    {
+      "id": "ordinal",
+      "failed_fields": [],
+      "action": {
+        "action": "delete_task",
+        "task_id": 102,
+        "reference": "recent_results"
+      },
+      "raw_action": {
+        "action": "delete_task",
+        "task_id": 102,
+        "reference": "recent_results",
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2205,
+          "completion_tokens": 116,
+          "total_tokens": 2321
+        }
+      }
+    },
+    {
+      "id": "no-referent",
+      "failed_fields": [],
+      "action": {
+        "action": "clarify",
+        "reference": "last_task",
+        "fields": {},
+        "filters": {},
+        "missing_fields": [
+          "task"
+        ]
+      },
+      "raw_action": {
+        "action": "clarify",
+        "reference": "last_task",
+        "fields": {},
+        "filters": {},
+        "missing_fields": [
+          "task"
+        ]
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2084,
+          "completion_tokens": 50,
+          "total_tokens": 2134
+        }
+      }
+    },
+    {
+      "id": "rename",
+      "failed_fields": [],
+      "action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "fields": {
+          "title": "Luyện đề toán"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "fields": {
+          "title": "Luyện đề toán"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2091,
+          "completion_tokens": 87,
+          "total_tokens": 2178
+        }
+      }
+    },
+    {
+      "id": "all-day-new-value",
+      "failed_fields": [],
+      "action": {
+        "action": "update_task",
+        "task_query": "Ngủ",
+        "fields": {
+          "start_time": null,
+          "end_time": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "update_task",
+        "task_query": "Ngủ",
+        "fields": {
+          "start_time": null,
+          "end_time": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2085,
+          "completion_tokens": 99,
+          "total_tokens": 2184
+        }
+      }
+    },
+    {
+      "id": "clear-note",
+      "failed_fields": [],
+      "action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "fields": {
+          "description": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "fields": {
+          "description": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2089,
+          "completion_tokens": 80,
+          "total_tokens": 2169
+        }
+      }
+    },
+    {
+      "id": "clear-category",
+      "failed_fields": [],
+      "action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "fields": {
+          "category_name": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "fields": {
+          "category_name": null
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2086,
+          "completion_tokens": 79,
+          "total_tokens": 2165
+        }
+      }
+    },
+    {
+      "id": "priority",
+      "failed_fields": [],
+      "action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "fields": {
+          "priority": "high"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "update_task",
+        "task_query": "Ôn toán",
+        "fields": {
+          "priority": "high"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2085,
+          "completion_tokens": 87,
+          "total_tokens": 2172
+        }
+      }
+    },
+    {
+      "id": "unknown-category",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Chạy bộ",
+          "category_name": "Thể thao"
+        },
+        "filters": {},
+        "missing_fields": [
+          "task_date",
+          "category_name"
+        ]
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Chạy bộ",
+          "category_name": "Thể thao"
+        },
+        "filters": {},
+        "missing_fields": [
+          "task_date",
+          "category_name"
+        ]
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2088,
+          "completion_tokens": 187,
+          "total_tokens": 2275
+        }
+      }
+    },
+    {
+      "id": "search-pending",
+      "failed_fields": [],
+      "action": {
+        "action": "get_tasks",
+        "fields": {},
+        "filters": {
+          "task_date": "2026-10-22",
+          "status": "pending"
+        },
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "get_tasks",
+        "fields": {},
+        "filters": {
+          "status": "pending"
+        },
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2082,
+          "completion_tokens": 65,
+          "total_tokens": 2147
+        }
+      }
+    },
+    {
+      "id": "search-completed",
+      "failed_fields": [],
+      "action": {
+        "action": "get_tasks",
+        "fields": {},
+        "filters": {
+          "date_from": "2026-10-20",
+          "date_to": "2026-10-20",
+          "status": "completed"
+        },
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "get_tasks",
+        "fields": {},
+        "filters": {
+          "date_from": "2026-10-20",
+          "date_to": "2026-10-20",
+          "status": "completed"
+        },
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2083,
+          "completion_tokens": 119,
+          "total_tokens": 2202
+        }
+      }
+    },
+    {
+      "id": "search-category",
+      "failed_fields": [],
+      "action": {
+        "action": "get_tasks",
+        "fields": {},
+        "filters": {
+          "priority": "high",
+          "category_name": "Học tập"
+        },
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "get_tasks",
+        "fields": {},
+        "filters": {
+          "priority": "high",
+          "category_name": "Học tập"
+        },
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2085,
+          "completion_tokens": 82,
+          "total_tokens": 2167
+        }
+      }
+    },
+    {
+      "id": "search-all-day",
+      "failed_fields": [],
+      "action": {
+        "action": "get_tasks",
+        "fields": {},
+        "filters": {
+          "task_date": "2026-10-22",
+          "all_day": true
+        },
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "get_tasks",
+        "fields": {},
+        "filters": {
+          "task_date": "2026-10-22",
+          "all_day": true
+        },
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2081,
+          "completion_tokens": 84,
+          "total_tokens": 2165
+        }
+      }
+    },
+    {
+      "id": "correct-date",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "task_date": "2026-10-23"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "task_date": "2026-10-23"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2113,
+          "completion_tokens": 104,
+          "total_tokens": 2217
+        }
+      }
+    },
+    {
+      "id": "new-intent",
+      "failed_fields": [],
+      "action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Đi chợ",
+          "task_date": "2026-10-22"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Đi chợ",
+          "task_date": "2026-10-22"
+        },
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2104,
+          "completion_tokens": 219,
+          "total_tokens": 2323
+        }
+      }
+    },
+    {
+      "id": "bulk-delete",
+      "failed_fields": [],
+      "action": {
+        "action": "unsupported",
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "unsupported",
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2085,
+          "completion_tokens": 46,
+          "total_tokens": 2131
+        }
+      }
+    },
+    {
+      "id": "bulk-complete",
+      "failed_fields": [],
+      "action": {
+        "action": "unsupported",
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "unsupported",
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2084,
+          "completion_tokens": 59,
+          "total_tokens": 2143
+        }
+      }
+    },
+    {
+      "id": "recurring",
+      "failed_fields": [],
+      "action": {
+        "action": "unsupported",
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "unsupported",
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2085,
+          "completion_tokens": 45,
+          "total_tokens": 2130
+        }
+      }
+    },
+    {
+      "id": "overnight",
+      "failed_fields": [],
+      "action": {
+        "action": "unsupported",
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "raw_action": {
+        "action": "unsupported",
+        "fields": {},
+        "filters": {},
+        "missing_fields": []
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2088,
+          "completion_tokens": 93,
+          "total_tokens": 2181
+        }
+      }
+    },
+    {
+      "id": "unsupported-topic",
+      "failed_fields": [],
+      "action": {
+        "action": "unsupported"
+      },
+      "raw_action": {
+        "action": "create_task",
+        "fields": {
+          "title": "Viết cho tôi một bài luận về lịch sử."
+        },
+        "filters": {},
+        "missing_fields": [
+          "task_date"
+        ]
+      },
+      "model": {
+        "configured_model": "openai/gpt-oss-20b",
+        "reported_model_matches": true,
+        "usage": {
+          "prompt_tokens": 2084,
+          "completion_tokens": 113,
+          "total_tokens": 2197
+        }
+      }
+    }
+  ]
+}

@@ -8,3 +8,7 @@ __pycache__/
 .mypy_cache/
 node_modules/
 dist/
+.local/
+*.log
+.coverage
+coverage/

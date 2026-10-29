@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-22",
+  "scope": "User-authorized Passlib + bcrypt integration; local verification only",
+  "runtime": "Python 3.11.9 / Windows",
+  "dependencies": {"passlib": "1.7.4", "bcrypt": "4.3.0"},
+  "password_policy": {
+    "normal_path": "Passlib CryptContext / pyca bcrypt backend",
+    "new_hash_ident": "2b",
+    "new_hash_rounds": 12,
+    "max_utf8_bytes": 72,
+    "nul_compatibility": "Direct pyca bcrypt preserves previously accepted NUL passwords; same algorithm and cost",
+    "database_migration": false,
+    "automatic_rehash": false
+  },
+  "checks": {
+    "isolated_password_units": {"passed": 26, "deselected": 4, "seconds": 7.66},
+    "main_venv_full_backend": {"passed": 200, "failed": 0, "warnings": 2, "seconds": 53.56},
+    "main_and_verification_pip_check": "pass",
+    "requirements_dev_dry_run": "all requirements already satisfied; not a fresh install",
+    "targeted_pip_audit": "No known vulnerabilities found for passlib==1.7.4 and bcrypt==4.3.0; not a new full dependency scan",
+    "compileall_app_tests": "pass",
+    "document_checker": {"documents": 26, "errors": []},
+    "git_diff_check": "pass; existing CRLF notices only"
+  },
+  "coverage": [
+    "New hashes interoperate with direct bcrypt and have random salt",
+    "Legacy bcrypt hashes, Unicode, whitespace and 72-byte boundary remain compatible",
+    "Overlong input and malformed hashes are rejected without password truncation",
+    "NUL compatibility does not strip or truncate password",
+    "Legacy account HTTP login/me/logout preserves stored hash",
+    "NUL registration and login",
+    "Full auth/task/ownership/conflict/chat/context/migration regression"
+  ],
+  "initial_failed_check": "Pre-change auth baseline: 12 database setup errors and 1 pass because local PostgreSQL was stopped. Existing local cluster restarted; full regression subsequently passed on the separate test database.",
+  "known_warnings": [
+    "Passlib logs caught error reading bcrypt __about__ version metadata on initialization; real hash/verify succeeded. No logger suppression, metadata monkeypatch or bcrypt downgrade.",
+    "Two existing pytest deprecations: Starlette HTTPX TestClient and AnyIO BlockingPortal alias"
+  ],
+  "live_ai_called": false,
+  "development_database_reset": false,
+  "frontend_changed_or_retested": false,
+  "remote_ci_or_deploy": false
+}
