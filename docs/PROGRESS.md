@@ -1,5 +1,13 @@
 # PROJECT PROGRESS
 
+## Sửa nút đổi giao diện ở sidebar — 2026-11-03
+
+- User báo nút mặt trời cạnh Cài đặt không đổi Sáng/Tối. `App.init()` gọi cả `ThemeManager.init()` và `Sidebar.init()`; cả hai gắn click handler cho `#theme-toggle`, khiến một click đổi theme hai lần rồi trở lại trạng thái cũ, đồng thời gửi hai request cập nhật preference nếu đã đăng nhập.
+- Sửa `frontend/js/components/sidebar.js`: bỏ handler và import `ThemeManager` bị trùng; `ThemeManager.init()` là nơi duy nhất gắn nút, giữ nguyên luồng áp dụng theme, store, localStorage và API hiện có.
+- Kiểm tra: JavaScript syntax qua `node --input-type=module --check` PASS. Kiểm tra Node VM dùng module thật `theme.js`, `store.js`, `api.js`, `sidebar.js`, DOM/localStorage/fetch giả lập và stub Auth/Toast: tái hiện bản HEAD trước sửa đổi hai lần/request hai lần; sau sửa PASS bốn trường hợp Sáng/Tối × có/không token, một thay đổi store mỗi click, đúng preference request, lưu hai khóa localStorage, khởi tạo lại giữ theme và click đảo lại đúng. Không gọi backend/database thật.
+- Kiểm tra UI trực tiếp chưa thực hiện được: browser access host không khả dụng; Computer Use dừng khi không xác minh được URL hiện tại của Edge. Chưa xác nhận render/CSS trực tiếp trong trình duyệt.
+- Phạm vi: bugfix trên source Vanilla JS sau import; không đổi stack, schema hoặc nghiệp vụ, không xác nhận lại toàn bộ acceptance của source import.
+
 ## Source import hiện tại — 2026-11-02
 
 - User xác nhận thay source trên origin/main bằng project trong todo-list-pro/todo-list, giữ tài liệu cũ và lịch sử Git.
