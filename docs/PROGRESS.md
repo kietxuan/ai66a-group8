@@ -432,3 +432,14 @@ Screenshots: docs/screenshots/todo-desktop.jpg, todo-mobile.jpg, calendar-deskto
 2. Điền key server-side và kiểm tra Gemini2.5Flash bằng --live-ai + manual clarification/relative date/ambiguity/conflict.
 3. Người có quyền triển khai Render/Neon theo 01_SETUP/DEMO; HTTPS smoke hai users và restart/persistence/context.
 4. Ghi URL/SHA/CI/provider evidence vào ACCEPTANCE/PROGRESS; chỉ khi đó đóng official Week5/8/9/10 gates.
+
+## 2026-11-03 — Sửa form ngày của To Do trong source mới
+
+- Phát hiện: ô `Ngày thực hiện` trong panel chi tiết gọi `render()` ngay sau khi lưu, thay cả input đang được chỉnh. Một thay đổi còn phát hai event và callback dẫn đến ba lượt `GET /tasks`, mỗi lượt có thể dựng lại panel. Đây là cập nhật DOM, không phải browser reload.
+- Sửa `frontend/js/todo/task-detail.js` và `frontend/js/pages/todo.js`: giữ input ngày khi cập nhật, hiện nút bỏ ngày mà không dựng lại panel, dùng một lượt refresh task qua callback; event toàn cục vẫn cập nhật badge/module khác.
+- Checks: localhost:3000 và localhost:8000/docs trả HTTP 200; JS được nginx phục vụ chứa bản sửa qua bind mount. `node --input-type=module --check` cho hai module và `git diff --check` pass.
+- Giới hạn: chưa chạy thao tác ngày trên phiên browser đã đăng nhập của user; Docker API bị từ chối quyền đọc nên không xác nhận trạng thái container bằng `docker compose ps`. Không sửa database hay `.env`.
+- Follow-up cùng ngày: user xác nhận bật/tắt `Cả ngày` vẫn dựng lại panel. Đổi `task-detail.js` để chỉ thêm/bỏ hàng nhập giờ, giữ nguyên panel và ô ngày; chỉnh giờ bắt đầu/kết thúc cũng giữ nguyên panel. Nếu lưu chế độ cả ngày lỗi, checkbox trở về trạng thái trước và hiện toast.
+- Kiểm tra follow-up: Node DOM giả lập xác nhận bật rồi tắt `Cả ngày` giữ nguyên panel/ô ngày, số ô giờ 2→0→2, mỗi lần đúng một API save và một refresh; file thử tạm đã xóa. JS syntax, `git diff --check`, và HTTP 200 cho asset đang phục vụ đều pass. Chưa kiểm tra tương tác trong phiên browser thật đã đăng nhập.
+- Follow-up tiếp theo: user vẫn thấy tải liên tục khi nhập ngày/giờ. Truy vết cho thấy `TaskDetail.notifyChanged()` sau từng `change` vẫn dẫn đến `GET /tasks`, `SmartListsSidebar.render()` và `TaskListView.render()` xóa/vẽ lại toàn bộ phần nền. Chuyển ba ô native date/time sang lưu khi `blur`, xếp tuần tự các PUT, gom một lần refresh khi rời nhóm ngày/giờ; checkbox `Cả ngày` dùng cùng cơ chế. Ô nhập và panel không bị thay trong quá trình chỉnh.
+- Kiểm tra follow-up tiếp theo: Node DOM giả lập xác nhận ba ô chỉ lưu trên blur và chỉ một refresh sau khi rời nhóm; kiểm tra syntax, diff và HTTP asset. Chưa có browser test trên phiên đăng nhập thật.

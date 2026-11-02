@@ -12,6 +12,13 @@ export class TaskDetail {
     this.onUpdate = onUpdate;
     this.onClose = onClose;
     this.task = null;
+    this.scheduleSave = Promise.resolve();
+  }
+
+  queueScheduleUpdate(taskId, updates) {
+    const save = this.scheduleSave.then(() => api.put(`/tasks/${taskId}`, updates));
+    this.scheduleSave = save.catch(() => {});
+    return save;
   }
 
   show(task) {
@@ -24,14 +31,11 @@ export class TaskDetail {
     this.container.innerHTML = '';
   }
 
-  notifyChanged(action = 'update') {
+  notifyChanged(action = 'update', { preserveDetail = false } = {}) {
     window.dispatchEvent(new CustomEvent('planify:data-changed', {
       detail: { source: 'task-detail', action, type: 'task', id: this.task?.id }
     }));
-    document.dispatchEvent(new CustomEvent('task-changed', {
-      detail: { action, task: this.task }
-    }));
-    if (this.onUpdate) this.onUpdate();
+    if (this.onUpdate) this.onUpdate({ preserveDetail });
   }
 
   render() {
@@ -253,34 +257,63 @@ export class TaskDetail {
       style: { marginBottom: '16px', paddingBottom: '14px', borderBottom: '1px solid var(--color-border-light)' }
     });
 
+    let scheduleDirty = false;
+    const flushScheduleRefresh = async () => {
+      if (!scheduleDirty || !this.container.contains(actionsGroup)) return;
+      const pendingSave = this.scheduleSave;
+      await pendingSave;
+      if (pendingSave !== this.scheduleSave) return flushScheduleRefresh();
+      if (actionsGroup.contains(document.activeElement) || !this.container.contains(actionsGroup)) return;
+      if (!scheduleDirty) return;
+      scheduleDirty = false;
+      this.notifyChanged('time_blocking', { preserveDetail: true });
+    };
+    const markScheduleChanged = () => {
+      scheduleDirty = true;
+      if (!actionsGroup.contains(document.activeElement)) flushScheduleRefresh();
+    };
+    actionsGroup.addEventListener('focusout', () => {
+      setTimeout(() => {
+        if (!actionsGroup.contains(document.activeElement)) flushScheduleRefresh();
+      }, 0);
+    });
+
+    const clearDueDateButton = createElement('button', {
+      type: 'button',
+      className: 'btn btn-secondary btn-xs',
+      textContent: '✕ Bỏ ngày (Vĩnh viễn)',
+      style: { display: t.due_date ? '' : 'none' },
+      onclick: async () => {
+        await this.queueScheduleUpdate(t.id, { due_date: null, due_time: null, start_time: null, end_time: null, is_all_day: true });
+        t.due_date = null;
+        t.start_time = null;
+        t.end_time = null;
+        t.is_all_day = true;
+        this.render();
+        this.notifyChanged('due_date');
+      }
+    });
     const dueHeaderRow = createElement('div', { className: 'flex items-center justify-between' }, [
       createElement('label', { className: 'form-label', style: { marginBottom: 0 }, textContent: '📅 Ngày thực hiện (Trống = Vĩnh viễn)' }),
-      t.due_date ? createElement('button', {
-        type: 'button',
-        className: 'btn btn-secondary btn-xs',
-        textContent: '✕ Bỏ ngày (Vĩnh viễn)',
-        onclick: async () => {
-          await api.put(`/tasks/${t.id}`, { due_date: null, due_time: null, start_time: null, end_time: null, is_all_day: true });
-          t.due_date = null;
-          t.start_time = null;
-          t.end_time = null;
-          t.is_all_day = true;
-          this.render();
-          this.notifyChanged('due_date');
-        }
-      }) : null
+      clearDueDateButton
     ]);
 
     const dueInput = createElement('input', {
       type: 'date',
       className: 'input',
       value: t.due_date ? String(t.due_date).slice(0, 10) : '',
-      onchange: async (e) => {
+      onblur: async (e) => {
         const val = e.target.value || null;
-        await api.put(`/tasks/${t.id}`, { due_date: val });
-        t.due_date = val;
-        this.render();
-        this.notifyChanged('due_date');
+        if (val === (t.due_date ? String(t.due_date).slice(0, 10) : null)) return;
+        try {
+          await this.queueScheduleUpdate(t.id, { due_date: val });
+          t.due_date = val;
+          clearDueDateButton.style.display = val ? '' : 'none';
+          markScheduleChanged();
+        } catch (err) {
+          e.target.value = t.due_date ? String(t.due_date).slice(0, 10) : '';
+          Toast.error('Không thể lưu ngày thực hiện');
+        }
       }
     });
 
@@ -289,8 +322,6 @@ export class TaskDetail {
 
     // Time inputs
     const isAllDay = t.is_all_day !== false;
-    const startTimeVal = t.start_time ? String(t.start_time).substring(0, 5) : '';
-    const endTimeVal = t.end_time ? String(t.end_time).substring(0, 5) : '';
 
     const timeBlockSection = createElement('div', {
       className: 'form-group',
@@ -301,6 +332,55 @@ export class TaskDetail {
         border: '1px solid var(--color-border-light)'
       }
     });
+
+    const createTimeInputsRow = () => createElement('div', {
+      className: 'flex items-center gap-sm',
+      style: { marginTop: '8px' }
+    }, [
+      createElement('div', { className: 'flex-1' }, [
+        createElement('label', { style: { fontSize: '11px', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '2px' }, textContent: 'Bắt đầu' }),
+        createElement('input', {
+          type: 'time',
+          className: 'input',
+          value: t.start_time ? String(t.start_time).substring(0, 5) : '09:00',
+          onblur: async (e) => {
+            const val = e.target.value ? `${e.target.value}:00` : null;
+            if (val === t.start_time) return;
+            try {
+              await this.queueScheduleUpdate(t.id, { start_time: val, due_time: val });
+              t.start_time = val;
+              t.due_time = val;
+              markScheduleChanged();
+            } catch (err) {
+              e.target.value = t.start_time ? String(t.start_time).substring(0, 5) : '';
+              Toast.error('Không thể lưu giờ bắt đầu');
+            }
+          }
+        })
+      ]),
+      createElement('div', { className: 'flex-1' }, [
+        createElement('label', { style: { fontSize: '11px', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '2px' }, textContent: 'Kết thúc' }),
+        createElement('input', {
+          type: 'time',
+          className: 'input',
+          value: t.end_time ? String(t.end_time).substring(0, 5) : '10:00',
+          onblur: async (e) => {
+            const val = e.target.value ? `${e.target.value}:00` : null;
+            if (val === t.end_time) return;
+            try {
+              await this.queueScheduleUpdate(t.id, { end_time: val });
+              t.end_time = val;
+              markScheduleChanged();
+            } catch (err) {
+              e.target.value = t.end_time ? String(t.end_time).substring(0, 5) : '';
+              Toast.error('Không thể lưu giờ kết thúc');
+            }
+          }
+        })
+      ])
+    ]);
+
+    let timeInputsRow = null;
 
     const timeBlockHeader = createElement('div', {
       className: 'flex items-center justify-between'
@@ -324,12 +404,27 @@ export class TaskDetail {
               updates.start_time = '09:00:00';
               updates.end_time = '10:00:00';
               updates.duration_minutes = 60;
-              if (!t.due_date) updates.due_date = formatDate(new Date(), 'YYYY-MM-DD');
+              if (!dueInput.value) updates.due_date = formatDate(new Date(), 'YYYY-MM-DD');
             }
-            await api.put(`/tasks/${t.id}`, updates);
-            Object.assign(t, updates);
-            this.render();
-            this.notifyChanged('time_blocking');
+            try {
+              await this.queueScheduleUpdate(t.id, updates);
+              Object.assign(t, updates);
+              if (updates.due_date) {
+                dueInput.value = updates.due_date;
+                clearDueDateButton.style.display = '';
+              }
+              if (nextAllDay) {
+                timeInputsRow?.remove();
+                timeInputsRow = null;
+              } else if (!timeInputsRow) {
+                timeInputsRow = createTimeInputsRow();
+                timeBlockSection.appendChild(timeInputsRow);
+              }
+              markScheduleChanged();
+            } catch (err) {
+              e.target.checked = !nextAllDay;
+              Toast.error('Không thể cập nhật chế độ cả ngày');
+            }
           }
         }),
         createElement('span', { textContent: 'Cả ngày' })
@@ -338,39 +433,7 @@ export class TaskDetail {
     timeBlockSection.appendChild(timeBlockHeader);
 
     if (!isAllDay) {
-      const timeInputsRow = createElement('div', {
-        className: 'flex items-center gap-sm',
-        style: { marginTop: '8px' }
-      }, [
-        createElement('div', { className: 'flex-1' }, [
-          createElement('label', { style: { fontSize: '11px', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '2px' }, textContent: 'Bắt đầu' }),
-          createElement('input', {
-            type: 'time',
-            className: 'input',
-            value: startTimeVal || '09:00',
-            onchange: async (e) => {
-              const val = `${e.target.value}:00`;
-              await api.put(`/tasks/${t.id}`, { start_time: val, due_time: val });
-              t.start_time = val;
-              this.notifyChanged('time_blocking');
-            }
-          })
-        ]),
-        createElement('div', { className: 'flex-1' }, [
-          createElement('label', { style: { fontSize: '11px', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '2px' }, textContent: 'Kết thúc' }),
-          createElement('input', {
-            type: 'time',
-            className: 'input',
-            value: endTimeVal || '10:00',
-            onchange: async (e) => {
-              const val = e.target.value ? `${e.target.value}:00` : null;
-              await api.put(`/tasks/${t.id}`, { end_time: val });
-              t.end_time = val;
-              this.notifyChanged('time_blocking');
-            }
-          })
-        ])
-      ]);
+      timeInputsRow = createTimeInputsRow();
       timeBlockSection.appendChild(timeInputsRow);
     }
 

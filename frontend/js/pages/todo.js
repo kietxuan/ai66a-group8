@@ -208,19 +208,21 @@ export const todoPage = {
     });
 
     this.taskDetailComponent = new TaskDetail(detailEl, {
-      onUpdate: () => this.fetchTasks(),
+      onUpdate: (options) => this.fetchTasks(options),
       onClose: () => this.closeDetail()
     });
 
     this.setupShortcuts();
-    this.dataChangedListener = () => this.fetchTasks();
+    this.dataChangedListener = (event) => {
+      if (event.detail?.source !== 'task-detail') this.fetchTasks();
+    };
     window.addEventListener('planify:data-changed', this.dataChangedListener);
     document.addEventListener('task-changed', this.dataChangedListener);
 
     await this.fetchTasks();
   },
 
-  async fetchTasks() {
+  async fetchTasks({ preserveDetail = false } = {}) {
     try {
       this.tasks = await api.get('/tasks') || [];
       // Update header title if custom list was restored from localStorage
@@ -240,8 +242,13 @@ export const todoPage = {
       if (this.activeTask) {
         const updatedActive = this.tasks.find(t => t.id === this.activeTask.id);
         if (updatedActive) {
-          this.activeTask = updatedActive;
-          this.taskDetailComponent.show(updatedActive);
+          if (preserveDetail) {
+            Object.assign(this.activeTask, updatedActive);
+            this.taskDetailComponent.task = this.activeTask;
+          } else {
+            this.activeTask = updatedActive;
+            this.taskDetailComponent.show(updatedActive);
+          }
         } else {
           this.closeDetail();
         }
