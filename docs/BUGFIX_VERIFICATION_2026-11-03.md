@@ -6,6 +6,8 @@ Nhánh `codex/fix-audit-regressions`, xuất phát từ `753788f`, tích hợp t
 
 Source được sửa là checkout `ai66a-group8`. Web cổng 3000 đang mount từ `todo-list-pro/todo-list` là bản độc lập, không tự nhận các bản sửa này. Không sửa source, .env, database hoặc container `web-template` của bản đang sử dụng.
 
+Kiểm tra cuối phát hiện `.env` riêng của checkout ai66a-group8 còn dùng JWT secret mẫu công khai. User xác nhận cho phép đổi: đã tạo khóa ngẫu nhiên 48 bytes, chỉ thay SECRET_KEY ở file ignored này, không in/commit khóa và không sửa .env todo-list-pro. Validation JWT/admin qua Settings thật và `docker compose --env-file .env config --quiet` PASS. Khi áp dụng source/khóa mới cần đăng nhập lại. SMTP thật vẫn cần cấu hình riêng, không đưa credentials vào báo cáo.
+
 Kiểm thử ở Docker project `codex-planify-test`, frontend 13000/backend 18000, PostgreSQL *_test tmpfs và Redis riêng. Không gọi thêm Groq hoặc gửi email thật. Tài khoản, mật khẩu và nội dung QA đều tổng hợp, không phải dữ liệu cá nhân.
 
 ## Đối chiếu lỗi đã báo

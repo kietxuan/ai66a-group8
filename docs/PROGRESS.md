@@ -10,6 +10,7 @@
 - Chưa xác minh provider/SMTP/cloud/thiết bị thật; không cam kết 0 lỗi tuyệt đối. Trước áp dụng thật phải backup DB, dùng đúng source/mount và bổ sung SMTP_* độc lập admin nếu dùng OTP/email.
 
 - Tích hợp origin/main cedef4b để giữ Landing/auth trượt mới của nhóm, giải quyết bốn conflict thủ công. Sửa thêm retry sau OTP đã tiêu thụ, Settings stale render/local preference, logout sau đổi mật khẩu, mở đúng form từ Lịch biểu và callback refresh Event. UI sau tích hợp: Guide redirect, lưu profile, tải/đọc ICS+JSON, tuần → lịch biểu sửa → complete → Dashboard; workspace A/B không reload, mobile composer nhìn thấy. Không suy ra remote CI pass từ kiểm thử local.
+- Kiểm tra cuối phát hiện JWT secret mẫu trong .env riêng ai66a-group8. User đã duyệt đổi SECRET_KEY và push nhánh: sinh khóa ngẫu nhiên 48 bytes chỉ trong .env ignored, không in/commit và không chạm .env todo-list-pro. Settings.validate_security và Compose config PASS. Khi chạy bản mới cần đăng nhập lại; email SMTP thật chưa xác minh.
 ## Giải quyết merge conflict trang đăng nhập — 2026-11-03
 
 - Conflict duy nhất ở `frontend/js/pages/login.js` khi ghép thiết kế auth mới với thay đổi landing đã commit. Giữ `createLoginForm()` của nhánh auth để tương thích `auth-page.js`, đồng thời giữ điều hướng `planify_redirect_after_login` của nhánh landing; sau đăng nhập ưu tiên trang được yêu cầu trước đó, rồi mới dùng `planify_last_route`.
