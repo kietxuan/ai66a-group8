@@ -1,5 +1,7 @@
 # 📋 KẾ HOẠCH TRIỂN KHAI TỪNG BƯỚC
 
+> Ghi chú 2026-11-03: đây là kế hoạch/checkbox lịch sử của source nhập, không phải chứng nhận nghiệm thu bản hiện tại. Kết quả kiểm thử mới và các khác biệt đã sửa nằm trong [BUGFIX_VERIFICATION_2026-11-03](BUGFIX_VERIFICATION_2026-11-03.md). Không bổ sung các tính năng chỉ có trong kế hoạch khi user chỉ yêu cầu sửa lỗi.
+
 ---
 
 ## Tổng quan

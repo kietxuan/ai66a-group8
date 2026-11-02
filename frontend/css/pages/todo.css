@@ -227,6 +227,7 @@
   padding: 16px 18px;
   position: relative;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .todo-header {
@@ -253,7 +254,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .todo-title {
@@ -396,6 +398,24 @@
   overflow-y: hidden;
   padding-bottom: 4px;
   min-width: 0;
+}
+
+/* Size by the actual workspace, including an open detail panel, not just the screen. */
+@container (max-width: 900px) {
+  .todo-kanban-board { grid-template-columns: repeat(2, minmax(0, 1fr)); overflow-y: auto; }
+  .kanban-column { min-height: 220px; }
+}
+@container (max-width: 520px) {
+  .todo-kanban-board { grid-template-columns: minmax(0, 1fr) !important; }
+}
+.todo-header-actions { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+.todo-search-input { min-width: 0; max-width: 100%; }
+@media (max-width: 768px) {
+  .todo-title-row, .todo-header-actions { width: 100%; }
+  .todo-title-row > div { min-width: 0; }
+  .todo-title, .todo-date-subtitle { overflow-wrap: anywhere; }
+  .todo-search-input { width: 100%; flex: 1 1 100%; }
+  .todo-header-actions .btn { max-width: 100%; white-space: normal; }
 }
 
 .kanban-column {

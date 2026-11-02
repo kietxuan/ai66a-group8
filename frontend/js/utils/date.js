@@ -9,9 +9,36 @@ const VI_MONTHS = [
   'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
 ];
 
+export function parseLocalDate(value) {
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(`${value}T00:00:00`);
+  if (typeof value === 'string' && /(Z|[+-]\d{2}:\d{2})$/.test(value)) return new Date(businessWallTime(value));
+  return new Date(value);
+}
+
+export function businessNow(instant = new Date()) {
+  return new Date(businessWallTime(instant.toISOString()));
+}
+
+export function businessWallTime(value) {
+  if (typeof value !== 'string' || !/(Z|[+-]\d{2}:\d{2})$/.test(value)) return value;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+  }).formatToParts(date).map(p => [p.type, p.value]));
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
+export function overlapsDay(item, day) {
+  const start = new Date(day); start.setHours(0, 0, 0, 0);
+  const end = new Date(start); end.setDate(end.getDate() + 1);
+  return new Date(item.start_at) < end && new Date(item.end_at) > start;
+}
+
 export function formatDate(date, format = 'YYYY-MM-DD') {
   if (!date) return '';
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   if (isNaN(d.getTime())) return '';
 
   const year = d.getFullYear();
@@ -30,7 +57,7 @@ export function formatDate(date, format = 'YYYY-MM-DD') {
 
 export function formatVietnameseDate(date, includeWeekday = true) {
   if (!date) return '';
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   if (isNaN(d.getTime())) return '';
   const weekday = VI_WEEKDAYS[d.getDay()];
   const day = d.getDate();
@@ -53,8 +80,8 @@ export function getMonthName(monthIndex) {
 
 export function isSameDay(d1, d2) {
   if (!d1 || !d2) return false;
-  const a = new Date(d1);
-  const b = new Date(d2);
+  const a = parseLocalDate(d1);
+  const b = parseLocalDate(d2);
   return (
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
@@ -63,17 +90,17 @@ export function isSameDay(d1, d2) {
 }
 
 export function isToday(date) {
-  return isSameDay(date, new Date());
+  return isSameDay(date, businessNow());
 }
 
 export function addDays(date, days) {
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   d.setDate(d.getDate() + days);
   return d;
 }
 
 export function getStartOfWeek(date, startOnMonday = true) {
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   const day = d.getDay();
   const diff = (day === 0 && startOnMonday ? -6 : (startOnMonday ? 1 - day : -day));
   d.setDate(d.getDate() + diff);
@@ -135,7 +162,7 @@ export function getMonthMatrix(year, month) {
 
 export function toLocalISOString(date) {
   if (!date) return '';
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   if (isNaN(d.getTime())) return '';
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -148,7 +175,7 @@ export function toLocalISOString(date) {
 
 export function formatLocalDate(date) {
   if (!date) return '';
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   if (isNaN(d.getTime())) return '';
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');

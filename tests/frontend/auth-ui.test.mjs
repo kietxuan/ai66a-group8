@@ -38,6 +38,7 @@ async function setup(hash = '#login') {
     get inert() { return this.attributes.has('inert'); }
     setAttribute(key, value) { this.attributes.set(key, String(value)); }
     getAttribute(key) { return this.attributes.get(key) ?? null; }
+    hasAttribute(key) { return this.attributes.has(key); }
     removeAttribute(key) { this.attributes.delete(key); }
     appendChild(child) { child.parentNode = this; this.children.push(child); return child; }
     append(...children) { children.forEach(child => this.appendChild(child)); }
@@ -74,18 +75,19 @@ async function setup(hash = '#login') {
     const values = new Map();
     return { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, String(value)), removeItem: key => values.delete(key) };
   };
-  const requests = [], messages = [], failures = new Set();
+  const requests = [], messages = [], openedForms = [], failures = new Set();
   const localStorage = storage(), sessionStorage = storage();
   const window = { location: { hash }, addEventListener() {} };
   const context = vm.createContext({
     document, window, localStorage, sessionStorage, Node: Element, URLSearchParams, Date,
+    TextEncoder, AbortController, setTimeout, clearTimeout,
     console: { ...console, error() {} },
     fetch: async (url, options = {}) => {
       requests.push({ url, ...options });
       const pathname = new URL(url, 'http://localhost').pathname;
       if (failures.has(pathname)) return { ok: false, status: 400, json: async () => ({ detail: 'Test failure' }) };
       const payload = pathname.endsWith('/login') ? { access_token: 'test-token' }
-        : pathname.endsWith('/users/me') ? { email: 'test@example.com', theme_preference: 'light' }
+        : pathname.endsWith('/users/me') ? { id: 1, email: 'test@example.com', theme_preference: 'light' }
         : pathname.endsWith('/otp/verify') ? { verified_token: 'verified-test-token' } : {};
       return { ok: true, status: 200, json: async () => payload };
     }
@@ -97,11 +99,15 @@ async function setup(hash = '#login') {
       ? new vm.SyntheticModule(['Toast'], function () {
         this.setExport('Toast', { success: message => messages.push(['success', message]), error: message => messages.push(['error', message]) });
       }, { context, identifier: file })
-      : new vm.SourceTextModule(readFileSync(file, 'utf8'), { context, identifier: file });
+      : file === path.join(sourceRoot, 'calendar/event-form.js')
+        ? new vm.SyntheticModule(['EventForm'], function () {
+          this.setExport('EventForm', { showFullModal: options => openedForms.push(options) });
+        }, { context, identifier: file })
+        : new vm.SourceTextModule(readFileSync(file, 'utf8'), { context, identifier: file });
     modules.set(file, module);
     return module;
   }
-  const entry = new vm.SourceTextModule("export { authPage } from './pages/auth-page.js'; export { router } from './router.js'; export { store } from './store.js'; export { ThemeManager } from './theme.js';", { context, identifier: path.join(sourceRoot, '__test__.js') });
+  const entry = new vm.SourceTextModule("export { authPage } from './pages/auth-page.js'; export { settingsPage } from './pages/settings.js'; export { AgendaView } from './calendar/agenda-view.js'; export { api } from './api.js'; export { router } from './router.js'; export { store } from './store.js'; export { ThemeManager } from './theme.js';", { context, identifier: path.join(sourceRoot, '__test__.js') });
   await entry.link((specifier, importer) => load(path.resolve(path.dirname(importer.identifier), specifier)));
   await entry.evaluate();
   const { authPage, router, store, ThemeManager } = entry.namespace;
@@ -114,7 +120,7 @@ async function setup(hash = '#login') {
   const fill = values => Object.entries(values).forEach(([id, value]) => { get(id).value = value; });
   const loginForm = () => get('login-email').closest('form');
   const registerForm = () => get('register-name').closest('form');
-  return { ...entry.namespace, document, window, localStorage, sessionStorage, requests, messages, failures, navigate, get, fill, loginForm, registerForm };
+  return { ...entry.namespace, document, window, localStorage, sessionStorage, requests, messages, openedForms, failures, navigate, get, fill, loginForm, registerForm };
 }
 
 const details = { 'register-name': 'Test User', 'register-email': 'test@example.com', 'register-password': 'test-password' };
@@ -230,6 +236,7 @@ test('registration endpoint failure does not sign in and allows retry with the O
   await app.registerForm().fire('submit');
   await firstSubmit;
   assert.equal(app.requests.filter(request => request.url === '/api/v1/auth/login').length, 1);
+  assert.equal(app.requests.filter(request => request.url === '/api/v1/otp/verify').length, 1, 'OTP was already consumed; retry must reuse proof');
 });
 
 test('password recovery still sends and verifies OTP before reset and returns to login', async () => {
@@ -262,4 +269,114 @@ test('theme toggle preserves form values; leaving auth removes credentials and t
   await app.navigate('#login');
   assert.equal(app.get('login-email').value, '');
   assert.equal(app.authPage.loginPanel.inert, false);
+});
+
+test('registration enforces backend password limits before sending email', async () => {
+  const app = await setup('#register');
+  for (const password of ['1234567', 'ệ'.repeat(25)]) {
+    app.fill({ ...details, 'register-password': password });
+    await app.registerForm().fire('submit');
+  }
+  assert.equal(app.requests.length, 0);
+  assert.equal(app.get('register-password').getAttribute('minlength'), '8');
+});
+
+test('login cannot succeed if the current-user request fails', async () => {
+  const app = await setup();
+  app.fill({ 'login-email': 'test@example.com', 'login-password': 'test-password' });
+  app.failures.add('/api/v1/users/me');
+  await app.loginForm().fire('submit');
+  assert.equal(app.localStorage.getItem('access_token'), null);
+  assert.equal(app.window.location.hash, '#login');
+});
+
+test('recovery blocks overlapping requests and reuses consumed OTP proof after request failure', async () => {
+  const app = await setup();
+  const recovery = app.authPage.loginPanel.querySelector('.auth-recovery');
+  app.fill({ 'recovery-email': 'test@example.com' });
+  const sending = recovery.querySelector('button').fire('click');
+  assert.equal(app.get('recovery-email').readOnly, true);
+  await recovery.querySelector('button').fire('click');
+  await sending;
+  assert.equal(app.requests.length, 1);
+  app.fill({ 'recovery-otp': '123456', 'recovery-password': 'new-test-password', 'recovery-confirm-password': 'new-test-password' });
+  const reset = app.get('recovery-otp').parentNode.querySelector('button');
+  app.failures.add('/api/v1/auth/reset-password');
+  await reset.fire('click');
+  app.failures.clear();
+  await reset.fire('click');
+  assert.equal(app.requests.filter(request => request.url === '/api/v1/otp/verify').length, 1);
+  assert.equal(app.requests.filter(request => request.url === '/api/v1/auth/reset-password').length, 2);
+  assert.equal(app.get('recovery-email').readOnly, false);
+});
+
+async function settingsApp() {
+  const app = await setup();
+  app.api.setToken('test-token');
+  app.store.set('user', { id: 1, email: 'test@example.com', notify_enabled: false });
+  const container = app.get('page-container');
+  await app.settingsPage.render(container);
+  return { ...app, container, button: text => container.querySelectorAll('button').find(button => button.textContent === text) };
+}
+
+test('late settings render cannot overwrite the next route', async () => {
+  const app = await setup();
+  app.api.setToken('test-token');
+  let resolve;
+  app.api.get = () => new Promise(done => { resolve = done; });
+  const container = app.get('page-container');
+  const pending = app.settingsPage.render(container);
+  app.settingsPage.destroy();
+  resolve({ id: 1, email: 'test@example.com' });
+  await pending;
+  assert.equal(container.children.length, 0);
+  assert.equal(app.store.get('user'), null);
+});
+
+test('failed notification save does not persist unsaved preferences locally', async () => {
+  const app = await settingsApp();
+  app.localStorage.setItem('planify_notify_minutes_before', '15');
+  app.get('settings-notify-minutes').value = '30';
+  app.api.put = async () => { throw new Error('Offline'); };
+  await app.button('💾 Lưu cài đặt thông báo').fire('click');
+  assert.equal(app.localStorage.getItem('planify_notify_minutes_before'), '15');
+  assert.equal(app.button('💾 Lưu cài đặt thông báo').disabled, false);
+});
+
+test('successful password change clears revoked session and credential inputs', async () => {
+  const app = await settingsApp();
+  app.get('settings-current-password').value = 'old-password';
+  app.get('settings-new-password').value = 'new-password';
+  let writes = 0;
+  app.api.put = async () => { writes++; };
+  await app.button('Đổi mật khẩu').fire('click');
+  assert.equal(writes, 1);
+  assert.equal(app.api.getToken(), null);
+  assert.equal(app.window.location.hash, '#login');
+  assert.equal(app.get('settings-current-password').value, '');
+  assert.equal(app.get('settings-new-password').value, '');
+});
+
+test('agenda edits the correct raw task or event and refreshes after update/delete', async () => {
+  const app = await setup();
+  const refresh = () => {};
+  const raw = { id: 7, title: 'Task', due_date: '2030-01-01', start_time: '09:00', end_time: '10:00' };
+  const event = { id: 8, title: 'Event', start_at: '2030-01-01T11:00:00', end_at: '2030-01-01T12:00:00' };
+  const container = app.get('page-container');
+  const agenda = new app.AgendaView(container, {
+    date: '2030-01-01T00:00:00', onRefresh: refresh, events: [event],
+    tasks: [{ id: 7, title: 'Task', start_at: '2030-01-01T09:00:00', end_at: '2030-01-01T10:00:00', is_task: true, raw_task: raw }]
+  });
+  agenda.render();
+  for (const card of container.querySelectorAll('.agenda-item-card')) await card.fire('click');
+  assert.equal(app.openedForms.length, 2);
+  assert.equal(app.openedForms[0].task, raw);
+  assert.equal(app.openedForms[0].event, null);
+  assert.equal(app.openedForms[1].event.id, 8);
+  assert.equal(app.openedForms[1].task, null);
+  for (const options of app.openedForms) {
+    assert.equal(options.onUpdated, refresh);
+    assert.equal(options.onDeleted, refresh);
+  }
+  assert.equal(app.window.location.hash, '#login');
 });

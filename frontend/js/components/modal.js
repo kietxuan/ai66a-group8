@@ -32,8 +32,17 @@ export class Modal {
         type: 'button',
         className: btnCfg.className || 'btn btn-secondary',
         textContent: btnCfg.label || 'OK',
-        onclick: () => {
-          if (typeof btnCfg.onClick === 'function') btnCfg.onClick();
+        onclick: async () => {
+          if (modal.busy) return;
+          modal.busy = true;
+          const buttons = modal.backdrop?.querySelectorAll('.modal-footer button') || [];
+          buttons.forEach(button => { button.disabled = true; });
+          try {
+            if (typeof btnCfg.onClick === 'function') await btnCfg.onClick();
+          } finally {
+            modal.busy = false;
+            buttons.forEach(button => { button.disabled = false; });
+          }
         }
       })));
     }
@@ -102,6 +111,7 @@ export class Modal {
   }
 
   open() {
+    this.previousFocus = document.activeElement;
     const container = document.getElementById('modal-container') || document.body;
     const stackDepth = Modal.modalStack.length;
     const zIndex = stackDepth > 0 ? 500 + stackDepth * 10 : null;
@@ -110,12 +120,16 @@ export class Modal {
       className: 'modal-backdrop',
       style: zIndex ? { zIndex: `${zIndex}` } : {},
       onclick: (e) => {
-        if (e.target === this.backdrop) this.close();
+        if (e.target === this.backdrop && !this.busy) this.close();
       }
     });
 
     const dialog = createElement('div', {
       className: 'modal-dialog',
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': this.title || 'Hộp thoại',
+      tabIndex: -1,
       style: { maxWidth: this.width }
     });
 
@@ -125,7 +139,8 @@ export class Modal {
         type: 'button',
         className: 'modal-close-btn',
         innerHTML: '&times;',
-        onclick: () => this.close()
+        'aria-label': 'Đóng hộp thoại',
+        onclick: () => { if (!this.busy) this.close(); }
       })
     ]);
 
@@ -155,12 +170,22 @@ export class Modal {
     Modal.modalStack.push(this);
     Modal.activeModal = this;
     document.addEventListener('keydown', this.handleKeyDown);
+    (dialog.querySelector('input, textarea, select, button') || dialog).focus();
     return dialog;
   }
 
   handleKeyDown(e) {
+    if (Modal.activeModal !== this) return;
+    if (e.key === 'Tab') {
+      const controls = [...this.backdrop.querySelectorAll('button, input, select, textarea, a[href], [tabindex="0"]')].filter(el => !el.disabled && el.getClientRects().length);
+      if (controls.length) {
+        const first = controls[0], last = controls[controls.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
     if (e.key === 'Escape') {
-      if (Modal.modalStack[Modal.modalStack.length - 1] === this) {
+      if (Modal.modalStack[Modal.modalStack.length - 1] === this && !this.busy) {
         this.close();
       }
     }
@@ -174,6 +199,7 @@ export class Modal {
     Modal.modalStack = Modal.modalStack.filter(m => m !== this);
     Modal.activeModal = Modal.modalStack[Modal.modalStack.length - 1] || null;
     document.removeEventListener('keydown', this.handleKeyDown);
+    if (this.previousFocus?.isConnected) this.previousFocus.focus();
     if (typeof this.onClose === 'function') {
       this.onClose();
     }

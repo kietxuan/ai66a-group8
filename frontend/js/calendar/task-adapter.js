@@ -14,7 +14,7 @@ export function adaptTaskForCalendar(task) {
   if (!dateStr) return null;
 
   const startTimeRaw = task.start_time || task.due_time;
-  const isAllDay = task.is_all_day !== false && !startTimeRaw;
+  const isAllDay = task.is_all_day !== false || !startTimeRaw;
   const defaultColor = task.color || (task.auto_complete ? '#4F46E5' : '#0B8043');
 
   if (isAllDay) {

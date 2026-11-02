@@ -1,12 +1,14 @@
+import { businessNow } from '../utils/date.js';
 import { createElement } from '../utils/dom.js';
 import { formatDate, isToday, isSameDay, getWeekdayName, addDays } from '../utils/date.js';
 import { EventForm } from './event-form.js';
 import { api } from '../api.js';
 import { Toast } from '../components/toast.js';
 import { toggleCalendarTaskComplete } from './task-adapter.js';
+import { overlapsDay } from '../utils/date.js';
 
 export class AgendaView {
-  constructor(container = null, { date = new Date(), events = [], tasks = [], defaultCalendarId = null, onRefresh = null } = {}) {
+  constructor(container = null, { date = businessNow(), events = [], tasks = [], defaultCalendarId = null, onRefresh = null } = {}) {
     this.container = container;
     this.date = new Date(date);
     this.events = events;
@@ -44,7 +46,7 @@ export class AgendaView {
 
     (this.events || []).forEach(e => {
       const s = new Date(e.start_at);
-      if (s >= startDay && s <= endDay) {
+      if (s <= endDay && new Date(e.end_at) > startDay) {
         allItems.push({
           ...e,
           _type: 'event',
@@ -55,7 +57,7 @@ export class AgendaView {
 
     (this.tasks || []).forEach(t => {
       const s = new Date(t.start_at);
-      if (s >= startDay && s <= endDay) {
+      if (s <= endDay && new Date(t.end_at) > startDay) {
         allItems.push({
           ...t,
           _type: 'task',
@@ -72,12 +74,9 @@ export class AgendaView {
       dayMap.set(key, { date: d, items: [] });
     }
 
-    allItems.forEach(item => {
-      const key = formatDate(item._dateObj, 'YYYY-MM-DD');
-      if (dayMap.has(key)) {
-        dayMap.get(key).items.push(item);
-      }
-    });
+    allItems.forEach(item => dayMap.forEach(group => {
+      if (overlapsDay(item, group.date)) group.items.push({ ...item, _dateObj: new Date(Math.max(item._dateObj, group.date)) });
+    }));
 
     // Sort items within each day (all-day first, then by time)
     dayMap.forEach(group => {
@@ -146,15 +145,13 @@ export class AgendaView {
               borderLeftColor: item.color || (isEvent ? 'var(--color-accent)' : '#0B8043')
             },
             onclick: () => {
-              if (isEvent) {
-                EventForm.showFullModal({
-                  event: item,
-                  defaultCalendarId: this.defaultCalendarId,
-                  onCreated: this.onRefresh
-                });
-              } else {
-                window.location.hash = '#todo';
-              }
+              EventForm.showFullModal({
+                task: isTask ? (item.raw_task || item) : null,
+                event: isEvent ? item : null,
+                defaultCalendarId: this.defaultCalendarId,
+                onUpdated: this.onRefresh,
+                onDeleted: this.onRefresh
+              });
             }
           });
 

@@ -1,3 +1,6 @@
+import { businessNow } from '../utils/date.js';
+import { overlapsDay } from '../utils/date.js';
+import { recurrenceContext } from './rrule.js';
 import { createElement } from '../utils/dom.js';
 import { TimeIndicator } from './time-indicator.js';
 import { EventForm } from './event-form.js';
@@ -9,14 +12,18 @@ import { Toast } from '../components/toast.js';
 /**
  * Helper: Calculate side-by-side columns for overlapping timed events (BUG-15)
  */
-export function layoutTimedItems(items, hourHeight = 60) {
+export function layoutTimedItems(items, hourHeight = 60, day = null) {
   if (!items || items.length === 0) return [];
 
   const elements = items.map(item => {
     const s = new Date(item.start_at);
     const end = new Date(item.end_at);
-    const startMin = s.getHours() * 60 + s.getMinutes();
-    const durMin = Math.max(15, (end.getTime() - s.getTime()) / 60000);
+    const dayStart = new Date(day || s); dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+    const visibleStart = new Date(Math.max(s, dayStart));
+    const visibleEnd = new Date(Math.min(end, dayEnd));
+    const startMin = visibleStart.getHours() * 60 + visibleStart.getMinutes();
+    const durMin = Math.max(15, (visibleEnd - visibleStart) / 60000);
     const endMin = startMin + durMin;
     return {
       item,
@@ -91,7 +98,7 @@ export function layoutTimedItems(items, hourHeight = 60) {
 }
 
 export class WeekView {
-  constructor(container, { date = new Date(), events = [], tasks = [], defaultCalendarId = null, daysCount = 7, onRefresh = null } = {}) {
+  constructor(container, { date = businessNow(), events = [], tasks = [], defaultCalendarId = null, daysCount = 7, onRefresh = null } = {}) {
     this.container = container;
     this.date = new Date(date);
     this.events = events;
@@ -204,7 +211,7 @@ export class WeekView {
         }
       });
 
-      const allDayTasks = this.tasks.filter(t => t.is_all_day && isSameDay(t.start_at, d));
+      const allDayTasks = this.tasks.filter(t => t.is_all_day && overlapsDay(t, d));
       allDayTasks.forEach(t => {
         col.appendChild(EventCard.create({
           event: t,
@@ -212,7 +219,7 @@ export class WeekView {
         }));
       });
 
-      const allDayEvs = this.events.filter(e => e.is_all_day && isSameDay(e.start_at, d));
+      const allDayEvs = this.events.filter(e => e.is_all_day && overlapsDay(e, d));
       allDayEvs.forEach(e => {
         col.appendChild(EventCard.create({ event: e, onUpdate: this.onRefresh }));
       });
@@ -269,6 +276,7 @@ export class WeekView {
       for (let h = 0; h < 24; h++) {
         const slot = createElement('div', {
           className: 'week-hour-slot',
+          'aria-label': `Tạo lịch ngày ${formatDate(d)} lúc ${h}:00`,
           dataset: { hour: h },
           style: {
             position: 'absolute',
@@ -303,11 +311,11 @@ export class WeekView {
         this.timeIndicator.mount();
       }
 
-      const dayEvents = this.events.filter(e => !e.is_all_day && isSameDay(e.start_at, d));
-      const dayTasks = this.tasks.filter(t => !t.is_all_day && isSameDay(t.start_at, d));
+      const dayEvents = this.events.filter(e => !e.is_all_day && overlapsDay(e, d));
+      const dayTasks = this.tasks.filter(t => !t.is_all_day && overlapsDay(t, d));
       const allTimedItems = [...dayEvents, ...dayTasks];
 
-      const packedElements = layoutTimedItems(allTimedItems, this.hourHeight);
+      const packedElements = layoutTimedItems(allTimedItems, this.hourHeight, d);
 
       packedElements.forEach(el => {
         const card = EventCard.create({ event: el.item, onUpdate: this.onRefresh });
@@ -430,6 +438,7 @@ export class WeekView {
       const dragPayload = {
         id: el.item.id,
         is_task: !!el.item.is_task,
+              ...recurrenceContext(el.item),
         durationMinutes: el.durMin,
         title: el.item.title,
         start_at: el.item.start_at,
@@ -515,6 +524,7 @@ export class WeekView {
             }));
           } else {
             await api.put(`/events/${el.item.id}`, {
+              ...recurrenceContext(el.item),
               start_at: toLocalISOString(startAt),
               end_at: toLocalISOString(newEnd)
             });
@@ -591,6 +601,7 @@ export class WeekView {
           }));
         } else {
           await api.put(`/events/${data.id}`, {
+              ...recurrenceContext(data),
             start_at: toLocalISOString(newStart),
             end_at: toLocalISOString(newEnd)
           });

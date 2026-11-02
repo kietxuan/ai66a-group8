@@ -1,3 +1,4 @@
+import { businessNow } from '../utils/date.js';
 import { createElement } from '../utils/dom.js';
 import { isToday, formatDate } from '../utils/date.js';
 import { soundManager } from '../utils/sound.js';
@@ -255,8 +256,8 @@ export class TaskItem {
   }
 
   static showContextMenu(x, y, task, onToggleComplete, onToggleImportant, onUpdated) {
-    const todayStr = formatDate(new Date(), 'YYYY-MM-DD');
-    const tomorrow = new Date();
+    const todayStr = formatDate(businessNow(), 'YYYY-MM-DD');
+    const tomorrow = businessNow();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = formatDate(tomorrow, 'YYYY-MM-DD');
 

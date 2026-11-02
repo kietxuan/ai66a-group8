@@ -1,3 +1,6 @@
+from unittest import SkipTest as _LegacyProbeSkipped
+raise _LegacyProbeSkipped("Historical probe archived: unsafe live DB/provider assumptions. Run backend/tests/regression instead.")
+
 """
 Adversarial Recurrence Engine & Stress Test Suite
 Challenger: teamwork_challenger_m1_1

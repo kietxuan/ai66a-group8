@@ -8,7 +8,7 @@ export class ChatMessage {
   static parseMarkdown(text) {
     if (!text) return '';
 
-    let html = text
+    let html = String(text)
       // Escape HTML chars
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -49,7 +49,7 @@ export class ChatMessage {
     bubbleWrapper.appendChild(bubble);
 
     // If there are tool calls, display execution badges
-    if (toolCalls && toolCalls.length > 0) {
+    if (Array.isArray(toolCalls) && toolCalls.length > 0) {
       const toolBadgesContainer = createElement('div', {
         className: 'flex flex-col gap-xs',
         style: { marginTop: '4px' }
@@ -59,8 +59,8 @@ export class ChatMessage {
         const toolName = tc.name || tc.tool || 'Công cụ';
         const badge = createElement('div', {
           className: 'ai-tool-badge cursor-pointer',
-          title: tc.args ? JSON.stringify(tc.args, null, 2) : 'Đã thực thi công cụ thành công',
-          innerHTML: `<span>⚙️</span> <span>Đã gọi: <strong>${toolName}</strong></span>`
+          title: tc.result?.success === false ? (tc.result.error || 'Công cụ chưa thực thi') : 'Kết quả công cụ',
+          textContent: `⚙️ ${tc.result?.requires_confirmation ? 'Chờ xác nhận' : tc.result?.success === false ? 'Chưa thực hiện' : 'Đã gọi'}: ${toolName}`
         });
         toolBadgesContainer.appendChild(badge);
       });

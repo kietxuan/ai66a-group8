@@ -1,3 +1,4 @@
+import { businessNow } from '../utils/date.js';
 import { createElement } from '../utils/dom.js';
 import { getMonthMatrix, getMonthName, isToday, isSameDay } from '../utils/date.js';
 import { store } from '../store.js';
@@ -6,7 +7,7 @@ export class MiniCalendar {
   constructor(container, { onDateSelect = null } = {}) {
     this.container = container;
     this.onDateSelect = onDateSelect;
-    this.currentDate = new Date();
+    this.currentDate = businessNow();
     this.viewYear = this.currentDate.getFullYear();
     this.viewMonth = this.currentDate.getMonth();
   }
@@ -73,7 +74,7 @@ export class MiniCalendar {
     });
 
     const matrix = getMonthMatrix(this.viewYear, this.viewMonth);
-    const selectedDate = store.get('selectedDate') || new Date();
+    const selectedDate = store.get('selectedDate') || businessNow();
 
     matrix.forEach(week => {
       week.forEach(cell => {

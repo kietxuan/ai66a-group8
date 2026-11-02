@@ -22,9 +22,14 @@ async def verify_password(input_password: str, hashed_password: str) -> bool:
     """
     Hàm kiểm tra mật khẩu
     """
-    return await asyncio.to_thread(pwd_context.verify, input_password, hashed_password)
+    if not isinstance(input_password, str) or len(input_password.encode("utf-8")) > 72:
+        return False
+    try:
+        return await asyncio.to_thread(pwd_context.verify, input_password, hashed_password)
+    except (ValueError, TypeError):
+        return False
 
-def create_access_token(subject: Union[str, Any], is_developer: bool) -> str:
+def create_access_token(subject: Union[str, Any], is_developer: bool, token_version: int = 0) -> str:
     """
     Hàm tạo token access cho jwt khi User đăng nhập thành công
     """
@@ -35,7 +40,8 @@ def create_access_token(subject: Union[str, Any], is_developer: bool) -> str:
     to_encode = {
         "exp": expire,
         "sub": str(subject),
-        "dev": is_developer
+        "dev": is_developer,
+        "ver": token_version
     }
 
     # Ký bảo mật và sinh chuỗi token JWT

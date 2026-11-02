@@ -1,8 +1,9 @@
+import { businessNow } from '../utils/date.js';
 import { createElement } from '../utils/dom.js';
 import { getMonthMatrix, getMonthName, isToday, isSameDay } from '../utils/date.js';
 
 export class DatePicker {
-  constructor({ selectedDate = new Date(), onSelect = null } = {}) {
+  constructor({ selectedDate = businessNow(), onSelect = null } = {}) {
     this.selectedDate = new Date(selectedDate);
     this.viewYear = this.selectedDate.getFullYear();
     this.viewMonth = this.selectedDate.getMonth();

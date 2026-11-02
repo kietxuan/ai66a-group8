@@ -1,3 +1,6 @@
+import { businessNow } from '../utils/date.js';
+import { overlapsDay } from '../utils/date.js';
+import { recurrenceContext } from './rrule.js';
 import { createElement } from '../utils/dom.js';
 import { TimeIndicator } from './time-indicator.js';
 import { EventForm } from './event-form.js';
@@ -8,7 +11,7 @@ import { api } from '../api.js';
 import { Toast } from '../components/toast.js';
 
 export class DayView {
-  constructor(container, { date = new Date(), events = [], tasks = [], defaultCalendarId = null, onRefresh = null } = {}) {
+  constructor(container, { date = businessNow(), events = [], tasks = [], defaultCalendarId = null, onRefresh = null } = {}) {
     this.container = container;
     this.date = new Date(date);
     this.events = events;
@@ -50,12 +53,12 @@ export class DayView {
       style: { flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }
     });
 
-    const allDayTasks = this.tasks.filter(t => t.is_all_day && isSameDay(t.start_at, this.date));
+    const allDayTasks = this.tasks.filter(t => t.is_all_day && overlapsDay(t, this.date));
     allDayTasks.forEach(t => {
       allDayContent.appendChild(EventCard.create({ event: t, onUpdate: this.onRefresh }));
     });
 
-    const allDayEvents = this.events.filter(e => e.is_all_day && isSameDay(e.start_at, this.date));
+    const allDayEvents = this.events.filter(e => e.is_all_day && overlapsDay(e, this.date));
     allDayEvents.forEach(e => {
       allDayContent.appendChild(EventCard.create({ event: e, onUpdate: this.onRefresh }));
     });
@@ -96,6 +99,7 @@ export class DayView {
     for (let h = 0; h < 24; h++) {
       const line = createElement('div', {
         className: 'day-hour-line',
+        'aria-label': `Tạo lịch ngày ${formatDate(this.date)} lúc ${h}:00`,
         dataset: { hour: h },
         style: {
           position: 'absolute',
@@ -133,11 +137,11 @@ export class DayView {
     this.timeIndicator.mount();
 
     // Render timed events and timed tasks with Collision Column Packing
-    const timedEvents = this.events.filter(e => !e.is_all_day && isSameDay(e.start_at, this.date));
-    const timedTasks = this.tasks.filter(t => !t.is_all_day && isSameDay(t.start_at, this.date));
+    const timedEvents = this.events.filter(e => !e.is_all_day && overlapsDay(e, this.date));
+    const timedTasks = this.tasks.filter(t => !t.is_all_day && overlapsDay(t, this.date));
     const allTimed = [...timedEvents, ...timedTasks];
 
-    const packedElements = layoutTimedItems(allTimed, this.hourHeight);
+    const packedElements = layoutTimedItems(allTimed, this.hourHeight, this.date);
 
     packedElements.forEach(el => {
       const card = EventCard.create({ event: el.item, onUpdate: this.onRefresh });
@@ -256,6 +260,7 @@ export class DayView {
       const dragPayload = {
         id: el.item.id,
         is_task: !!el.item.is_task,
+              ...recurrenceContext(el.item),
         durationMinutes: el.durMin,
         title: el.item.title,
         start_at: el.item.start_at,
@@ -341,6 +346,7 @@ export class DayView {
             }));
           } else {
             await api.put(`/events/${el.item.id}`, {
+              ...recurrenceContext(el.item),
               start_at: toLocalISOString(startAt),
               end_at: toLocalISOString(newEnd)
             });
@@ -417,6 +423,7 @@ export class DayView {
           }));
         } else {
           await api.put(`/events/${data.id}`, {
+              ...recurrenceContext(data),
             start_at: toLocalISOString(newStart),
             end_at: toLocalISOString(newEnd)
           });

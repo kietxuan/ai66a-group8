@@ -1,3 +1,5 @@
+.flex-wrap { flex-wrap: wrap; }
+
 body {
   font-family: var(--font-family);
   font-size: var(--font-size-md);

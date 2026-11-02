@@ -1,3 +1,4 @@
+import { businessNow } from '../utils/date.js';
 import { createElement } from '../utils/dom.js';
 import { store } from '../store.js';
 import { api } from '../api.js';
@@ -21,6 +22,7 @@ export const calendarPage = {
   unscheduledContainer: null,
 
   async render(container) {
+    const renderGeneration = this.renderGeneration = (this.renderGeneration || 0) + 1;
     this.container = container;
     container.innerHTML = '';
 
@@ -77,6 +79,7 @@ export const calendarPage = {
     this.miniCalendar.render();
 
     await this.updateView();
+    if (renderGeneration !== this.renderGeneration || !this.container) return;
 
     // Setup Keyboard shortcuts (D, W, M, A, T, N)
     this.handleKeyDown = (e) => {
@@ -87,7 +90,7 @@ export const calendarPage = {
       else if (key === 'M') this.setViewMode('month');
       else if (key === 'A') this.setViewMode('agenda');
       else if (key === 'T') {
-        store.set('selectedDate', new Date());
+        store.set('selectedDate', businessNow());
         this.updateView();
       } else if (key === 'N') {
         EventForm.showFullModal({ hasDate: false, onCreated: () => this.updateView() });
@@ -160,7 +163,7 @@ export const calendarPage = {
           EventForm.showFullModal({
             task: t,
             hasDate: true,
-            startAt: store.get('selectedDate') || new Date(),
+            startAt: store.get('selectedDate') || businessNow(),
             onUpdated: () => this.updateView(),
             onDeleted: () => this.updateView()
           });
@@ -176,7 +179,8 @@ export const calendarPage = {
   },
 
   async updateView() {
-    const curDate = store.get('selectedDate') || new Date();
+    const generation = this.requestGeneration = (this.requestGeneration || 0) + 1;
+    const curDate = store.get('selectedDate') || businessNow();
     let curMode = store.get('calendarView') || 'month';
     if (curMode === 'workweek') curMode = 'month';
 
@@ -200,6 +204,8 @@ export const calendarPage = {
     } else {
       startDt = new Date(curDate.getFullYear(), curDate.getMonth(), 1);
       endDt = new Date(curDate.getFullYear(), curDate.getMonth() + 1, 0, 23, 59, 59);
+      startDt = getStartOfWeek(startDt, true);
+      endDt = addDays(getStartOfWeek(endDt, true), 7);
     }
 
     let displayTitle = '';
@@ -238,7 +244,7 @@ export const calendarPage = {
     });
 
     document.getElementById('btn-cal-today')?.addEventListener('click', () => {
-      store.set('selectedDate', new Date());
+      store.set('selectedDate', businessNow());
       this.updateView();
       if (this.miniCalendar) this.miniCalendar.render();
     });
@@ -254,9 +260,10 @@ export const calendarPage = {
 
     try {
       const [events, allTasks] = await Promise.all([
-        api.get('/events', { start: toLocalISOString(startDt), end: toLocalISOString(endDt) }).catch(() => []),
-        api.get('/tasks').catch(() => [])
+        api.get('/events', { start: `${toLocalISOString(startDt)}+07:00`, end: `${toLocalISOString(endDt)}+07:00` }),
+        api.get('/tasks')
       ]);
+      if (generation !== this.requestGeneration || !this.container) return;
 
       this.renderUnscheduledTray(allTasks || []);
 
@@ -268,16 +275,10 @@ export const calendarPage = {
       const adaptedTasks = adaptTasksForCalendar(allTasks || []);
 
       // Tránh trùng lặp nếu một sự kiện vừa nằm ở bảng events cũ vừa đã đồng bộ sang tasks
-      const taskTitleDateSet = new Set(
-        adaptedTasks.map(t => `${t.title}|${String(t.start_at).slice(0, 16)}`)
-      );
-      const dedupedEvents = expandedEvents.filter(
-        e => !taskTitleDateSet.has(`${e.title}|${String(e.start_at).slice(0, 16)}`)
-      );
 
       const viewOptions = {
         date: curDate,
-        events: dedupedEvents,
+        events: expandedEvents,
         tasks: adaptedTasks,
         daysCount: 7,
         onNavigateMonth: (delta) => this.navigateDate(delta),
@@ -296,12 +297,14 @@ export const calendarPage = {
 
       this.activeView.render();
     } catch (err) {
+      if (generation !== this.requestGeneration || !this.container) return;
+      Toast.error(err.message || 'Không tải được lịch.');
       console.warn('Failed to load calendar items:', err);
     }
   },
 
   navigateDate(direction) {
-    const curDate = store.get('selectedDate') || new Date();
+    const curDate = store.get('selectedDate') || businessNow();
     const curMode = store.get('calendarView') || 'month';
     let nextDate;
 
@@ -326,6 +329,8 @@ export const calendarPage = {
   },
 
   destroy() {
+    this.renderGeneration = (this.renderGeneration || 0) + 1;
+    this.requestGeneration = (this.requestGeneration || 0) + 1;
     if (this.handleKeyDown) {
       document.removeEventListener('keydown', this.handleKeyDown);
       this.handleKeyDown = null;

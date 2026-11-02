@@ -165,7 +165,7 @@ export const landingPage = {
             'Tạo sự kiện hoặc kéo công việc chưa xếp lịch vào ngày phù hợp.',
             'Thay đổi công việc được phản ánh ở cả To Do và Calendar.'
           ],
-          imageAlt: 'Lịch tháng Planify Pro hiển thị công việc, sự kiện và khay việc chưa xếp lịch'
+          imageAlt: 'Calendar Planify Pro ở chế độ tuần, hiển thị công việc, sự kiện và khay việc chưa xếp lịch'
         }),
         featureCard({
           number: '03', icon: '✧', label: 'TRỢ LÝ AI', image: 'ai',

@@ -32,7 +32,7 @@ class RedisClient:
         """
         if self.redis:
             try:
-                await self.redis.close()
+                await self.redis.aclose()
                 logger.info("Đóng kết nối Redis thành công!")
             except Exception as e:
                 logger.error(f"Lỗi đóng kết nối Redis: {str(e)}")

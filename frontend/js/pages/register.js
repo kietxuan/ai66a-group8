@@ -5,6 +5,8 @@ import { isValidEmail, isValidPassword } from '../utils/validator.js';
 
 export function createRegisterForm() {
   let otpEmail = null;
+  let verifiedToken = null;
+  let verifiedOtp = null;
   let busy = false;
   const field = (id, label, attrs) => createElement('div', { className: 'form-group' }, [
     createElement('label', { for: id, className: 'form-label', textContent: label }),
@@ -17,7 +19,7 @@ export function createRegisterForm() {
     type: 'email', placeholder: 'tenban@example.com', required: true, autocomplete: 'email'
   });
   const passGroup = field('register-password', 'Mật khẩu', {
-    type: 'password', placeholder: 'Tối thiểu 6 ký tự', required: true, minlength: 6, autocomplete: 'new-password'
+    type: 'password', placeholder: 'Tối thiểu 8 ký tự', required: true, minlength: 8, autocomplete: 'new-password'
   });
   const nameInput = nameGroup.querySelector('input');
   const emailInput = emailGroup.querySelector('input');
@@ -51,8 +53,8 @@ export function createRegisterForm() {
       emailInput.focus();
       return false;
     }
-    if (!isValidPassword(passwordInput.value, 6)) {
-      Toast.error('Mật khẩu phải có ít nhất 6 ký tự.');
+    if (!isValidPassword(passwordInput.value, 8)) {
+      Toast.error('Mật khẩu phải có ít nhất 8 ký tự và không quá 72 bytes UTF-8.');
       passwordInput.focus();
       return false;
     }
@@ -75,6 +77,8 @@ export function createRegisterForm() {
     try {
       await AuthManager.sendOtp(email, 'verify-email');
       otpEmail = email;
+      verifiedToken = null;
+      verifiedOtp = null;
       otpInput.value = '';
       otpInput.required = true;
       otpSection.classList.remove('hidden');
@@ -91,6 +95,8 @@ export function createRegisterForm() {
   emailInput.addEventListener('input', () => {
     if (otpEmail && emailInput.value.trim() !== otpEmail) {
       otpEmail = null;
+      verifiedToken = null;
+      verifiedOtp = null;
       otpInput.value = '';
       otpInput.required = false;
       otpSection.classList.add('hidden');
@@ -116,8 +122,14 @@ export function createRegisterForm() {
       }
       setBusy(true);
       try {
-        const verifyRes = await AuthManager.verifyOtp(otpEmail, otp, 'verify-email');
-        const verifiedToken = verifyRes?.verified_token || verifyRes?.data?.verified_token || null;
+        // Verification consumes the OTP. A failed subsequent request must not
+        // verify the same one-time code again; keep its proof for a safe retry.
+        if (!verifiedToken || verifiedOtp !== otp) {
+          const verifyRes = await AuthManager.verifyOtp(otpEmail, otp, 'verify-email');
+          verifiedToken = verifyRes?.verified_token || verifyRes?.data?.verified_token || null;
+          verifiedOtp = otp;
+          if (!verifiedToken) throw new Error('Máy chủ không trả về xác thực OTP hợp lệ.');
+        }
         await AuthManager.register(otpEmail, nameInput.value.trim(), passwordInput.value, otp, verifiedToken);
         Toast.success('Đăng ký thành công! Chào mừng bạn đến với Planify Pro.');
         sessionStorage.removeItem('planify_redirect_after_login');

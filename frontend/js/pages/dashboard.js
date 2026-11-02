@@ -1,3 +1,4 @@
+import { businessNow } from '../utils/date.js';
 import { createElement } from '../utils/dom.js';
 import { api } from '../api.js';
 import { store } from '../store.js';
@@ -105,16 +106,21 @@ export const dashboardPage = {
 
   async loadAndRender(pageEl) {
     if (!pageEl) return;
+    const generation = this.generation = (this.generation || 0) + 1;
     try {
-      this.stats = await api.get('/dashboard/stats');
+      const stats = await api.get('/dashboard/stats');
+      if (generation !== this.generation || !this.container) return;
+      this.stats = stats;
     } catch (err) {
+      if (generation !== this.generation || !this.container) return;
       this.stats = await this.computeFallbackStats();
     }
+    if (generation !== this.generation || !this.container) return;
     this.renderContent(pageEl, this.stats);
   },
 
   async computeFallbackStats() {
-    const todayStr = formatDate(new Date(), 'YYYY-MM-DD');
+    const todayStr = formatDate(businessNow(), 'YYYY-MM-DD');
     let tasks = [];
     let lists = [];
     try {
@@ -369,7 +375,7 @@ export const dashboardPage = {
     const user = store.get('user') || {};
     const s = data?.summary || {};
     const breakdown = data?.status_breakdown || {};
-    const hour = new Date().getHours();
+    const hour = businessNow().getHours();
     const greeting = hour < 12 ? 'Chào buổi sáng' : (hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối');
 
     // 1. HERO BANNER
@@ -379,7 +385,7 @@ export const dashboardPage = {
 
     const heroBanner = createElement('section', { className: 'dash-hero-banner' }, [
       createElement('div', { className: 'dash-hero-left' }, [
-        createElement('div', { style: { fontSize: '12px', fontWeight: '600', opacity: '0.9' }, textContent: `📅 ${formatVietnameseDate(new Date(), true)}` }),
+        createElement('div', { style: { fontSize: '12px', fontWeight: '600', opacity: '0.9' }, textContent: `📅 ${formatVietnameseDate(businessNow(), true)}` }),
         createElement('h1', { className: 'dash-hero-greeting', textContent: `${greeting}, ${user.nickname || 'bạn'}! 👋` }),
         createElement('p', {
           className: 'dash-hero-subtitle',
@@ -471,7 +477,7 @@ export const dashboardPage = {
     const trendItems = (data?.weekly_trend && data.weekly_trend.length > 0)
       ? data.weekly_trend
       : Array.from({ length: 7 }, (_, idx) => {
-          const d = new Date();
+          const d = businessNow();
           d.setDate(d.getDate() - (6 - idx));
           return {
             date: formatDate(d, 'YYYY-MM-DD'),
@@ -657,6 +663,7 @@ export const dashboardPage = {
   },
 
   destroy() {
+    this.generation = (this.generation || 0) + 1;
     if (this.themeListener) {
       this.themeListener();
       this.themeListener = null;

@@ -1,3 +1,6 @@
+from unittest import SkipTest as _LegacyProbeSkipped
+raise _LegacyProbeSkipped("Historical probe archived: unsafe live DB/provider assumptions. Run backend/tests/regression instead.")
+
 #!/usr/bin/env python3
 """
 Planify Milestone M4 Empirical Challenger Adversarial Test Suite

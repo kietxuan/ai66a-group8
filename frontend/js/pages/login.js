@@ -108,6 +108,16 @@ export function createLoginForm() {
   // ===== 2. FORGOT PASSWORD OTP FLOW =====
   const forgotView = createElement('div', { className: 'auth-recovery hidden' });
   let fpVerifiedToken = null;
+  let fpVerifiedEmail = null;
+  let fpVerifiedOtp = null;
+  let recoveryBusy = false;
+
+  function setRecoveryBusy(value) {
+    recoveryBusy = value;
+    fpSendOtpBtn.disabled = value;
+    fpResetBtn.disabled = value;
+    [fpEmailInput, fpOtpInput, fpNewPassInput, fpConfirmPassInput].forEach(input => { input.readOnly = value; });
+  }
 
   const fpEmailGroup = createElement('div', { className: 'form-group' }, [
     createElement('label', { for: 'recovery-email', className: 'form-label', textContent: 'Email tài khoản' }),
@@ -127,16 +137,20 @@ export function createLoginForm() {
     style: { width: '100%', padding: '10px 14px', fontWeight: '700', marginTop: '6px' },
     textContent: '📨 Gửi mã OTP đặt lại mật khẩu',
     onclick: async () => {
-      if (fpSendOtpBtn.disabled) return;
+      if (recoveryBusy) return;
       const email = fpEmailInput.value.trim();
       if (!isValidEmail(email)) {
         Toast.error('Vui lòng nhập địa chỉ email hợp lệ.');
         return;
       }
-      fpSendOtpBtn.disabled = true;
+      setRecoveryBusy(true);
       fpSendOtpBtn.textContent = 'Đang gửi mã OTP qua Email...';
       try {
         await AuthManager.sendOtp(email, 'change-password');
+        fpVerifiedToken = null;
+        fpVerifiedEmail = null;
+        fpVerifiedOtp = null;
+        fpOtpInput.value = '';
         Toast.success(`Đã gửi mã OTP 6 chữ số tới ${email}. Vui lòng kiểm tra hộp thư!`);
         fpStep2Box.classList.remove('hidden');
         fpSendOtpBtn.textContent = '🔄 Gửi lại mã OTP';
@@ -144,7 +158,7 @@ export function createLoginForm() {
         Toast.error(err.message || 'Không thể gửi mã OTP. Hãy kiểm tra lại email.');
         fpSendOtpBtn.textContent = '📨 Gửi mã OTP đặt lại mật khẩu';
       } finally {
-        fpSendOtpBtn.disabled = false;
+        setRecoveryBusy(false);
       }
     }
   });
@@ -180,7 +194,7 @@ export function createLoginForm() {
     id: 'recovery-password',
     autocomplete: 'new-password',
     className: 'input',
-    placeholder: 'Mật khẩu mới (tối thiểu 6 ký tự)'
+    placeholder: 'Mật khẩu mới (tối thiểu 8 ký tự)'
   });
 
   const fpConfirmPassInput = createElement('input', {
@@ -197,7 +211,7 @@ export function createLoginForm() {
     style: { padding: '11px 16px', fontWeight: '700' },
     textContent: '🔒 Xác nhận OTP & Đặt lại mật khẩu',
     onclick: async () => {
-      if (fpResetBtn.disabled) return;
+      if (recoveryBusy) return;
       const email = fpEmailInput.value.trim();
       const otp = fpOtpInput.value.trim();
       const newPass = fpNewPassInput.value;
@@ -207,8 +221,8 @@ export function createLoginForm() {
         Toast.error('Vui lòng nhập mã OTP đã nhận qua email.');
         return;
       }
-      if (!isValidPassword(newPass, 6)) {
-        Toast.error('Mật khẩu mới phải có ít nhất 6 ký tự.');
+      if (!isValidPassword(newPass, 8)) {
+        Toast.error('Mật khẩu mới phải có ít nhất 8 ký tự và không quá 72 bytes UTF-8.');
         return;
       }
       if (newPass !== confirmPass) {
@@ -216,11 +230,16 @@ export function createLoginForm() {
         return;
       }
 
-      fpResetBtn.disabled = true;
+      setRecoveryBusy(true);
       fpResetBtn.textContent = 'Đang xác thực OTP & đổi mật khẩu...';
       try {
-        const verifyRes = await AuthManager.verifyOtp(email, otp, 'change-password');
-        fpVerifiedToken = verifyRes?.verified_token || verifyRes?.data?.verified_token || null;
+        if (!fpVerifiedToken || fpVerifiedEmail !== email || fpVerifiedOtp !== otp) {
+          const verifyRes = await AuthManager.verifyOtp(email, otp, 'change-password');
+          fpVerifiedToken = verifyRes?.verified_token || verifyRes?.data?.verified_token || null;
+          fpVerifiedEmail = email;
+          fpVerifiedOtp = otp;
+          if (!fpVerifiedToken) throw new Error('Máy chủ không trả về xác thực OTP hợp lệ.');
+        }
         await AuthManager.resetPassword(email, newPass, otp, fpVerifiedToken);
         Toast.success('🎉 Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.');
         emailInput.value = email;
@@ -232,11 +251,12 @@ export function createLoginForm() {
         fpOtpInput.value = '';
         fpNewPassInput.value = '';
         fpConfirmPassInput.value = '';
+        fpVerifiedToken = null;
         passwordInput.focus();
       } catch (err) {
         Toast.error(err.message || 'Mã OTP không hợp lệ hoặc đã hết hạn.');
       } finally {
-        fpResetBtn.disabled = false;
+        setRecoveryBusy(false);
         fpResetBtn.textContent = '🔒 Xác nhận OTP & Đặt lại mật khẩu';
       }
     }

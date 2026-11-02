@@ -1,3 +1,4 @@
+import { businessNow } from '../utils/date.js';
 /**
  * Background Reminder & Notification Service
  * Polls upcoming tasks/events every 30 seconds, triggers Email reminders via Backend SMTP,
@@ -24,10 +25,10 @@ export class ReminderNotifier {
   static getMinutesBefore() {
     const user = store.get('user');
     if (user && user.notify_minutes_before !== undefined && user.notify_minutes_before !== null) {
-      return Number(user.notify_minutes_before) || 15;
+      return Number(user.notify_minutes_before);
     }
     const saved = localStorage.getItem('planify_notify_minutes_before');
-    return saved ? (Number(saved) || 15) : 15;
+    return saved !== null && Number.isFinite(Number(saved)) ? Number(saved) : 15;
   }
 
   static start() {
@@ -50,6 +51,7 @@ export class ReminderNotifier {
   }
 
   static stop() {
+    this.notifiedSet.clear();
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
@@ -107,7 +109,7 @@ export class ReminderNotifier {
     if (!user) return;
     if (!this.isEnabled()) return;
 
-    const now = new Date();
+    const now = businessNow();
     const nowMs = now.getTime();
     const defaultRemindMins = this.getMinutesBefore();
 

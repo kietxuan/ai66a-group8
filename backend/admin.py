@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select
 
 from app.models.user_model import User
 from app.core.security import hash_password
@@ -11,12 +11,10 @@ admin_useremail = settings.ADMIN_EMAIL
 admin_password = settings.ADMIN_PASSWORD
 
 async def create_admin_user(db: AsyncSession):
+    # Bootstrap only. Never delete accounts or reset credentials on startup.
+    if not admin_password:
+        return
     try:
-        # Đọn dẹp các tài khoản admin cũ
-        stmt_delete = delete(User).where(User.is_developer == True, User.email != admin_useremail)
-        await db.execute(stmt_delete)
-        await db.commit()
-
         # Kiểm tra nếu tài khoản admin đã tồn tại
         stmt_select = select(User).where(User.email == admin_useremail)
         result = await db.execute(stmt_select)
@@ -34,11 +32,8 @@ async def create_admin_user(db: AsyncSession):
             await db.commit()
             logger.info(f"Tài khoản Admin {admin_useremail} đã được tạo thành công.")
         
-        else:
-            admin_exists.password_hashed = await hash_password(admin_password)
-            admin_exists.nickname = admin_username
-            await db.commit()
-            logger.info(f"Cập nhật mật khẩu cho tài khoản Admin {admin_useremail} thành công.")
+        elif not admin_exists.is_developer:
+            logger.warning("Admin bootstrap email already belongs to an ordinary user; unchanged.")
 
     except Exception as e:
         await db.rollback()

@@ -1,3 +1,4 @@
+import { businessNow } from '../utils/date.js';
 import { createElement } from '../utils/dom.js';
 import { TaskItem } from './task-item.js';
 import { formatDate } from '../utils/date.js';
@@ -147,7 +148,7 @@ export class TaskListView {
 
   renderGeneralKanbanBoard() {
     const allFiltered = this.filterTasks();
-    const now = new Date();
+    const now = businessNow();
     const todayStr = formatDate(now, 'YYYY-MM-DD');
     const nowTimeStr = formatDate(now, 'HH:mm');
 
@@ -212,7 +213,7 @@ export class TaskListView {
         subtitle: 'Việc & Sự kiện trong hôm nay',
         color: '#F59E0B',
         items: this.sortTasks(colTodayItems, false),
-        onAddQuick: () => EventForm.showFullModal({ hasDate: true, startAt: new Date(), onCreated: this.onRefresh }),
+        onAddQuick: () => EventForm.showFullModal({ hasDate: true, startAt: businessNow(), onCreated: this.onRefresh }),
         onDropTask: async (taskId) => {
           await api.put(`/tasks/${taskId}`, {
             is_completed: false,
@@ -347,7 +348,7 @@ export class TaskListView {
 
   renderCustomListView() {
     const allFiltered = this.filterTasks();
-    const now = new Date();
+    const now = businessNow();
     const todayStr = formatDate(now, 'YYYY-MM-DD');
     const nowTimeStr = formatDate(now, 'HH:mm');
 

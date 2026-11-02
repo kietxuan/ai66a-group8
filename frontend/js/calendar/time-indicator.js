@@ -1,3 +1,4 @@
+import { businessNow } from '../utils/date.js';
 import { createElement } from '../utils/dom.js';
 
 export class TimeIndicator {
@@ -21,7 +22,7 @@ export class TimeIndicator {
 
   updatePosition() {
     if (!this.element) return;
-    const now = new Date();
+    const now = businessNow();
     const minutes = now.getHours() * 60 + now.getMinutes();
     const topPx = (minutes / 60) * this.hourHeight;
     this.element.style.top = `${topPx}px`;

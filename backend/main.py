@@ -1,6 +1,8 @@
 import asyncio
 from datetime import datetime, date
-from fastapi import FastAPI
+from app.core.time import local_now, BUSINESS_TZ
+from app.services.task_service import task_service
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from admin import create_admin_user
 from contextlib import asynccontextmanager
@@ -26,27 +28,6 @@ from app.helper.otp import send_reminder_email
 from app.api.v1.api import api_router
 
 
-async def ensure_schema_columns(session):
-    """Tự động bổ sung các cột mới vào cơ sở dữ liệu nếu chưa có (an toàn tuyệt đối khi nâng cấp)"""
-    alter_statements = [
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS notify_enabled BOOLEAN NOT NULL DEFAULT TRUE;",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS notify_minutes_before INTEGER NOT NULL DEFAULT 15;",
-        "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS location VARCHAR(300);",
-        "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS auto_complete BOOLEAN NOT NULL DEFAULT FALSE;",
-        "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_minutes INTEGER DEFAULT 15;",
-        "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN NOT NULL DEFAULT FALSE;",
-    ]
-    for stmt in alter_statements:
-        try:
-            await session.execute(text(stmt))
-        except Exception as e:
-            logger.debug(f"Schema check ({stmt}): {e}")
-    try:
-        await session.commit()
-    except Exception:
-        await session.rollback()
-
-
 async def background_scheduler_loop():
     """
     Vòng lặp chạy ngầm mỗi 45 giây:
@@ -57,7 +38,7 @@ async def background_scheduler_loop():
         try:
             await asyncio.sleep(45)
             async with AsyncSessionLocal() as session:
-                now = datetime.now()
+                now = local_now()
                 today = now.date()
                 current_time = now.time()
 
@@ -80,8 +61,9 @@ async def background_scheduler_loop():
                             if end_t and end_t <= current_time:
                                 should_complete = True
                         if should_complete:
-                            task.is_completed = True
-                            task.completed_at = now
+                            from app.services.write_lock import lock_owner
+                            await lock_owner(session, task.user_id)
+                            await task_service._complete_transition(session, task.id, task.user_id, True)
                             changed = True
                             continue
 
@@ -93,14 +75,14 @@ async def background_scheduler_loop():
                     ):
                         start_t = task.start_time or task.due_time
                         if start_t:
-                            target_dt = datetime.combine(today, start_t)
+                            target_dt = datetime.combine(today, start_t, BUSINESS_TZ)
                             diff_minutes = (target_dt - now).total_seconds() / 60.0
-                            remind_mins = getattr(task, "reminder_minutes", None) or getattr(user, "notify_minutes_before", 15) or 15
+                            remind_mins = task.reminder_minutes if task.reminder_minutes is not None else user.notify_minutes_before
                             if -5.0 <= diff_minutes <= float(remind_mins):
                                 time_str = f"{start_t.strftime('%H:%M')} hôm nay ({today.strftime('%d/%m/%Y')})"
                                 if task.end_time:
                                     time_str = f"{start_t.strftime('%H:%M')} - {task.end_time.strftime('%H:%M')} ({today.strftime('%d/%m/%Y')})"
-                                await send_reminder_email(
+                                sent_ok = await send_reminder_email(
                                     to_email=user.email,
                                     user_name=user.nickname,
                                     task_title=task.title,
@@ -109,8 +91,8 @@ async def background_scheduler_loop():
                                     location=getattr(task, "location", "") or "",
                                     minutes_before=max(0, int(round(diff_minutes)))
                                 )
-                                task.reminder_sent = True
-                                changed = True
+                                task.reminder_sent = bool(sent_ok)
+                                changed = bool(sent_ok) or changed
 
                 if changed:
                     await session.commit()
@@ -122,22 +104,21 @@ async def background_scheduler_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    try:
-        await redis_client.connect()
-    except Exception as e:
-        logger.error(f"Không thể kết nối tới Redis lúc khởi chạy: {e}")
-
+    settings.validate_security()
+    await redis_client.connect()
     async with AsyncSessionLocal() as session:
-        try:
-            await ensure_schema_columns(session)
-            await create_admin_user(session)
-        except Exception as e:
-            logger.error(f"Lỗi khởi tạo ban đầu: {e}")
-
-    bg_task = asyncio.create_task(background_scheduler_loop())
-    yield
-    bg_task.cancel()
-    await redis_client.close()
+        # No startup DDL: migrations must supply the schema or startup fails visibly.
+        await session.execute(select(User).limit(1))
+        await session.execute(select(Task).limit(1))
+        await create_admin_user(session)
+    bg_task = asyncio.create_task(background_scheduler_loop()) if settings.SCHEDULER_ENABLED else None
+    try:
+        yield
+    finally:
+        if bg_task:
+            bg_task.cancel()
+            await bg_task
+        await redis_client.close()
 
 
 app = FastAPI(title=settings.PROJECT_NAME,
@@ -147,7 +128,7 @@ app = FastAPI(title=settings.PROJECT_NAME,
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -163,5 +144,13 @@ def read_root():
     return {"success": f"Welcome to {settings.PROJECT_NAME} API!"}
 
 @app.get("/health", tags=["Health"])
-def health_check():
+async def health_check():
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+        if not redis_client.redis:
+            raise RuntimeError("Redis unavailable")
+        await redis_client.redis.ping()
+    except Exception:
+        raise HTTPException(503, "Dependencies not ready.")
     return {"status": "healthy"}

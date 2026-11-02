@@ -11,7 +11,7 @@ Baseline mới nhất trước import: 96ed0b8fdd70a7c630fca04e1aa2b50a0708c446.
 - Nhập 218 file từ project nguồn, loại riêng .env. Không sửa/xóa folder todo-list-pro gốc.
 - Backend/frontend, Docker Compose, migrations, tests và docs đánh số dùng bản user cung cấp.
 - Bỏ 78 file runtime chỉ thuộc app trước: React/Vite source/tooling, migrations/tests cũ, scripts, Render config và CI cũ. Không trộn hai schema hoặc chạy workflow cũ trên project mới. Có thể khôi phục chúng từ Git history tại 96ed0b8.
-- Giữ mọi file kế hoạch và evidence cũ trong docs; giữ README trước import ở [README_PLANNING](../README_PLANNING.md). Chúng là tài liệu lịch sử nếu không khớp source mới.
+- Giữ mọi file kế hoạch và evidence cũ trong docs; giữ README trước import ở [README_PLANNING](README_PLANNING.md). Chúng là tài liệu lịch sử nếu không khớp source mới.
 - Lưu 21 file Markdown local chưa commit ở [planning-baseline](planning-baseline/README.md), giữ cấu trúc relative links. Git stash local cũng giữ backup trước import; không pop stash trực tiếp vì có thể ghi đè docs mới.
 - README hiện tại lấy từ source mới, bổ sung bước tạo .env và phân biệt tài liệu mới/cũ.
 - Không đổi business logic. Khác biệt so với source nguồn chỉ gồm safeguards .gitignore, JWT placeholder .env.example, README setup/ghi chú và whitespace ở ba file Python.

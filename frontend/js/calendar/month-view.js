@@ -1,3 +1,6 @@
+import { businessNow } from '../utils/date.js';
+import { overlapsDay } from '../utils/date.js';
+import { recurrenceContext } from './rrule.js';
 import { createElement } from '../utils/dom.js';
 import { getMonthMatrix, isToday, isSameDay, formatDate, toLocalISOString } from '../utils/date.js';
 import { EventCard } from './event-card.js';
@@ -7,7 +10,7 @@ import { Toast } from '../components/toast.js';
 
 export class MonthView {
   constructor(container, {
-    date = new Date(),
+    date = businessNow(),
     events = [],
     tasks = [],
     defaultCalendarId = null,
@@ -36,8 +39,8 @@ export class MonthView {
       style: { display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }
     });
 
-    const todayWeekdayIdx = (new Date().getDay() + 6) % 7; // 0 = Thứ Hai ... 6 = Chủ Nhật
-    const isCurrentMonthYear = (new Date().getFullYear() === year && new Date().getMonth() === month);
+    const todayWeekdayIdx = (businessNow().getDay() + 6) % 7; // 0 = Thứ Hai ... 6 = Chủ Nhật
+    const isCurrentMonthYear = (businessNow().getFullYear() === year && businessNow().getMonth() === month);
     const weekdayLabels = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
 
     const weekdaysHeader = createElement('div', {
@@ -149,7 +152,7 @@ export class MonthView {
               const data = JSON.parse(raw);
               if (!data || !data.id) return;
               const targetDateStr = formatDate(cell.date, 'YYYY-MM-DD');
-              const todayStr = formatDate(new Date(), 'YYYY-MM-DD');
+              const todayStr = formatDate(businessNow(), 'YYYY-MM-DD');
 
               if (data.is_task) {
                 await api.put(`/tasks/${data.id}`, {
@@ -165,6 +168,7 @@ export class MonthView {
                 newS.setHours(origS.getHours() || 9, origS.getMinutes() || 0, 0, 0);
                 const newE = new Date(newS.getTime() + dur);
                 await api.put(`/events/${data.id}`, {
+              ...recurrenceContext(data),
                   start_at: toLocalISOString(newS),
                   end_at: toLocalISOString(newE)
                 });
@@ -230,8 +234,8 @@ export class MonthView {
           }
         });
 
-        const dayTasks = this.tasks.filter(t => isSameDay(t.start_at, cell.date));
-        const dayEvents = this.events.filter(e => isSameDay(e.start_at, cell.date));
+        const dayTasks = this.tasks.filter(t => overlapsDay(t, cell.date));
+        const dayEvents = this.events.filter(e => overlapsDay(e, cell.date));
         const allItems = [...dayTasks, ...dayEvents];
 
         allItems.forEach(item => {
@@ -243,6 +247,7 @@ export class MonthView {
             ev.dataTransfer.setData('text/plain', JSON.stringify({
               id: item.id,
               is_task: !!item.is_task,
+              ...recurrenceContext(item),
               start_at: item.start_at,
               end_at: item.end_at,
               title: item.title

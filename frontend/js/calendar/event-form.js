@@ -1,9 +1,11 @@
+import { businessNow } from '../utils/date.js';
 import { createElement } from '../utils/dom.js';
 import { Modal } from '../components/modal.js';
 import { Toast } from '../components/toast.js';
 import { api } from '../api.js';
 import { store } from '../store.js';
 import { formatDate } from '../utils/date.js';
+import { recurrenceContext, eventDeleteUrl } from './rrule.js';
 
 const PRESET_COLORS = [
   '#4F46E5', '#2563EB', '#0EA5E9', '#10B981',
@@ -67,7 +69,7 @@ export class EventForm {
     // Mặc định KHÔNG để thời gian (để nằm ở cột Cần làm & kéo vào lịch),
     // trừ khi đang sửa mục đã có due_date hoặc chọn trực tiếp từ ô trên lịch
     let scheduleEnabled = false;
-    let initialDateStr = formatDate(new Date(), 'YYYY-MM-DD');
+    let initialDateStr = formatDate(businessNow(), 'YYYY-MM-DD');
     let initialStartTime = '09:00';
     let initialEndTime = '10:00';
     let isAllDay = false;
@@ -109,6 +111,7 @@ export class EventForm {
 
     // 1. Tiêu đề
     const titleInput = createElement('input', {
+      'aria-label': 'Tiêu đề Công việc / Sự kiện',
       type: 'text',
       className: 'input',
       style: { fontSize: '15px', fontWeight: '700', padding: '11px 14px' },
@@ -141,6 +144,7 @@ export class EventForm {
     });
 
     const autoCheck = createElement('input', {
+      'aria-label': 'Sự kiện (Tự động hoàn thành)',
       type: 'checkbox',
       checked: isAutoComplete,
       style: { width: '17px', height: '17px', marginTop: '2px', accentColor: 'var(--color-primary)', cursor: 'pointer' }
@@ -177,6 +181,10 @@ export class EventForm {
     updateAutoUI();
 
     const importantCard = createElement('div', {
+      role: 'checkbox', tabindex: '0', 'aria-label': 'Quan trọng',
+      onkeydown: e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); importantCard.click(); }
+      },
       style: {
         padding: '11px 13px',
         borderRadius: '12px',
@@ -192,6 +200,7 @@ export class EventForm {
 
     const starIcon = createElement('span', { style: { fontSize: '22px', lineHeight: '1' } });
     const updateImportantUI = () => {
+      importantCard.setAttribute('aria-checked', String(isImportant));
       if (isImportant) {
         starIcon.textContent = '⭐';
         importantCard.style.borderColor = '#F59E0B';
@@ -217,7 +226,7 @@ export class EventForm {
     modeRow.appendChild(importantCard);
 
     // 3. Danh sách lưu trữ & Màu sắc thẻ
-    const listSelect = createElement('select', { className: 'input' });
+    const listSelect = createElement('select', { className: 'input', 'aria-label': 'Thuộc danh sách' });
     const targetListId = existingItem?.list_id || defaultListId || (taskLists[0]?.id ?? '');
     if (taskLists.length === 0) {
       listSelect.appendChild(createElement('option', { value: '', textContent: '📝 Công việc cá nhân (Mặc định)' }));
@@ -262,6 +271,7 @@ export class EventForm {
       const swatch = createElement('button', {
         type: 'button',
         className: 'unified-color-swatch',
+        'aria-label': `Chọn màu ${c}`,
         dataset: { color: c },
         style: {
           width: '24px',
@@ -341,6 +351,7 @@ export class EventForm {
     });
 
     const dateInput = createElement('input', {
+      'aria-label': 'Ngày thực hiện',
       type: 'date',
       className: 'input',
       value: initialDateStr
@@ -351,14 +362,14 @@ export class EventForm {
         type: 'button',
         className: 'btn btn-secondary btn-xs',
         textContent: '☀️ Hôm nay',
-        onclick: () => { dateInput.value = formatDate(new Date(), 'YYYY-MM-DD'); }
+        onclick: () => { dateInput.value = formatDate(businessNow(), 'YYYY-MM-DD'); }
       }),
       createElement('button', {
         type: 'button',
         className: 'btn btn-secondary btn-xs',
         textContent: '🌤️ Ngày mai',
         onclick: () => {
-          const d = new Date();
+          const d = businessNow();
           d.setDate(d.getDate() + 1);
           dateInput.value = formatDate(d, 'YYYY-MM-DD');
         }
@@ -368,7 +379,7 @@ export class EventForm {
         className: 'btn btn-secondary btn-xs',
         textContent: '📅 Thứ Hai tới',
         onclick: () => {
-          const d = new Date();
+          const d = businessNow();
           const day = d.getDay();
           const diff = (8 - day) % 7 || 7;
           d.setDate(d.getDate() + diff);
@@ -378,11 +389,13 @@ export class EventForm {
     ]);
 
     const startTimeInput = createElement('input', {
+      'aria-label': 'Giờ bắt đầu',
       type: 'time',
       className: 'input',
       value: initialStartTime
     });
     const endTimeInput = createElement('input', {
+      'aria-label': 'Giờ kết thúc',
       type: 'time',
       className: 'input',
       value: initialEndTime
@@ -417,7 +430,7 @@ export class EventForm {
 
     // Nhắc nhở & Lặp lại
     const defaultRemind = existingItem?.reminder_minutes ?? store.get('user')?.notify_minutes_before ?? 15;
-    const reminderSelect = createElement('select', { className: 'input' }, [
+    const reminderSelect = createElement('select', { className: 'input', 'aria-label': 'Thông báo nhắc trước' }, [
       { val: '0', label: 'Đúng giờ diễn ra (0 phút)' },
       { val: '5', label: 'Trước 5 phút' },
       { val: '10', label: 'Trước 10 phút' },
@@ -430,7 +443,7 @@ export class EventForm {
       return opt;
     }));
 
-    const rruleSelect = createElement('select', { className: 'input' }, [
+    const rruleSelect = createElement('select', { className: 'input', 'aria-label': 'Chu kỳ lặp lại' }, [
       { val: '', label: 'Không lặp lại' },
       { val: 'FREQ=DAILY', label: 'Hàng ngày' },
       { val: 'FREQ=WEEKLY', label: 'Hàng tuần' },
@@ -496,6 +509,7 @@ export class EventForm {
 
     // 5. Địa điểm & Ghi chú
     const locInput = createElement('input', {
+      'aria-label': 'Địa điểm hoặc đường dẫn họp',
       type: 'text',
       className: 'input',
       value: existingItem?.location || '',
@@ -503,6 +517,7 @@ export class EventForm {
     });
 
     const descInput = createElement('textarea', {
+      'aria-label': 'Ghi chú chi tiết',
       className: 'input',
       rows: 2,
       placeholder: '📝 Ghi chú chi tiết, nội dung chuẩn bị hoặc các bước cần lưu ý...'
@@ -556,7 +571,7 @@ export class EventForm {
         }
       }
 
-      const todayStr = formatDate(new Date(), 'YYYY-MM-DD');
+      const todayStr = formatDate(businessNow(), 'YYYY-MM-DD');
       const taskPayload = {
         title,
         note: descInput.value.trim() || null,
@@ -579,13 +594,22 @@ export class EventForm {
       try {
         if (isEdit) {
           if (isLegacyEvent) {
-            // Nếu là sự kiện cũ từ bảng events, chuyển đổi sang Task thống nhất và xóa bản ghi cũ
-            const created = await api.post('/tasks', taskPayload);
-            await api.delete(`/events/${existingItem.id}`).catch(() => {});
-            Toast.success('Đã cập nhật & đồng bộ mục lịch biểu!');
+            // Preserve the event identity and recurring occurrence; never create a task twin.
+            if (!dueDateVal) throw new Error('Sự kiện phải có ngày diễn ra.');
+            const start = `${dueDateVal}T${isAllDay ? '00:00:00' : startTimeVal}`;
+            const endDate = new Date(`${dueDateVal}T12:00:00`);
+            const oldDays = Math.max(0, Math.round((new Date(String(existingItem.end_at).slice(0, 10) + 'T12:00:00') - new Date(String(existingItem.start_at).slice(0, 10) + 'T12:00:00')) / 86400000));
+            endDate.setDate(endDate.getDate() + (isAllDay ? Math.max(1, oldDays) : oldDays));
+            const updated = await api.put(`/events/${existingItem.id}`, {
+              title, description: taskPayload.note, location: taskPayload.location,
+              start_at: start, end_at: `${formatDate(endDate)}T${isAllDay ? '00:00:00' : endTimeVal}`,
+              is_all_day: isAllDay, color: selectedColor, recurrence_rule: taskPayload.recurrence_rule,
+              ...recurrenceContext(existingItem)
+            });
+            Toast.success('Đã cập nhật sự kiện!');
             modalRef.close();
             window.dispatchEvent(new CustomEvent('planify:data-changed'));
-            if (onUpdated) onUpdated(created);
+            if (onUpdated) onUpdated(updated);
           } else {
             const updated = await api.put(`/tasks/${existingItem.id}`, taskPayload);
             Toast.success('Đã lưu thay đổi!');
@@ -618,7 +642,7 @@ export class EventForm {
           if (!confirm(`Bạn có chắc chắn muốn xóa "${existingItem.title}" không?`)) return;
           try {
             if (isLegacyEvent) {
-              await api.delete(`/events/${existingItem.id}`);
+              await api.delete(eventDeleteUrl(existingItem));
             } else {
               await api.delete(`/tasks/${existingItem.id}`);
             }

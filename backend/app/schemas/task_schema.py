@@ -1,15 +1,16 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime, date, time
+from app.schemas.validation import InputValidation
 
 # --- Task Step Schemas ---
 class TaskStepBase(BaseModel):
     title: str = Field(..., max_length=500)
 
-class TaskStepCreate(TaskStepBase):
+class TaskStepCreate(TaskStepBase, InputValidation):
     position: Optional[int] = 0
 
-class TaskStepUpdate(BaseModel):
+class TaskStepUpdate(InputValidation):
     title: Optional[str] = Field(None, max_length=500)
     is_completed: Optional[bool] = None
     position: Optional[int] = None
@@ -30,10 +31,10 @@ class TaskListBase(BaseModel):
     color: str = Field(default="#4285F4", max_length=7)
     icon: Optional[str] = Field(None, max_length=10)
 
-class TaskListCreate(TaskListBase):
+class TaskListCreate(TaskListBase, InputValidation):
     position: Optional[int] = 0
 
-class TaskListUpdate(BaseModel):
+class TaskListUpdate(InputValidation):
     name: Optional[str] = Field(None, max_length=100)
     color: Optional[str] = Field(None, max_length=7)
     icon: Optional[str] = Field(None, max_length=10)
@@ -72,13 +73,13 @@ class TaskBase(BaseModel):
     reminder_minutes: Optional[int] = 15
     recurrence_rule: Optional[str] = Field(None, max_length=500)
 
-class TaskCreate(TaskBase):
+class TaskCreate(TaskBase, InputValidation):
     steps: Optional[List[TaskStepCreate]] = None
 
-class TaskUpdate(BaseModel):
+class TaskUpdate(InputValidation):
     title: Optional[str] = Field(None, max_length=500)
     note: Optional[str] = None
-    location: Optional[str] = None
+    location: Optional[str] = Field(None, max_length=300)
     list_id: Optional[int] = None
     is_completed: Optional[bool] = None
     is_important: Optional[bool] = None

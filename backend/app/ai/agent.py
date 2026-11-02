@@ -11,6 +11,8 @@ from app.core.logger import logger
 from app.ai.tools import TOOLS
 from app.ai.tool_executor import ToolExecutor
 from app.ai.prompts import SYSTEM_PROMPT
+from app.ai.confirmation import pending_actions
+from app.core.time import local_now, business_today
 
 
 class PlanifyAgent:
@@ -48,7 +50,8 @@ class PlanifyAgent:
         user_id: int,
         messages: List[Dict[str, Any]],
         db: AsyncSession,
-        user_timezone: str = "Asia/Ho_Chi_Minh"
+        user_timezone: str = "Asia/Ho_Chi_Minh",
+        conversation_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Execute an agent turn with multi-step tool calling loop and intelligent local NLP fallback.
@@ -61,6 +64,7 @@ class PlanifyAgent:
 
         # 1. Strict Security Guardrail (Requirement 5: manipulate everything EXCEPT security)
         if self._is_security_request(last_user_msg):
+            pending_actions.take((user_id, conversation_id))
             return {
                 "content": (
                     "🔒 **Giới hạn Bảo mật**: Vì sự an toàn cho tài khoản của bạn, Trợ lý AI được thiết kế "
@@ -73,6 +77,7 @@ class PlanifyAgent:
 
         # 2. Out-of-scope guardrail check
         if self._is_out_of_scope(last_user_msg):
+            pending_actions.take((user_id, conversation_id))
             return {
                 "content": (
                     "Xin lỗi bạn! 🙏 Tôi là **Planify AI** — chuyên gia hỗ trợ quản lý lịch trình, công việc cần làm (To Do) "
@@ -83,17 +88,42 @@ class PlanifyAgent:
                 "tool_results": None
             }
 
-        executor = ToolExecutor(user_id=user_id, db=db)
+        executor = ToolExecutor(user_id=user_id, db=db, conversation_id=conversation_id)
+        normalized = last_user_msg.strip().lower().rstrip('.!')
+        pending = pending_actions.take(executor.context_key)
+        if normalized in {"xác nhận xóa", "confirm delete"}:
+            if not pending:
+                return {"content": "Không có thao tác xóa đang chờ hoặc xác nhận đã hết hạn. Vui lòng yêu cầu lại.", "tool_calls": None, "tool_results": None}
+            name, arguments = pending
+            executor.confirmed_action = (name, arguments)
+            result = await executor.execute(name, arguments)
+            return self._execution_reply(executor, "Đã thực hiện thao tác xóa." if result.get("success") else result.get("error"))
+        if normalized in {"hủy", "huỷ", "cancel", "không", "khong"}:
+            return {"content": "Đã hủy. Không thực hiện thao tác xóa.", "tool_calls": None, "tool_results": None}
+        if re.search(r"(?:không|khong|đừng|dung|do not|don't|never)\s+(?:.*?\s)?(?:xóa|xoa|delete|remove|tạo|thêm|create|sửa|update|hoàn thành|complete|dời|reschedule|đánh dấu)", normalized):
+            return {"content": "Tôi sẽ không thực hiện thao tác đó.", "tool_calls": None, "tool_results": None}
 
         # 3. If external LLM API Key is configured, use multi-turn LLM + Tools loop
         if self.api_key:
             try:
                 return await self._run_llm_agent_loop(executor, messages, user_timezone, last_user_msg)
             except Exception as e:
-                logger.warning(f"LLM API failed ({e}), falling back to Built-in Smart NLP Agent Engine.")
+                logger.warning("LLM request failed (%s).", type(e).__name__)
+                if executor.executions:
+                    return self._execution_reply(executor, "Provider bị gián đoạn sau khi xử lý công cụ. Kết quả thực tế được ghi bên dưới; không chạy lại yêu cầu.")
 
         # 4. Built-in Smart Hybrid NLP Agent Engine (works 100% offline/without external API key)
-        return await self._run_local_smart_agent(executor, last_user_msg)
+        result = await self._run_local_smart_agent(executor, last_user_msg)
+        failures = [r for _, _, r in executor.executions if not r.get("success")]
+        if failures:
+            result["content"] = failures[0].get("error", "Không thực hiện được yêu cầu.")
+        return result
+
+    @staticmethod
+    def _execution_reply(executor, content):
+        summaries = [{"tool": n, "name": n, "arguments": a, "result": r} for n, a, r in executor.executions]
+        details = "\n".join(json.dumps(r, ensure_ascii=False, default=str) for _, _, r in executor.executions)
+        return {"content": f"{content}\n{details}", "tool_calls": summaries or None, "tool_results": None}
 
     async def _run_llm_agent_loop(
         self,
@@ -105,7 +135,7 @@ class PlanifyAgent:
         system_msg = {
             "role": "system",
             "content": SYSTEM_PROMPT.format(
-                current_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                current_time=local_now().strftime("%Y-%m-%d %H:%M:%S"),
                 user_timezone=user_timezone
             )
         }
@@ -139,7 +169,11 @@ class PlanifyAgent:
                 except Exception:
                     tool_args = {}
 
+                if any(n == tool_name and a == tool_args for n, a, _ in executor.executions) and not tool_name.startswith(("list_", "get_", "search_", "find_", "check_")):
+                    return self._execution_reply(executor, "Đã xử lý thao tác này trong lượt chat; không thực hiện lặp.")
                 result = await executor.execute(tool_name, tool_args)
+                if result.get("requires_confirmation") or not result.get("success"):
+                    return self._execution_reply(executor, result.get("error", "Cần làm rõ yêu cầu."))
                 executed_tools_summary.append({
                     "tool": tool_name,
                     "name": tool_name,
@@ -212,7 +246,7 @@ class PlanifyAgent:
 
     def _extract_date_from_text(self, text: str) -> Optional[date]:
         lower = text.lower()
-        today = date.today()
+        today = business_today()
 
         # ISO date YYYY-MM-DD
         m_iso = re.search(r"(\d{4}-\d{2}-\d{2})", text)
@@ -318,7 +352,9 @@ class PlanifyAgent:
 
     async def _run_local_smart_agent(self, executor: ToolExecutor, user_text: str) -> Dict[str, Any]:
         text = (user_text or "").strip()
-        lower = text.lower()
+        # Quoted task/event names are data, not commands (e.g. create "Hoàn thành báo cáo").
+        lower = re.sub(r"['\"“”‘’][^'\"“”‘’]*['\"“”‘’]", "", text.lower())
+        create_requested = bool(re.match(r"^(?:(?:hãy|giúp tôi|vui lòng)\s+)*(?:tạo|thêm|create|add|nhắc tôi|lên lịch|đặt lịch)\b", lower))
         executed_tools = []
         tool_results = []
 
@@ -350,7 +386,7 @@ class PlanifyAgent:
 
         # --- CASE 2: Find free slots / Tìm khung giờ trống ---
         if any(k in lower for k in ["giờ trống", "rảnh lúc nào", "khung giờ trống", "free slot", "thời gian trống"]):
-            target_d = self._extract_date_from_text(text) or date.today()
+            target_d = self._extract_date_from_text(text) or business_today()
             res = await call_tool("find_free_slots", {"date": str(target_d), "duration_minutes": 60})
             data = res.get("data") or {}
             slots = data.get("free_slots") or []
@@ -376,7 +412,7 @@ class PlanifyAgent:
             return {"content": content, "tool_calls": executed_tools, "tool_results": tool_results}
 
         # --- CASE 4: Batch task actions (Overdue / Complete all My Day / Clear completed) ---
-        if "quá hạn" in lower and any(k in lower for k in ["dời", "chuyển", "hôm nay", "ngày mai"]):
+        if not create_requested and "quá hạn" in lower and any(k in lower for k in ["dời", "chuyển", "reschedule"]):
             action = "reschedule_overdue_to_tomorrow" if "ngày mai" in lower else "reschedule_overdue_to_today"
             res = await call_tool("batch_update_tasks", {"action": action})
             cnt = (res.get("data") or {}).get("affected_count", 0)
@@ -418,7 +454,7 @@ class PlanifyAgent:
             }
 
         # --- CASE 6: Complete / Delete Task or Event ---
-        if any(k in lower for k in ["hoàn thành", "đánh dấu xong", "xong việc", "complete task"]):
+        if not create_requested and any(k in lower for k in ["hoàn thành", "đánh dấu xong", "xong việc", "complete task"]):
             title_q = self._extract_quoted_or_title(text, r"^.*?(?:đánh dấu\s+)?(?:hoàn thành|xong)\s+(?:công việc|việc|task)?\s*")
             res = await call_tool("complete_task", {"title_query": title_q, "is_completed": True})
             if res.get("success"):
@@ -428,7 +464,7 @@ class PlanifyAgent:
                 content = f"⚠️ {res.get('error', 'Không tìm thấy công việc cần đánh dấu hoàn thành.')}"
             return {"content": content, "tool_calls": executed_tools, "tool_results": tool_results}
 
-        if any(k in lower for k in ["xóa sự kiện", "hủy lịch", "hủy cuộc họp", "delete event"]):
+        if not create_requested and any(k in lower for k in ["xóa sự kiện", "hủy lịch", "hủy cuộc họp", "delete event"]):
             title_q = self._extract_quoted_or_title(text, r"^.*?(?:xóa|hủy)\s+(?:sự kiện|lịch|cuộc họp|event)\s*")
             res = await call_tool("delete_event", {"title_query": title_q})
             if res.get("success"):
@@ -438,7 +474,7 @@ class PlanifyAgent:
                 content = f"⚠️ {res.get('error', 'Không tìm thấy sự kiện cần xóa.')}"
             return {"content": content, "tool_calls": executed_tools, "tool_results": tool_results}
 
-        if any(k in lower for k in ["xóa việc", "xóa công việc", "xóa task", "delete task"]):
+        if not create_requested and any(k in lower for k in ["xóa việc", "xóa công việc", "xóa task", "delete task"]):
             title_q = self._extract_quoted_or_title(text, r"^.*?(?:xóa|bỏ)\s+(?:công việc|việc cần làm|việc|task)\s*")
             res = await call_tool("delete_task", {"title_query": title_q})
             if res.get("success"):
@@ -447,6 +483,10 @@ class PlanifyAgent:
             else:
                 content = f"⚠️ {res.get('error', 'Không tìm thấy công việc cần xóa.')}"
             return {"content": content, "tool_calls": executed_tools, "tool_results": tool_results}
+
+        # Unsupported local edit/delete requests must never fall through to CREATE.
+        if not create_requested and re.search(r"\b(?:xóa|xoá|xoa|delete|remove|sửa|đổi|dời|update|edit|move|reschedule|hoàn thành|complete)\b", lower):
+            return {"content": "Tôi chưa xác định rõ thao tác và mục cần thay đổi. Không có dữ liệu nào được sửa. Vui lòng nêu ID, thao tác và thời gian cụ thể hoặc dùng form chỉnh sửa.", "tool_calls": executed_tools or None, "tool_results": tool_results or None}
 
         # --- CASE 7: Create Task (To Do) ---
         is_task_intent = any(k in lower for k in [
@@ -463,7 +503,7 @@ class PlanifyAgent:
                 r"^.*?(?:hãy\s+)?(?:tạo|thêm)\s+(?:cho tôi\s+)?(?:một\s+)?(?:công việc|việc cần làm|việc|task)\s*(?:mới)?\s*"
             )
             due_d = self._extract_date_from_text(text)
-            s_dt, e_dt = self._extract_datetimes_or_times(text, due_d or date.today())
+            s_dt, e_dt = self._extract_datetimes_or_times(text, due_d or business_today())
             rrule = self._extract_rrule(text)
             is_imp = any(k in lower for k in ["quan trọng", "important", "ưu tiên", "đánh dấu sao"])
             is_my_day = any(k in lower for k in ["my day", "ngày của tôi", "hôm nay"])
@@ -510,11 +550,12 @@ class PlanifyAgent:
                 text,
                 r"^.*?(?:hãy\s+)?(?:tạo|thêm|lên lịch|đặt lịch)\s+(?:cho tôi\s+)?(?:một\s+)?(?:sự kiện|cuộc họp|lịch hẹn|lịch)?\s*"
             )
-            target_d = self._extract_date_from_text(text) or date.today()
+            target_d = self._extract_date_from_text(text)
+            if not target_d:
+                return {"content": "Bạn muốn tạo sự kiện vào ngày nào và lúc mấy giờ? Chưa có dữ liệu nào được tạo.", "tool_calls": None, "tool_results": None}
             s_dt, e_dt = self._extract_datetimes_or_times(text, target_d)
             if not s_dt:
-                s_dt = datetime.combine(target_d, time(9, 0))
-                e_dt = datetime.combine(target_d, time(10, 0))
+                return {"content": "Bạn muốn bắt đầu sự kiện lúc mấy giờ? Chưa có dữ liệu nào được tạo.", "tool_calls": None, "tool_results": None}
 
             rrule = self._extract_rrule(text)
             ev_args: Dict[str, Any] = {
@@ -588,7 +629,7 @@ class PlanifyAgent:
             }
 
         # --- DEFAULT: Schedule Summary for Today or Requested Date ---
-        target_d = self._extract_date_from_text(text) or date.today()
+        target_d = self._extract_date_from_text(text) or business_today()
         res = await call_tool("get_schedule_summary", {"date": str(target_d)})
         d = res.get("data") or {}
         evs = d.get("events") or []

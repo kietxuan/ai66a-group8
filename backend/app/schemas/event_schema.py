@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
+from app.schemas.validation import InputValidation
 
 class EventReminderBase(BaseModel):
     minutes_before: int = Field(default=15, ge=0)
@@ -28,10 +29,10 @@ class EventBase(BaseModel):
     recurrence_rule: Optional[str] = Field(None, max_length=500)
     recurrence_end: Optional[datetime] = None
 
-class EventCreate(EventBase):
+class EventCreate(EventBase, InputValidation):
     reminders: Optional[List[EventReminderCreate]] = None
 
-class EventUpdate(BaseModel):
+class EventUpdate(InputValidation):
     calendar_id: Optional[int] = None
     title: Optional[str] = Field(None, max_length=200)
     description: Optional[str] = None

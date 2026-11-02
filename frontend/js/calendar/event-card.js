@@ -1,3 +1,4 @@
+import { recurrenceContext, eventDeleteUrl } from './rrule.js';
 import { createElement } from '../utils/dom.js';
 import { formatDate, toLocalISOString } from '../utils/date.js';
 import { EventForm } from './event-form.js';
@@ -185,6 +186,7 @@ export class EventCard {
               s.setDate(s.getDate() + 1);
               e.setDate(e.getDate() + 1);
               await api.put(`/events/${event.id}`, {
+                ...recurrenceContext(event),
                 start_at: toLocalISOString(s),
                 end_at: toLocalISOString(e)
               });
@@ -199,8 +201,8 @@ export class EventCard {
             label: 'Xóa sự kiện',
             danger: true,
             onClick: async () => {
-              const targetId = event.parent_event_id || event.id;
-              await api.delete(`/events/${targetId}`);
+              if (!confirm(`Xóa sự kiện "${event.title}"?`)) return;
+              await api.delete(eventDeleteUrl(event));
               Toast.success('Đã xóa sự kiện');
               window.dispatchEvent(new CustomEvent('planify:data-changed'));
               if (onUpdate) onUpdate();

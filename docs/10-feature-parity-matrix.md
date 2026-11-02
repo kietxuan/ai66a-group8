@@ -1,5 +1,7 @@
 # 📊 Feature Parity & Usability Benchmark Matrix: Planify vs. Google Calendar, Outlook Calendar & Microsoft To Do
 
+> Lịch sử / chưa được xác minh lại: các điểm parity và nhãn production dưới đây được nhập cùng source, không phải kết quả QA của nhánh sửa lỗi. Các probe cũ có assertion không chứng minh UI thật đã được archive/skip. Chỉ dùng [báo cáo kiểm chứng mới](BUGFIX_VERIFICATION_2026-11-03.md) cho phạm vi đã test; không suy ra sync Google/Outlook, Pomodoro đang bật hoặc an toàn 100%.
+
 > **Document Identifier:** `docs/10-feature-parity-matrix.md`  
 > **Version:** 3.1.0 — Production Parity Benchmark  
 > **Target Systems:** Planify (Production Stack) vs. Google Calendar (Web), Microsoft Outlook Calendar (Web/M365), Microsoft To Do (Web)  

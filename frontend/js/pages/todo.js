@@ -1,3 +1,4 @@
+import { businessNow } from '../utils/date.js';
 import { createElement } from '../utils/dom.js';
 import { api } from '../api.js';
 import { store } from '../store.js';
@@ -91,13 +92,13 @@ export const todoPage = {
           className: 'todo-date-subtitle',
           id: 'todo-header-subtitle',
           textContent: String(this.activeListId) === 'board'
-            ? `${formatVietnameseDate(new Date())} • Sắp xếp tự động theo thời gian`
+            ? `${formatVietnameseDate(businessNow())} • Sắp xếp tự động theo thời gian`
             : 'Chế độ Danh sách • Sắp xếp mặc định theo thời gian'
         })
       ])
     ]);
 
-    const headerActions = createElement('div', { className: 'flex items-center gap-xs flex-wrap' });
+    const headerActions = createElement('div', { className: 'todo-header-actions flex items-center gap-xs flex-wrap' });
 
     // Search Input
     const searchInput = createElement('input', {
@@ -223,8 +224,11 @@ export const todoPage = {
   },
 
   async fetchTasks({ preserveDetail = false } = {}) {
+    const generation = this.requestGeneration = (this.requestGeneration || 0) + 1;
     try {
-      this.tasks = await api.get('/tasks') || [];
+      const tasks = await api.get('/tasks') || [];
+      if (generation !== this.requestGeneration || !this.container) return;
+      this.tasks = tasks;
       // Update header title if custom list was restored from localStorage
       if (typeof this.activeListId === 'number') {
         const lists = store.get('taskLists') || [];
@@ -300,7 +304,7 @@ export const todoPage = {
     if (titleEl) titleEl.textContent = name;
     if (subEl) {
       subEl.textContent = String(id) === 'board'
-        ? `${formatVietnameseDate(new Date())} • Sắp xếp tự động theo thời gian`
+        ? `${formatVietnameseDate(businessNow())} • Sắp xếp tự động theo thời gian`
         : 'Chế độ Danh sách • Sắp xếp mặc định theo thời gian';
     }
 
@@ -435,6 +439,7 @@ export const todoPage = {
   },
 
   destroy() {
+    this.requestGeneration = (this.requestGeneration || 0) + 1;
     if (this.keyHandler) {
       document.removeEventListener('keydown', this.keyHandler);
     }

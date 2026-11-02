@@ -1,0 +1,35 @@
+name: Regression
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Frontend unit regressions and syntax
+        run: |
+          node --test frontend/tests/*.test.mjs
+          node --experimental-vm-modules --test --test-isolation=none tests/frontend/auth-ui.test.mjs
+          find frontend/js -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Build disposable test stack
+        run: docker compose -p planify-ci -f docker-compose.test.yml up -d --build --wait
+      - name: Backend and migration regressions (mock provider/SMTP)
+        run: docker compose -p planify-ci -f docker-compose.test.yml exec -T backend python -m unittest discover -s tests/regression -v
+      - name: Dependency consistency
+        run: docker compose -p planify-ci -f docker-compose.test.yml exec -T backend python -m pip check
+      - name: Test logs on failure
+        if: failure()
+        run: docker compose -p planify-ci -f docker-compose.test.yml logs --tail 80 backend
+      - name: Remove disposable test stack
+        if: always()
+        run: docker compose -p planify-ci -f docker-compose.test.yml down

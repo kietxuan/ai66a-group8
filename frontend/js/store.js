@@ -1,3 +1,4 @@
+import { businessNow, parseLocalDate } from './utils/date.js';
 /**
  * Central State Store & EventBus with Automatic LocalStorage Persistence
  */
@@ -6,11 +7,11 @@ function loadSavedDate() {
   try {
     const raw = localStorage.getItem('planify_calendar_date');
     if (raw) {
-      const parsed = new Date(raw);
+      const parsed = parseLocalDate(raw);
       if (!isNaN(parsed.getTime())) return parsed;
     }
   } catch (_) {}
-  return new Date();
+  return businessNow();
 }
 
 function loadSavedView() {
@@ -57,6 +58,15 @@ class Store {
 
   set(key, value) {
     const oldValue = this.state[key];
+    if (key === 'user' && oldValue?.id !== value?.id) {
+      for (const name of ['calendars', 'events', 'taskLists', 'tasks']) this.state[name] = [];
+      this.state.selectedTask = null;
+      this.state.activeTodoList = 'board';
+      this.set('isAiPanelOpen', false);
+      for (const name of ['planify_todo_active_list', 'planify_notify_enabled', 'planify_notify_minutes_before']) localStorage.removeItem(name);
+      for (const name of ['planify_notified_reminders', 'planify_ai_pending_prompt']) sessionStorage.removeItem(name);
+      this.emit('session-reset');
+    }
     this.state[key] = value;
 
     // Persist key state selections across page refreshes (F5)
@@ -64,7 +74,7 @@ class Store {
       if (key === 'calendarView' && value) {
         localStorage.setItem('planify_calendar_view', String(value));
       } else if (key === 'selectedDate' && value instanceof Date && !isNaN(value.getTime())) {
-        localStorage.setItem('planify_calendar_date', value.toISOString());
+        localStorage.setItem('planify_calendar_date', `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,'0')}-${String(value.getDate()).padStart(2,'0')}`);
       } else if (key === 'activeTodoList' && value !== undefined) {
         localStorage.setItem('planify_todo_active_list', String(value));
       } else if (key === 'theme' && (value === 'light' || value === 'dark')) {

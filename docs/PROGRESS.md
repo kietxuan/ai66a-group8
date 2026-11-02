@@ -1,5 +1,17 @@
 # PROJECT PROGRESS
 
+## Sửa lỗi audit và regression — 2026-11-03
+
+- Nhánh codex/fix-audit-regressions; chỉ bugfix chức năng sẵn có, không thêm feature từ bảng đề xuất. Đối chiếu L/S, modules, tests và giới hạn ở [BUGFIX_VERIFICATION_2026-11-03](BUGFIX_VERIFICATION_2026-11-03.md).
+- Sửa isolation/foreign parent, OTP/admin/JWT, AI confirmation/ambiguity/fallback, task/event recurrence/anchors, validation/all-day/timezone, free slots/auto-plan, Dashboard/export, cache/stale response và toolbar mobile.
+- PostgreSQL/Redis test riêng, provider/SMTP mock; 35 backend tests PASS (gồm migration và property test 250 tập khoảng bận), 38 frontend tests PASS (21 core chạy cả TZ America/Los_Angeles + 17 auth/settings/agenda). Fresh Docker build + pip check + Python/JS syntax và diff check PASS.
+- UI QA A → logout → B không còn cache A; Todo → Calendar → complete → Todo đồng bộ; mobile 390/320 không cắt nút sau sửa flex-wrap. Dùng computer-use kiểm tra DOM và ảnh, không giả nhận chỉ từ scrollWidth.
+- Không sửa .env hoặc app/DB web-template đang mount từ todo-list-pro; không gọi Groq/gửi email thật, không tự thêm sync Google/Outlook/Pomodoro/priority/category/filter mới. Các probe/benchmark cũ được đánh dấu lịch sử, không tính là bằng chứng mới.
+- Chưa xác minh provider/SMTP/cloud/thiết bị thật; không cam kết 0 lỗi tuyệt đối. Trước áp dụng thật phải backup DB, dùng đúng source/mount và bổ sung SMTP_* độc lập admin nếu dùng OTP/email.
+
+- Tích hợp origin/main cedef4b để giữ Landing/auth trượt mới của nhóm, giải quyết bốn conflict thủ công. Sửa thêm retry sau OTP đã tiêu thụ, Settings stale render/local preference, logout sau đổi mật khẩu, mở đúng form từ Lịch biểu và callback refresh Event. UI sau tích hợp: Guide redirect, lưu profile, tải/đọc ICS+JSON, tuần → lịch biểu sửa → complete → Dashboard; workspace A/B không reload, mobile composer nhìn thấy. Không suy ra remote CI pass từ kiểm thử local.
+- Kiểm tra cuối phát hiện JWT secret mẫu trong .env riêng ai66a-group8. User đã duyệt đổi SECRET_KEY và push nhánh: sinh khóa ngẫu nhiên 48 bytes chỉ trong .env ignored, không in/commit và không chạm .env todo-list-pro. Settings.validate_security và Compose config PASS. Khi chạy bản mới cần đăng nhập lại; email SMTP thật chưa xác minh.
+- Tích hợp tiếp main 33ef7ef (ảnh/mô tả Landing do nhóm thêm trong lúc audit); giữ đủ ba ảnh. Browser QA trên nhánh tích hợp ở 320px xác nhận cả ba ảnh tải được, nằm trong viewport và trang không tràn ngang. Chỉnh alt ảnh Calendar thành lịch tuần đúng nội dung minh họa. Không tự phát triển thêm Landing trong nhánh bugfix.
 ## Mở rộng phần giới thiệu tính năng trên landing — 2026-11-03
 
 - Thay ba thẻ mô tả ngắn bằng ba mục Công việc, Lịch biểu, Trợ lý AI có mô tả và ví dụ thao tác cụ thể, dựa trên chức năng của frontend hiện tại. Giữ nội dung chỉ để giới thiệu, không gắn thao tác giả.

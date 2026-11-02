@@ -1,4 +1,14 @@
-import { toLocalISOString } from '../utils/date.js';
+import { toLocalISOString, businessWallTime } from '../utils/date.js';
+
+export function recurrenceContext(event) {
+  return (event.recurrence_rule || event.is_occurrence || event.parent_event_id || event.original_start)
+    ? { scope: 'this', original_start: event.original_start || event.start_at } : {};
+}
+
+export function eventDeleteUrl(event) {
+  const context = recurrenceContext(event);
+  return `/events/${event.id}${context.original_start ? `?scope=this&occurrence_date=${encodeURIComponent(context.original_start + (/(Z|[+-]\d{2}:\d{2})$/.test(context.original_start) ? '' : '+07:00'))}` : ''}`;
+}
 
 export class RRuleParser {
   static parse(rruleStr) {
@@ -21,6 +31,7 @@ export class RRuleParser {
       if (key === 'FREQ') rule.freq = val;
       else if (key === 'INTERVAL') rule.interval = parseInt(val, 10) || 1;
       else if (key === 'BYDAY') rule.byday = val.split(',').map(d => d.trim());
+      else if (key === 'BYMONTHDAY') rule.bymonthday = val.split(',').map(Number);
       else if (key === 'COUNT') rule.count = parseInt(val, 10);
       else if (key === 'UNTIL') {
         rule.until = this.parseUntilDate(val);
@@ -31,7 +42,7 @@ export class RRuleParser {
 
   static parseUntilDate(str) {
     if (!str) return null;
-    if (str.includes('-')) return new Date(str);
+    if (str.includes('-')) return new Date(businessWallTime(str));
     const y = parseInt(str.substring(0, 4), 10);
     const m = parseInt(str.substring(4, 6), 10) - 1;
     const d = parseInt(str.substring(6, 8), 10);
@@ -42,7 +53,9 @@ export class RRuleParser {
       mm = parseInt(timePart.substring(2, 4), 10) || 0;
       ss = parseInt(timePart.substring(4, 6), 10) || 0;
     }
-    return new Date(Date.UTC(y, m, d, hh, mm, ss));
+    if (!str.includes('T')) return new Date(y, m, d, 23, 59, 59);
+    const date = new Date(Date.UTC(y, m, d, hh, mm, ss));
+    return new Date(str.endsWith('Z') ? businessWallTime(date.toISOString()) : new Date(y, m, d, hh, mm, ss));
   }
 
   static DAY_INDEX_MAP = {
@@ -105,143 +118,54 @@ export class RRuleParser {
    * suppressing occurrences matching child exceptions.
    */
   static expand(event, rangeStart, rangeEnd, exceptions = []) {
-    if (!event.recurrence_rule) {
-      const s = new Date(event.start_at);
-      const e = new Date(event.end_at);
-      return (s <= rangeEnd && e >= rangeStart) ? [event] : [];
-    }
-
+    const origStart = new Date(event.start_at), origEnd = new Date(event.end_at);
+    const rStart = new Date(rangeStart), rEnd = new Date(rangeEnd);
+    if (!event.recurrence_rule) return origStart < rEnd && origEnd > rStart ? [event] : [];
     const rule = this.parse(event.recurrence_rule);
-    if (!rule) {
-      return [event];
-    }
-
-    const origStart = new Date(event.start_at);
-    const origEnd = new Date(event.end_at);
-    const durationMs = Math.max(0, origEnd.getTime() - origStart.getTime());
-
+    if (!rule || !['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'].includes(rule.freq)) return [];
+    const interval = Math.max(1, rule.interval || 1);
+    const duration = origEnd - origStart;
     let until = rule.until;
     if (event.recurrence_end) {
-      const recEnd = new Date(event.recurrence_end);
-      if (!until || recEnd < until) until = recEnd;
+      const end = new Date(event.recurrence_end);
+      until = !until || end < until ? end : until;
     }
-
+    const dayNumber = d => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000;
+    const originDay = dayNumber(origStart);
+    const monday = originDay - ((origStart.getDay() + 6) % 7);
+    const cur = new Date(origStart);
+    if (!rule.count && rStart - duration > origStart) {
+      const near = new Date(rStart - duration);
+      cur.setFullYear(near.getFullYear(), near.getMonth(), near.getDate());
+    }
+    let count = 0, examined = 0;
     const occurrences = [];
-    let countSoFar = 0;
-    const maxCount = rule.count || 500;
-    const interval = Math.max(1, rule.interval || 1);
-
-    const rStart = new Date(rangeStart);
-    const rEnd = new Date(rangeEnd);
-
-    if (rule.freq === 'DAILY') {
-      let cur = new Date(origStart);
-      let iter = 0;
-      while (iter < 1000 && countSoFar < maxCount) {
-        if (until && cur > until) break;
-        if (cur > rEnd) break;
-
-        const curEnd = new Date(cur.getTime() + durationMs);
-        if (curEnd >= rStart && cur <= rEnd) {
-          if (!this.isOccurrenceSuppressed(cur, exceptions)) {
-            occurrences.push(this.cloneOccurrence(event, cur, curEnd));
-          }
-        }
-
-        countSoFar++;
-        cur = new Date(cur.getTime() + interval * 86400000);
-        iter++;
+    while (cur <= rEnd && (!until || cur <= until)) {
+      if (++examined > 366000) throw new Error('Khoảng tính lịch lặp quá lớn.');
+      const days = dayNumber(cur) - originDay;
+      const months = (cur.getFullYear() - origStart.getFullYear()) * 12 + cur.getMonth() - origStart.getMonth();
+      const byDay = !rule.byday || rule.byday.some(code => {
+        const match = /^([+-]?\d+)?(SU|MO|TU|WE|TH|FR|SA)$/.exec(code);
+        if (!match || this.DAY_INDEX_MAP[match[2]] !== cur.getDay()) return false;
+        if (!match[1]) return true;
+        const ordinal = Number(match[1]);
+        const lastDay = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
+        return ordinal > 0 ? Math.ceil(cur.getDate() / 7) === ordinal : -Math.ceil((lastDay - cur.getDate() + 1) / 7) === ordinal;
+      });
+      const monthDay = rule.bymonthday ? rule.bymonthday.includes(cur.getDate()) : (rule.byday ? true : cur.getDate() === origStart.getDate());
+      let matches = false;
+      if (rule.freq === 'DAILY') matches = days % interval === 0 && byDay;
+      if (rule.freq === 'WEEKLY') matches = Math.floor((dayNumber(cur) - monday) / 7) % interval === 0 && (rule.byday ? byDay : cur.getDay() === origStart.getDay());
+      if (rule.freq === 'MONTHLY') matches = months % interval === 0 && monthDay && byDay;
+      if (rule.freq === 'YEARLY') matches = (cur.getFullYear() - origStart.getFullYear()) % interval === 0 && cur.getMonth() === origStart.getMonth() && monthDay && byDay;
+      if (matches && cur >= origStart) {
+        count++;
+        if (rule.count && count > rule.count) break;
+        const end = new Date(cur.getTime() + duration);
+        if (end > rStart && cur < rEnd && !this.isOccurrenceSuppressed(cur, exceptions)) occurrences.push(this.cloneOccurrence(event, cur, end));
       }
-    } else if (rule.freq === 'WEEKLY') {
-      const bydays = rule.byday && rule.byday.length > 0 
-        ? rule.byday.map(d => this.DAY_INDEX_MAP[d]).filter(d => d !== undefined)
-        : [origStart.getDay()];
-
-      let weekStart = new Date(origStart);
-      const dayOffset = (weekStart.getDay() === 0 ? -6 : 1 - weekStart.getDay());
-      weekStart.setDate(weekStart.getDate() + dayOffset);
-      weekStart.setHours(origStart.getHours(), origStart.getMinutes(), origStart.getSeconds(), origStart.getMilliseconds());
-
-      let weekIter = 0;
-      let stop = false;
-
-      while (weekIter < 200 && !stop && countSoFar < maxCount) {
-        for (const targetDay of bydays) {
-          const offsetFromMon = targetDay === 0 ? 6 : targetDay - 1;
-          const occDate = new Date(weekStart);
-          occDate.setDate(occDate.getDate() + offsetFromMon);
-
-          if (occDate < origStart) continue;
-
-          if (until && occDate > until) {
-            stop = true;
-            break;
-          }
-
-          if (occDate > rEnd) {
-            stop = true;
-            break;
-          }
-
-          const occEnd = new Date(occDate.getTime() + durationMs);
-          if (occEnd >= rStart && occDate <= rEnd) {
-            if (!this.isOccurrenceSuppressed(occDate, exceptions)) {
-              occurrences.push(this.cloneOccurrence(event, occDate, occEnd));
-            }
-          }
-
-          countSoFar++;
-          if (countSoFar >= maxCount) {
-            stop = true;
-            break;
-          }
-        }
-
-        weekStart.setDate(weekStart.getDate() + interval * 7);
-        weekIter++;
-      }
-    } else if (rule.freq === 'MONTHLY') {
-      let cur = new Date(origStart);
-      let iter = 0;
-      while (iter < 240 && countSoFar < maxCount) {
-        if (until && cur > until) break;
-        if (cur > rEnd) break;
-
-        const curEnd = new Date(cur.getTime() + durationMs);
-        if (curEnd >= rStart && cur <= rEnd) {
-          if (!this.isOccurrenceSuppressed(cur, exceptions)) {
-            occurrences.push(this.cloneOccurrence(event, cur, curEnd));
-          }
-        }
-
-        countSoFar++;
-        cur = new Date(cur);
-        cur.setMonth(cur.getMonth() + interval);
-        iter++;
-      }
-    } else if (rule.freq === 'YEARLY') {
-      let cur = new Date(origStart);
-      let iter = 0;
-      while (iter < 50 && countSoFar < maxCount) {
-        if (until && cur > until) break;
-        if (cur > rEnd) break;
-
-        const curEnd = new Date(cur.getTime() + durationMs);
-        if (curEnd >= rStart && cur <= rEnd) {
-          if (!this.isOccurrenceSuppressed(cur, exceptions)) {
-            occurrences.push(this.cloneOccurrence(event, cur, curEnd));
-          }
-        }
-
-        countSoFar++;
-        cur = new Date(cur);
-        cur.setFullYear(cur.getFullYear() + interval);
-        iter++;
-      }
-    } else {
-      occurrences.push(event);
+      cur.setDate(cur.getDate() + 1);
     }
-
     return occurrences;
   }
 
@@ -253,6 +177,7 @@ export class RRuleParser {
       start_at: sIso,
       end_at: eIso,
       is_occurrence: true,
+      original_start: sIso,
       recurrence_instance_date: sIso.split('T')[0]
     };
   }
