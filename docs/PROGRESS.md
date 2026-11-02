@@ -1,5 +1,20 @@
 # PROJECT PROGRESS
 
+## Giải quyết merge conflict trang đăng nhập — 2026-11-03
+
+- Conflict duy nhất ở `frontend/js/pages/login.js` khi ghép thiết kế auth mới với thay đổi landing đã commit. Giữ `createLoginForm()` của nhánh auth để tương thích `auth-page.js`, đồng thời giữ điều hướng `planify_redirect_after_login` của nhánh landing; sau đăng nhập ưu tiên trang được yêu cầu trước đó, rồi mới dùng `planify_last_route`.
+- Thêm kiểm tra hồi quy cho điều hướng sau đăng nhập vào `tests/frontend/auth-ui.test.mjs`. Chạy `node --experimental-vm-modules --test --test-isolation=none tests/frontend/auth-ui.test.mjs`: 10/10 pass; cú pháp `login.js` pass. Không gọi OTP thật hoặc thay database.
+
+## Giao diện đăng nhập / đăng ký theo mẫu trượt — 2026-11-03
+
+- User yêu cầu áp dụng mẫu hai form và phần giới thiệu trượt ngang, phối với theme hiện tại và giữ chức năng. Đây là thay đổi UI được yêu cầu trực tiếp trên source Vanilla JS sau import.
+- `frontend/js/pages/auth-page.js` dùng chung cho `#login` và `#register`; `frontend/js/app.js` đăng ký hai route về controller này. Hai form giữ DOM trong lúc chuyển mode để animation và bước OTP không bị reset; form ẩn có `inert`/`aria-hidden`, focus chuyển về heading đang mở. Rời auth xóa DOM chứa thông tin nhập và hủy listener theme.
+- `frontend/css/pages/auth.css`: khung form + panel gradient tím/xanh theo Planify, input gạch chân và nút bo tròn theo mẫu; dùng token Sáng/Tối hiện có, responsive xếp dọc ở <=680px, tự cuộn khi OTP/khôi phục dài, hỗ trợ reduced motion và focus bàn phím. Nền dùng CSS gradient thay ảnh `ext.jpg` không được cung cấp trong mẫu.
+- `login.js` / `register.js` xuất factory form dùng API `AuthManager` hiện có. Giữ đăng nhập/khôi phục mật khẩu/đăng ký OTP + tự đăng nhập. Thêm label liên kết input, autocomplete, kiểm tra đủ 6 số OTP; đăng ký gom luồng gửi/gửi lại mã, chặn submit lặp khi đang chờ, đổi email phải nhận OTP mới. Nút đổi theme có trên header auth và giữ nguyên nội dung đang nhập.
+- Checks PASS: syntax cho bốn module JS thay đổi/thêm; `git diff --check`; `node --experimental-vm-modules --test --test-isolation=none tests/frontend/auth-ui.test.mjs` — **9/9**. Tests dùng module router/form/AuthManager/API/theme/store thật với DOM double, fetch và toast giả lập; kiểm tra route, payload/thứ tự API, OTP, lỗi/thử lại, submit lặp, recovery, theme và cleanup. Không gửi OTP thật, tạo tài khoản hoặc sửa database. Chạy test mặc định bị sandbox chặn spawn (EPERM); `--test-isolation=none` chạy thành công, còn ExperimentalWarning của Node VM.
+- HTTP local `http://localhost:3000`: bốn file auth-page/login/register/auth.css trả 200 và nội dung khớp workspace, bản sửa đã được server phục vụ.
+- Giới hạn: browser access host không khả dụng trong lượt này; chưa kiểm chứng ảnh render/animation, viewport thực hoặc luồng email/backend thật. Tests DOM không chứng minh CSS đúng trong trình duyệt. Không thay schema/stack/provider, không public/deploy hoặc tuyên bố toàn bộ acceptance pass.
+
 ## Sửa nút đổi giao diện ở sidebar — 2026-11-03
 
 - User báo nút mặt trời cạnh Cài đặt không đổi Sáng/Tối. `App.init()` gọi cả `ThemeManager.init()` và `Sidebar.init()`; cả hai gắn click handler cho `#theme-toggle`, khiến một click đổi theme hai lần rồi trở lại trạng thái cũ, đồng thời gửi hai request cập nhật preference nếu đã đăng nhập.
