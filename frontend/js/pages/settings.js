@@ -11,6 +11,7 @@ export const settingsPage = {
   container: null,
 
   async render(container) {
+    const generation = this.generation = (this.generation || 0) + 1;
     this.container = container;
     container.innerHTML = '';
 
@@ -22,9 +23,11 @@ export const settingsPage = {
     let user = store.get('user');
     try {
       const response = await api.get('/users/me');
+      if (generation !== this.generation || this.container !== container) return;
       user = response?.data || response;
       store.set('user', user);
     } catch (_) {
+      if (generation !== this.generation || !AuthManager.isAuthenticated()) return;
       user = user || {};
     }
 
@@ -74,6 +77,7 @@ export const settingsPage = {
     });
 
     const notifyMinutesInput = createElement('input', {
+      id: 'settings-notify-minutes',
       type: 'number',
       className: 'input',
       min: 1,
@@ -99,12 +103,10 @@ export const settingsPage = {
       className: 'btn btn-primary',
       textContent: '💾 Lưu cài đặt thông báo',
       onclick: async () => {
+        if (saveNotifyBtn.disabled) return;
         const enabled = notifyToggleCheck.checked;
         const mins = Math.max(1, Math.min(1440, parseInt(notifyMinutesInput.value, 10) || 15));
         notifyMinutesInput.value = String(mins);
-
-        localStorage.setItem('planify_notify_enabled', enabled ? 'true' : 'false');
-        localStorage.setItem('planify_notify_minutes_before', String(mins));
 
         saveNotifyBtn.disabled = true;
         try {
@@ -113,7 +115,9 @@ export const settingsPage = {
             notify_minutes_before: mins
           });
           const updatedUser = updated?.data || updated;
-          store.set('user', { ...user, ...updatedUser, notify_enabled: enabled, notify_minutes_before: mins });
+          localStorage.setItem('planify_notify_enabled', enabled ? 'true' : 'false');
+          localStorage.setItem('planify_notify_minutes_before', String(mins));
+          store.set('user', { ...store.get('user'), ...updatedUser, notify_enabled: enabled, notify_minutes_before: mins });
           Toast.success(
             enabled
               ? `Đã bật thông báo nhắc lịch (Báo trước ${mins} phút qua Email & Trình duyệt)!`
@@ -168,7 +172,7 @@ export const settingsPage = {
         notifyToggleCheck
       ]),
       createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: '⏰ Thông báo trước bao nhiêu phút?' }),
+        createElement('label', { for: 'settings-notify-minutes', className: 'form-label', textContent: '⏰ Thông báo trước bao nhiêu phút?' }),
         createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' } }, [
           notifyMinutesInput,
           createElement('span', { style: { fontSize: '13px', fontWeight: '600', color: 'var(--color-text-secondary)' }, textContent: 'phút trước giờ bắt đầu công việc / sự kiện' })
@@ -183,13 +187,14 @@ export const settingsPage = {
 
     // 3. Profile Section
     const nicknameInput = createElement('input', {
+      id: 'settings-nickname',
       type: 'text',
       className: 'input',
       value: user.nickname || ''
     });
 
     const currentTimezone = user.timezone || 'Asia/Ho_Chi_Minh';
-    const timezoneSelect = createElement('select', { className: 'select' }, [
+    const timezoneSelect = createElement('select', { id: 'settings-timezone', className: 'select' }, [
       createElement('option', { value: 'Asia/Ho_Chi_Minh', textContent: 'Hà Nội, TP.HCM (GMT+7)', selected: currentTimezone === 'Asia/Ho_Chi_Minh' }),
       createElement('option', { value: 'Asia/Tokyo', textContent: 'Tokyo (GMT+9)', selected: currentTimezone === 'Asia/Tokyo' }),
       createElement('option', { value: 'UTC', textContent: 'Giờ phối hợp quốc tế (UTC)', selected: currentTimezone === 'UTC' })
@@ -201,6 +206,7 @@ export const settingsPage = {
       className: 'btn btn-primary',
       textContent: 'Lưu thay đổi',
       onclick: async () => {
+        if (saveProfileBtn.disabled) return;
         try {
           saveProfileBtn.disabled = true;
           const updated = await api.put('/users/me', {
@@ -224,8 +230,9 @@ export const settingsPage = {
     const accountSection = createElement('div', { className: 'settings-section' }, [
       createElement('h2', { className: 'settings-section-title', textContent: '👤 Thông tin cá nhân' }),
       createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: 'Email' }),
+        createElement('label', { for: 'settings-email', className: 'form-label', textContent: 'Email' }),
         createElement('input', {
+          id: 'settings-email',
           type: 'text',
           className: 'input',
           value: user.email || '',
@@ -233,11 +240,11 @@ export const settingsPage = {
         })
       ]),
       createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: 'Tên hiển thị' }),
+        createElement('label', { for: 'settings-nickname', className: 'form-label', textContent: 'Tên hiển thị' }),
         nicknameInput
       ]),
       createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: 'Múi giờ' }),
+        createElement('label', { for: 'settings-timezone', className: 'form-label', textContent: 'Múi giờ' }),
         timezoneSelect
       ]),
       createElement('div', { style: { marginTop: '4px' } }, [saveProfileBtn])
@@ -289,13 +296,14 @@ export const settingsPage = {
     ]);
 
     // 5. Security Section (Password Change)
-    const currentPassInput = createElement('input', { type: 'password', className: 'input', placeholder: '••••••••' });
-    const newPassInput = createElement('input', { type: 'password', className: 'input', placeholder: '••••••••' });
+    const currentPassInput = createElement('input', { id: 'settings-current-password', type: 'password', autocomplete: 'current-password', className: 'input', placeholder: '••••••••' });
+    const newPassInput = createElement('input', { id: 'settings-new-password', type: 'password', autocomplete: 'new-password', className: 'input', placeholder: '••••••••' });
     const changePassBtn = createElement('button', {
       type: 'button',
       className: 'btn btn-secondary',
       textContent: 'Đổi mật khẩu',
       onclick: async () => {
+        if (changePassBtn.disabled) return;
         if (!currentPassInput.value || !newPassInput.value) {
           Toast.error('Vui lòng điền đủ mật khẩu cũ và mới.');
           return;
@@ -310,9 +318,10 @@ export const settingsPage = {
             current_password: currentPassInput.value,
             new_password: newPassInput.value
           });
-          Toast.success('Đổi mật khẩu thành công!');
+          Toast.success('Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
           currentPassInput.value = '';
           newPassInput.value = '';
+          AuthManager.logout();
         } catch (err) {
           Toast.error(err.message || 'Mật khẩu cũ không chính xác.');
         } finally {
@@ -324,11 +333,11 @@ export const settingsPage = {
     const securitySection = createElement('div', { className: 'settings-section' }, [
       createElement('h2', { className: 'settings-section-title', textContent: '🔒 Bảo mật & Mật khẩu' }),
       createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: 'Mật khẩu hiện tại' }),
+        createElement('label', { for: 'settings-current-password', className: 'form-label', textContent: 'Mật khẩu hiện tại' }),
         currentPassInput
       ]),
       createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: 'Mật khẩu mới' }),
+        createElement('label', { for: 'settings-new-password', className: 'form-label', textContent: 'Mật khẩu mới' }),
         newPassInput
       ]),
       createElement('div', { style: { marginTop: '4px' } }, [changePassBtn])
@@ -361,6 +370,7 @@ export const settingsPage = {
   },
 
   destroy() {
+    this.generation = (this.generation || 0) + 1;
     if (this.container) {
       this.container.innerHTML = '';
       this.container = null;

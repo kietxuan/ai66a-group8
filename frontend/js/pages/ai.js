@@ -273,7 +273,7 @@ export const aiPage = {
       role: 'assistant',
       content: (
         'Xin chào! 👋 Tôi là **Planify AI Agent**.\n\n' +
-        'Tôi có thể thực hiện **toàn bộ các kịch bản trong ứng dụng** (ngoại trừ các tác vụ bảo mật/mật khẩu):\n' +
+        'Tôi hỗ trợ các tác vụ dưới đây. Hãy kiểm tra kết quả; yêu cầu chưa rõ có thể cần bổ sung thông tin. Không xử lý mật khẩu hoặc tác vụ bảo mật.\n' +
         '- ✨ **Lập kế hoạch tự động**: *"Tự động lập kế hoạch hôm nay giúp tôi"*\n' +
         '- 📅 **Quản lý Lịch biểu**: Tạo sự kiện đơn/lặp lại, dời lịch, kiểm tra trùng lịch, tìm khung giờ trống.\n' +
         '- ✅ **Quản lý To Do**: Tạo việc cần làm gắn khung giờ Time-Blocking, đánh dấu quan trọng, thêm bước nhỏ (subtasks), dời việc quá hạn hàng loạt.\n\n' +

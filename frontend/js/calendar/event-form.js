@@ -111,6 +111,7 @@ export class EventForm {
 
     // 1. Tiêu đề
     const titleInput = createElement('input', {
+      'aria-label': 'Tiêu đề Công việc / Sự kiện',
       type: 'text',
       className: 'input',
       style: { fontSize: '15px', fontWeight: '700', padding: '11px 14px' },
@@ -143,6 +144,7 @@ export class EventForm {
     });
 
     const autoCheck = createElement('input', {
+      'aria-label': 'Sự kiện (Tự động hoàn thành)',
       type: 'checkbox',
       checked: isAutoComplete,
       style: { width: '17px', height: '17px', marginTop: '2px', accentColor: 'var(--color-primary)', cursor: 'pointer' }
@@ -179,6 +181,10 @@ export class EventForm {
     updateAutoUI();
 
     const importantCard = createElement('div', {
+      role: 'checkbox', tabindex: '0', 'aria-label': 'Quan trọng',
+      onkeydown: e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); importantCard.click(); }
+      },
       style: {
         padding: '11px 13px',
         borderRadius: '12px',
@@ -194,6 +200,7 @@ export class EventForm {
 
     const starIcon = createElement('span', { style: { fontSize: '22px', lineHeight: '1' } });
     const updateImportantUI = () => {
+      importantCard.setAttribute('aria-checked', String(isImportant));
       if (isImportant) {
         starIcon.textContent = '⭐';
         importantCard.style.borderColor = '#F59E0B';
@@ -219,7 +226,7 @@ export class EventForm {
     modeRow.appendChild(importantCard);
 
     // 3. Danh sách lưu trữ & Màu sắc thẻ
-    const listSelect = createElement('select', { className: 'input' });
+    const listSelect = createElement('select', { className: 'input', 'aria-label': 'Thuộc danh sách' });
     const targetListId = existingItem?.list_id || defaultListId || (taskLists[0]?.id ?? '');
     if (taskLists.length === 0) {
       listSelect.appendChild(createElement('option', { value: '', textContent: '📝 Công việc cá nhân (Mặc định)' }));
@@ -344,6 +351,7 @@ export class EventForm {
     });
 
     const dateInput = createElement('input', {
+      'aria-label': 'Ngày thực hiện',
       type: 'date',
       className: 'input',
       value: initialDateStr
@@ -381,11 +389,13 @@ export class EventForm {
     ]);
 
     const startTimeInput = createElement('input', {
+      'aria-label': 'Giờ bắt đầu',
       type: 'time',
       className: 'input',
       value: initialStartTime
     });
     const endTimeInput = createElement('input', {
+      'aria-label': 'Giờ kết thúc',
       type: 'time',
       className: 'input',
       value: initialEndTime
@@ -420,7 +430,7 @@ export class EventForm {
 
     // Nhắc nhở & Lặp lại
     const defaultRemind = existingItem?.reminder_minutes ?? store.get('user')?.notify_minutes_before ?? 15;
-    const reminderSelect = createElement('select', { className: 'input' }, [
+    const reminderSelect = createElement('select', { className: 'input', 'aria-label': 'Thông báo nhắc trước' }, [
       { val: '0', label: 'Đúng giờ diễn ra (0 phút)' },
       { val: '5', label: 'Trước 5 phút' },
       { val: '10', label: 'Trước 10 phút' },
@@ -433,7 +443,7 @@ export class EventForm {
       return opt;
     }));
 
-    const rruleSelect = createElement('select', { className: 'input' }, [
+    const rruleSelect = createElement('select', { className: 'input', 'aria-label': 'Chu kỳ lặp lại' }, [
       { val: '', label: 'Không lặp lại' },
       { val: 'FREQ=DAILY', label: 'Hàng ngày' },
       { val: 'FREQ=WEEKLY', label: 'Hàng tuần' },
@@ -499,6 +509,7 @@ export class EventForm {
 
     // 5. Địa điểm & Ghi chú
     const locInput = createElement('input', {
+      'aria-label': 'Địa điểm hoặc đường dẫn họp',
       type: 'text',
       className: 'input',
       value: existingItem?.location || '',
@@ -506,6 +517,7 @@ export class EventForm {
     });
 
     const descInput = createElement('textarea', {
+      'aria-label': 'Ghi chú chi tiết',
       className: 'input',
       rows: 2,
       placeholder: '📝 Ghi chú chi tiết, nội dung chuẩn bị hoặc các bước cần lưu ý...'

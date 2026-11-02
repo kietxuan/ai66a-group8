@@ -19,6 +19,7 @@ jobs:
       - name: Frontend unit regressions and syntax
         run: |
           node --test frontend/tests/*.test.mjs
+          node --experimental-vm-modules --test --test-isolation=none tests/frontend/auth-ui.test.mjs
           find frontend/js -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Build disposable test stack
         run: docker compose -p planify-ci -f docker-compose.test.yml up -d --build --wait

@@ -15,8 +15,7 @@ import { api } from './api.js';
 import { keyboardManager } from './utils/keyboard.js';
 
 import { landingPage } from './pages/landing.js';
-import { loginPage } from './pages/login.js';
-import { registerPage } from './pages/register.js';
+import { authPage } from './pages/auth-page.js';
 import { dashboardPage } from './pages/dashboard.js';
 import { calendarPage } from './pages/calendar.js';
 import { todoPage } from './pages/todo.js';
@@ -39,8 +38,8 @@ class App {
 
     // 2. Register All Routes (Landing + Auth + 5 Core Tabs + Settings)
     router.register('landing', landingPage);
-    router.register('login', loginPage);
-    router.register('register', registerPage);
+    router.register('login', authPage);
+    router.register('register', authPage);
     router.register('dashboard', dashboardPage);
     router.register('todo', todoPage);
     router.register('calendar', calendarPage);

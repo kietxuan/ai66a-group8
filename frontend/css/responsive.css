@@ -285,30 +285,6 @@
     overflow-y: auto !important;
   }
 
-  /* Landing Page Mobile */
-  .landing-navbar {
-    padding: 0 16px;
-  }
-
-  .landing-hero {
-    padding: 40px 16px;
-  }
-
-  .landing-title {
-    font-size: 28px;
-  }
-
-  .landing-cta-group {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .btn-hero-primary,
-  .btn-hero-secondary {
-    width: 100%;
-    justify-content: center;
-  }
-
   .theme-options-grid {
     grid-template-columns: 1fr;
   }

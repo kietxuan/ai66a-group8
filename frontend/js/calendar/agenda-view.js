@@ -145,15 +145,13 @@ export class AgendaView {
               borderLeftColor: item.color || (isEvent ? 'var(--color-accent)' : '#0B8043')
             },
             onclick: () => {
-              if (isEvent) {
-                EventForm.showFullModal({
-                  event: item,
-                  defaultCalendarId: this.defaultCalendarId,
-                  onCreated: this.onRefresh
-                });
-              } else {
-                window.location.hash = '#todo';
-              }
+              EventForm.showFullModal({
+                task: isTask ? (item.raw_task || item) : null,
+                event: isEvent ? item : null,
+                defaultCalendarId: this.defaultCalendarId,
+                onUpdated: this.onRefresh,
+                onDeleted: this.onRefresh
+              });
             }
           });
 

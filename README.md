@@ -17,7 +17,7 @@ Không có đồng bộ tài khoản Google/Outlook. Pomodoro đã được bỏ
 Chạy từ thư mục chứa docker-compose.yml. Nếu đã có .env, giữ nguyên và bổ sung trường còn thiếu; không ghi đè cấu hình thật:
 
 ```powershell
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
 Điền secrets riêng: PostgreSQL, Redis và SECRET_KEY ngẫu nhiên tối thiểu 32 ký tự. Placeholder JWT sẽ bị từ chối khi startup. ADMIN_PASSWORD để trống sẽ không bootstrap admin; startup không xóa admin khác hoặc reset mật khẩu tài khoản có sẵn.
@@ -43,10 +43,11 @@ Không chạy các probe lịch sử vào web/database đang sử dụng. Chúng
 docker compose -p planify-test -f docker-compose.test.yml up -d --build --wait
 docker compose -p planify-test -f docker-compose.test.yml exec -T backend python -m unittest discover -s tests/regression -v
 node --test frontend/tests/regressions.test.mjs
+node --experimental-vm-modules --test --test-isolation=none tests/frontend/auth-ui.test.mjs
 docker compose -p planify-test -f docker-compose.test.yml down
 ```
 
-Stack test dùng DB *_test và Redis riêng, PostgreSQL tmpfs, không đọc .env thật, không gửi email hoặc gọi Groq. Toàn bộ dữ liệu của stack này là dữ liệu dùng một lần và mất khi dừng DB. Test frontend dùng Node 18+; workflow dùng Node 24.
+Stack test dùng DB *_test và Redis riêng, PostgreSQL tmpfs, không đọc .env thật, không gửi email hoặc gọi Groq. Toàn bộ dữ liệu của stack này là dữ liệu dùng một lần và mất khi dừng DB. Dùng Node 24 cho cả hai bộ frontend test; cảnh báo ExperimentalWarning của VM Modules không phải ca kiểm thử thất bại.
 
 ## Tài liệu và kết quả
 

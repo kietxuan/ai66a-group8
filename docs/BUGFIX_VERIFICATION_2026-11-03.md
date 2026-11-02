@@ -2,7 +2,7 @@
 
 ## Phạm vi
 
-Nhánh `codex/fix-audit-regressions`, xuất phát từ `753788f`. Chỉ sửa lỗi của chức năng có sẵn; không thêm Google/Outlook sync, Pomodoro, bộ lọc/category/ba mức priority mới, framework mới hay tool AI mới.
+Nhánh `codex/fix-audit-regressions`, xuất phát từ `753788f`, tích hợp thêm `origin/main` tại `cedef4b` khi nhóm cập nhật giao diện auth/Landing. Giữ thiết kế mới và điều hướng về trang đã yêu cầu, áp dụng validation/OTP bugfix vào factory form mới. Chỉ sửa lỗi của chức năng có sẵn; không thêm Google/Outlook sync, Pomodoro, bộ lọc/category/ba mức priority mới, framework mới hay tool AI mới.
 
 Source được sửa là checkout `ai66a-group8`. Web cổng 3000 đang mount từ `todo-list-pro/todo-list` là bản độc lập, không tự nhận các bản sửa này. Không sửa source, .env, database hoặc container `web-template` của bản đang sử dụng.
 
@@ -46,11 +46,14 @@ Overlap Calendar vẫn được phép theo source mới. Không thêm cơ chế 
 - Tooltip tool từng báo thành công mặc định và chèn tool name bằng HTML. Hiển thị trạng thái thực, render tên bằng textContent.
 - Toolbar mobile có class flex-wrap nhưng không có utility tương ứng. Kiểm tra browser phát hiện nút tạo bị cắt dù scrollWidth bằng viewport; đã sửa wrap thật và kiểm tra vị trí từng nút.
 - Một test phiên bản đầu tái dùng session đã đóng, gây cảnh báo connection khi GC. Đã sửa fixture/session; không che bằng bỏ cảnh báo.
+- Sau tích hợp auth mới: nhãn/minlength mật khẩu vẫn ghi 6 dù backend cần 8; retry đăng ký/khôi phục cố xác minh lại mã OTP đã bị tiêu thụ. Đã thống nhất 8 ký tự/72 bytes, giữ proof theo đúng email/mã cho retry và khóa các thao tác recovery đang chờ.
+- Cài đặt: chặn response render đến muộn sau chuyển trang, không ghi preference local trước khi API lưu thành công, gắn label input và thoát phiên đã bị thu hồi sau đổi mật khẩu.
+- Lịch biểu: mở đúng task gốc trong form có sẵn thay vì chỉ chuyển sang To Do; Event edit/delete dùng đúng callback refresh. Thêm tên truy cập cho các input trong Unified Form và thao tác Quan trọng bằng phím.
 
 ## Kết quả tự động
 
 - Backend: **35 tests PASS**: 31 API/service/AI cases + migration + 3 nhóm pure rules/property tests. Property group có 250 tập khoảng bận, không tính thành 250 integration tests.
-- Frontend: **21 tests PASS**, chạy lại với TZ=America/Los_Angeles, gồm date-only/business midnight, recurrence, session reset/stale responses, password bytes và ICS.
+- Frontend: **38 tests PASS** = 21 core regressions + 17 auth/settings/agenda DOM-double tests. Core suite chạy lại với TZ=America/Los_Angeles, gồm date-only/business midnight, recurrence, session reset/stale responses, password bytes và ICS. Bộ auth của main được bổ sung browser primitives/ID user hợp lệ trong fixture để tương thích API hardening, không hạ validation thật nhằm làm test pass.
 - Python compileall với cache riêng: PASS. Lần đầu cache mặc định bị Windows chặn rename .pyc; chạy lại với pycache_prefix=.local/audit-pycache, không sửa/tắt kiểm tra.
 - Tất cả JS modules qua node --check; git diff whitespace check PASS.
 - Docker build từ requirements.lock PASS; pip check không có dependency hỏng. Không coi pip check là CVE audit.
@@ -62,6 +65,8 @@ Lệnh tái lập có trong [README](../README.md). Workflow theo tài liệu ch
 - Login hai QA, To Do/Calendar create task → refresh không F5 → complete từ Calendar → To Do phản ánh đúng.
 - QA A mở chat, gửi dấu riêng bằng local NLP, logout, QA B login cùng tab: profile B, panel trống/welcome, không còn dấu hoặc hội thoại của A.
 - To Do 390×844 và 320×640: không tràn trang; mọi nút toolbar nằm trong viewport sau sửa wrap. Theme đổi sang dark đúng một lần. Có kiểm tra ảnh render, không chỉ scrollWidth.
+- Sau tích hợp main: Landing/auth ở 320px, protected Guide → login → trở lại Guide, Settings lưu hồ sơ QA; tải ICS/JSON và đọc nội dung file; Calendar tuần tạo task → Lịch biểu sửa title/Quan trọng bằng phím → hoàn thành → Dashboard 1/2 và 1 mục hoàn thành hôm nay. Tháng/Ngày cũng render trong lượt QA; không thay bằng mock UI.
+- Workspace AI dùng fallback local, A gửi dấu QA_WORKSPACE_A_FINAL → logout → B login cùng tab: DOM/profile B và không có dấu/chat/task A. Composer mobile 390×844 nhìn thấy phía trên bottom nav. Các log 401/stale token cũ xảy ra khi fixture tự động thay ID user trong DB test, không tính là lỗi UI mới hoặc che log.
 - Kiểm tra responsive viewport không thay cho iOS/Android/touch thật. Không chứng nhận mọi breakpoint, browser, concurrency/load hoặc mọi câu nói tự nhiên.
 - Không chạy SMTP/Groq thật, cloud deploy, database migration của user hoặc security penetration test độc lập. Không có cam kết “an toàn/không lỗi 100%”.
 
