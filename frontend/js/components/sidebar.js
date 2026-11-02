@@ -1,17 +1,9 @@
 import { store } from '../store.js';
-import { ThemeManager } from '../theme.js';
 import { AuthManager } from '../auth.js';
 import { Toast } from './toast.js';
 
 export class Sidebar {
   static init() {
-    const themeBtn = document.getElementById('theme-toggle');
-    if (themeBtn) {
-      themeBtn.addEventListener('click', () => {
-        ThemeManager.toggle();
-      });
-    }
-
     // Header AI drawer button
     const aiDrawerBtn = document.getElementById('btn-toggle-ai-drawer');
     if (aiDrawerBtn) {
