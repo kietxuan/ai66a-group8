@@ -1,5 +1,7 @@
 # 🎨 KIẾN TRÚC FRONTEND (HTML/CSS/JS thuần)
 
+> Cập nhật implementation 2026-11-03: `app.js` đăng ký cả `#login`/`#register` với `pages/auth-page.js`. Controller này dựng khung chung, giữ hai form từ factory `createLoginForm()`/`createRegisterForm()` trong `login.js`/`register.js` để chuyển mode bằng CSS mà không mất bước OTP. Form không hoạt động có `inert`/`aria-hidden`; rời auth xóa DOM và listener theme. Giao diện dùng token theme hiện tại, breakpoint 680px, reduced motion; API đăng nhập/OTP/khôi phục vẫn qua `AuthManager`. Xem `PROGRESS.md` cho checks và giới hạn; các ví dụ thiết kế bên dưới không thay thế source runtime.
+
 ---
 
 ## 1. Tổng quan
