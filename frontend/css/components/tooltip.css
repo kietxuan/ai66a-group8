@@ -1,0 +1,19 @@
+.tooltip {
+  position: absolute;
+  padding: 4px 8px;
+  background-color: var(--color-text-primary);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: var(--z-tooltip);
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.tooltip.show {
+  opacity: 1;
+}
+

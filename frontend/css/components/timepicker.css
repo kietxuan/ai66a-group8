@@ -1,0 +1,38 @@
+.timepicker-popup {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-md);
+  display: flex;
+  gap: var(--space-sm);
+  z-index: var(--z-dropdown);
+  animation: fade-in var(--transition-fast) forwards;
+}
+
+.timepicker-column {
+  max-height: 180px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 4px;
+}
+
+.timepicker-option {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  text-align: center;
+}
+
+.timepicker-option:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.timepicker-option.selected {
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+

@@ -1,0 +1,19 @@
+{
+  "name": "Frontend Environment",
+  "dockerComposeFile": ["../../docker-compose.yml", "../../docker-compose.override.yml"],
+  "service": "frontend",
+  "workspaceFolder": "/app",
+  "runServices": ["db-postgre", "redis", "backend", "frontend"],
+  "shutdownAction": "stopCompose",
+  "overrideCommand": false,
+  "remoteUser": "root",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  },
+  "postStartCommand": "npm install"
+}

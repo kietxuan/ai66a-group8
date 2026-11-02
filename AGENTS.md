@@ -1,5 +1,7 @@
 # AGENTS.md
 
+> Source import 2026-11-02: user xác nhận thay source hiện tại bằng project trong todo-list-pro/todo-list và giữ tài liệu cũ. Các quyết định/stack bên dưới thuộc baseline trước import khi khác code mới. Đọc docs/SOURCE_IMPORT_2026-11-02.md và tài liệu docs/00–07 của bản mới trước khi sửa code; không tự migrate source mới về stack cũ chỉ để khớp tài liệu. Đây là ghi nhận thay thế source theo user, không chứng nhận bản mới đã qua acceptance/security/deploy checks.
+
 ## 1. Project Purpose
 
 Đây là project môn Web Design: **Todo List Calendar tích hợp AI Chatbot**.

@@ -1,0 +1,208 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: modal-backdrop-in var(--transition-fast) forwards;
+  z-index: var(--z-modal-backdrop);
+}
+
+.modal-dialog {
+  background-color: var(--color-bg-modal);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: modal-in var(--transition-normal) forwards;
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.modal-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.modal-close-btn {
+  font-size: 20px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+}
+
+.modal-close-btn:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.modal-body {
+  padding: var(--space-lg);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.modal-footer {
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  background-color: var(--color-bg-secondary);
+}
+
+/* Recurrence Scope Dialog */
+.recurrence-scope-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.recurrence-scope-prompt {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.recurrence-scope-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.recurrence-scope-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-card);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.recurrence-scope-option:hover {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-primary);
+}
+
+.recurrence-scope-option:has(input:checked) {
+  border-color: var(--color-primary);
+  background-color: rgba(99, 102, 241, 0.08);
+}
+
+.recurrence-scope-option input[type="radio"] {
+  margin-top: 3px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.recurrence-scope-option .scope-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recurrence-scope-option .scope-title {
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.recurrence-scope-option .scope-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+/* Unified Creation Modal Tabs */
+.creation-modal-tabs {
+  display: flex;
+  background-color: var(--color-bg-tertiary);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-xs);
+}
+
+.creation-tab-btn {
+  flex: 1;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.creation-tab-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.creation-tab-btn.active {
+  background-color: var(--color-bg-card);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Quick Modal Tabs */
+.quick-modal-tabs {
+  display: flex;
+  background-color: var(--color-bg-tertiary);
+  padding: 3px;
+  border-radius: var(--radius-md);
+}
+
+.quick-tab-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.quick-tab-btn.active {
+  background-color: var(--color-bg-card);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.quick-modal-info {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+
+

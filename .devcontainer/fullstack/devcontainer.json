@@ -1,0 +1,54 @@
+{
+  "name": "Fullstack Environment",
+  "dockerComposeFile": [
+    "../../docker-compose.yml",
+    "../../docker-compose.override.yml",
+    "docker-compose.fullstack.yml"
+  ],
+  "service": "workspace",
+  "workspaceFolder": "/workspace",
+  "runServices": ["db-postgre", "redis", "backend", "frontend", "workspace"],
+  "shutdownAction": "stopCompose",
+  "remoteUser": "root",
+  "containerEnv": {
+    "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "version": "latest",
+      "enableNonRootDocker": "true",
+      "moby": "false"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11",
+      "installTools": true
+    }
+  },
+  "postCreateCommand": "if [ ! -f /workspace/.env ]; then cp /workspace/.env.example /workspace/.env; fi",
+  "postStartCommand": "pip install --user -r /workspace/backend/requirements.txt && cd /workspace/frontend && npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker"
+      ]
+    },
+    "antigravity": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.debugpy",
+        "ms-python.python-environments",
+        "meta.pyrefly",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}

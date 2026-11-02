@@ -1,0 +1,3 @@
+# Đảm bảo các file shell script luôn sử dụng định dạng dòng của Linux (LF)
+# Tránh lỗi "\r: command not found" hoặc "bad interpreter" khi chạy Docker trên Windows
+*.sh text eol=lf

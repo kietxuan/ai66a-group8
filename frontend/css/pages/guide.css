@@ -1,0 +1,191 @@
+/* ===== Interactive User Guide Page Styles ===== */
+
+.guide-page {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px 28px 40px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  background-color: var(--color-bg-primary);
+}
+
+.guide-hero {
+  background: linear-gradient(135deg, #1E1B4B 0%, #312E81 55%, #4F46E5 100%);
+  color: #ffffff;
+  padding: 28px 32px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  box-shadow: 0 10px 26px rgba(49, 46, 129, 0.25);
+  flex-shrink: 0;
+}
+
+.guide-hero-title {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.guide-hero-desc {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 700px;
+  line-height: 1.55;
+}
+
+.guide-tabs-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  background-color: var(--color-bg-card);
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.guide-tab-btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background-color: transparent;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.guide-tab-btn:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.guide-tab-btn.active {
+  background-color: var(--color-accent);
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.guide-section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.guide-feature-box {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.guide-feature-box:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-accent);
+}
+
+.guide-box-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.guide-box-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.guide-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--color-text-secondary);
+}
+
+.guide-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+}
+
+.guide-step-bullet {
+  color: var(--color-accent);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.guide-prompt-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.guide-prompt-card:hover {
+  border-color: var(--color-accent);
+  background-color: var(--color-bg-hover);
+  transform: translateX(3px);
+}
+
+.guide-kbd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.guide-kbd-table th,
+.guide-kbd-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border-light);
+  text-align: left;
+}
+
+.guide-kbd-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--color-accent);
+}
+
+@media (max-width: 900px) {
+  .guide-section-grid {
+    grid-template-columns: 1fr;
+  }
+  .guide-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

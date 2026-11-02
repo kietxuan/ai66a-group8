@@ -1,0 +1,184 @@
+{
+  "timestamp": "2026-11-01T19:25:31.516433+00:00",
+  "total": 25,
+  "passed": 25,
+  "failed": 0,
+  "pass_rate_pct": 100.0,
+  "results": [
+    {
+      "name": "test_adv_01_leap_year_feb29_recurrence",
+      "category": "Recurrence & Date Math",
+      "passed": true,
+      "duration_ms": 0.05,
+      "error": null
+    },
+    {
+      "name": "test_adv_02_rrule_extreme_and_corrupt_parameters",
+      "category": "Recurrence & Date Math",
+      "passed": true,
+      "duration_ms": 0.04,
+      "error": null
+    },
+    {
+      "name": "test_adv_03_inverted_event_times_auto_heal",
+      "category": "Recurrence & Date Math",
+      "passed": true,
+      "duration_ms": 12.73,
+      "error": null
+    },
+    {
+      "name": "test_adv_04_midnight_crossing_time_blocks",
+      "category": "Recurrence & Date Math",
+      "passed": true,
+      "duration_ms": 20.33,
+      "error": null
+    },
+    {
+      "name": "test_adv_05_event_split_following_first_occurrence",
+      "category": "Exception & Series Split",
+      "passed": true,
+      "duration_ms": 25.45,
+      "error": null
+    },
+    {
+      "name": "test_adv_06_event_split_following_last_occurrence",
+      "category": "Exception & Series Split",
+      "passed": true,
+      "duration_ms": 25.11,
+      "error": null
+    },
+    {
+      "name": "test_adv_07_event_delete_following_first_occurrence",
+      "category": "Exception & Series Split",
+      "passed": true,
+      "duration_ms": 16.82,
+      "error": null
+    },
+    {
+      "name": "test_adv_08_event_exception_idempotent_delete_this",
+      "category": "Exception & Series Split",
+      "passed": true,
+      "duration_ms": 30.29,
+      "error": null
+    },
+    {
+      "name": "test_adv_09_event_cascade_purge_scope_all",
+      "category": "Exception & Series Split",
+      "passed": true,
+      "duration_ms": 55.55,
+      "error": null
+    },
+    {
+      "name": "test_adv_10_event_delete_child_exception_directly",
+      "category": "Exception & Series Split",
+      "passed": true,
+      "duration_ms": 33.93,
+      "error": null
+    },
+    {
+      "name": "test_adv_11_task_reorder_sparse_duplicates_and_nonexistent",
+      "category": "Task & Steps Hardening",
+      "passed": true,
+      "duration_ms": 45.86,
+      "error": null
+    },
+    {
+      "name": "test_adv_12_task_reorder_cross_user_isolation",
+      "category": "Task & Steps Hardening",
+      "passed": true,
+      "duration_ms": 435.65,
+      "error": null
+    },
+    {
+      "name": "test_adv_13_task_recurrence_termination_count_one",
+      "category": "Task & Steps Hardening",
+      "passed": true,
+      "duration_ms": 20.76,
+      "error": null
+    },
+    {
+      "name": "test_adv_14_task_recurrence_termination_until_past",
+      "category": "Task & Steps Hardening",
+      "passed": true,
+      "duration_ms": 24.17,
+      "error": null
+    },
+    {
+      "name": "test_adv_15_task_bulk_steps_and_extreme_payloads",
+      "category": "Task & Steps Hardening",
+      "passed": true,
+      "duration_ms": 32.07,
+      "error": null
+    },
+    {
+      "name": "test_adv_16_ai_tool_executor_unknown_and_corrupt_tools",
+      "category": "AI Hardening & Guardrails",
+      "passed": true,
+      "duration_ms": 0.31,
+      "error": null
+    },
+    {
+      "name": "test_adv_17_ai_tool_executor_sql_and_xss_injection",
+      "category": "AI Hardening & Guardrails",
+      "passed": true,
+      "duration_ms": 14.57,
+      "error": null
+    },
+    {
+      "name": "test_adv_18_ai_conversation_cross_user_isolation",
+      "category": "AI Hardening & Guardrails",
+      "passed": true,
+      "duration_ms": 440.97,
+      "error": null
+    },
+    {
+      "name": "test_adv_19_ai_rate_limiting_enforcement",
+      "category": "AI Hardening & Guardrails",
+      "passed": true,
+      "duration_ms": 6.01,
+      "error": null
+    },
+    {
+      "name": "test_adv_20_concurrent_task_creation_flood",
+      "category": "Concurrency & Contention",
+      "passed": true,
+      "duration_ms": 109.75,
+      "error": null
+    },
+    {
+      "name": "test_adv_21_concurrent_event_overlapping_grid",
+      "category": "Concurrency & Contention",
+      "passed": true,
+      "duration_ms": 57.69,
+      "error": null
+    },
+    {
+      "name": "test_adv_22_concurrent_recurring_task_toggle",
+      "category": "Concurrency & Contention",
+      "passed": true,
+      "duration_ms": 33.74,
+      "error": null
+    },
+    {
+      "name": "test_adv_23_collision_packing_stress_emulation",
+      "category": "Frontend Algorithms",
+      "passed": true,
+      "duration_ms": 0.1,
+      "error": null
+    },
+    {
+      "name": "test_adv_24_agenda_view_window_emulation",
+      "category": "Frontend Algorithms",
+      "passed": true,
+      "duration_ms": 0.37,
+      "error": null
+    },
+    {
+      "name": "test_adv_25_rrule_corrupted_parser_emulation",
+      "category": "Frontend Algorithms",
+      "passed": true,
+      "duration_ms": 0.02,
+      "error": null
+    }
+  ]
+}

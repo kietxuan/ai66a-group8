@@ -1,13 +1,235 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f7f8f4" />
-    <script src="/theme-init.js"></script>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="description" content="Lên kế hoạch, quản lý công việc và lịch cá nhân cùng trợ lý AI." />
-    <title>Nhịp — Todo & Calendar</title>
-  </head>
-  <body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Planify Pro — Quản lý Công việc, Lịch biểu & Trợ lý AI</title>
+
+  <!-- 0ms Anti-FOUC Theme Initializer -->
+  <script>
+    (function() {
+      try {
+        let theme = localStorage.getItem('planify_theme') || localStorage.getItem('theme') || 'light';
+        if (theme !== 'dark' && theme !== 'light') theme = 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('planify_theme', theme);
+        localStorage.setItem('theme', theme);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+
+  <!-- Core Stylesheets -->
+  <link rel="stylesheet" href="css/variables.css?v=6.0.0">
+  <link rel="stylesheet" href="css/reset.css?v=6.0.0">
+  <link rel="stylesheet" href="css/themes/light.css?v=6.0.0">
+  <link rel="stylesheet" href="css/themes/dark.css?v=6.0.0">
+  <link rel="stylesheet" href="css/base.css?v=6.0.0">
+  <link rel="stylesheet" href="css/animations.css?v=6.0.0">
+
+  <!-- Layout Stylesheets -->
+  <link rel="stylesheet" href="css/layout/sidebar.css?v=6.0.0">
+  <link rel="stylesheet" href="css/layout/header.css?v=6.0.0">
+  <link rel="stylesheet" href="css/layout/main.css?v=6.0.0">
+
+  <!-- Components Stylesheets -->
+  <link rel="stylesheet" href="css/components/modal.css?v=6.0.0">
+  <link rel="stylesheet" href="css/components/dropdown.css?v=6.0.0">
+  <link rel="stylesheet" href="css/components/datepicker.css?v=6.0.0">
+  <link rel="stylesheet" href="css/components/timepicker.css?v=6.0.0">
+  <link rel="stylesheet" href="css/components/toast.css?v=6.0.0">
+  <link rel="stylesheet" href="css/components/tooltip.css?v=6.0.0">
+  <link rel="stylesheet" href="css/components/loading.css?v=6.0.0">
+  <link rel="stylesheet" href="css/components/guide-card.css?v=6.0.0">
+
+  <!-- Pages Stylesheets -->
+  <link rel="stylesheet" href="css/pages/landing.css?v=6.0.0">
+  <link rel="stylesheet" href="css/pages/auth.css?v=6.0.0">
+  <link rel="stylesheet" href="css/pages/dashboard.css?v=6.0.0">
+  <link rel="stylesheet" href="css/pages/calendar.css?v=6.0.0">
+  <link rel="stylesheet" href="css/pages/todo.css?v=6.0.0">
+  <link rel="stylesheet" href="css/pages/ai-chat.css?v=6.0.0">
+  <link rel="stylesheet" href="css/pages/guide.css?v=6.0.0">
+  <link rel="stylesheet" href="css/pages/settings.css?v=6.0.0">
+  <link rel="stylesheet" href="css/responsive.css?v=6.0.0">
+</head>
+<body>
+  <!-- ===== LANDING PAGE CONTAINER ===== -->
+  <div id="landing-container" class="hidden">
+    <div id="landing-page"></div>
+  </div>
+
+  <!-- ===== AUTH CONTAINER (Login & Register) ===== -->
+  <div id="auth-container" class="hidden">
+    <div id="auth-page"></div>
+  </div>
+
+  <!-- ===== MAIN APP CONTAINER ===== -->
+  <div id="app-container" class="app-container hidden">
+    <!-- MOBILE SIDEBAR BACKDROP -->
+    <div id="mobile-sidebar-backdrop" class="mobile-sidebar-backdrop hidden"></div>
+
+    <!-- LEFT SIDEBAR (5 Core Tabs + Settings) -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <a href="#dashboard" class="logo">
+          <span class="logo-icon">✨</span>
+          <div class="logo-brand-col">
+            <span class="logo-text">Planify Pro</span>
+            <span class="logo-subtext">Workspace & AI</span>
+          </div>
+        </a>
+        <button id="btn-close-sidebar-mobile" class="btn-icon mobile-only" title="Đóng menu">&times;</button>
+      </div>
+
+      <div class="sidebar-section-label">MENU CHÍNH</div>
+      <nav class="sidebar-nav" id="main-sidebar-nav">
+        <a class="nav-item active" data-page="dashboard" href="#dashboard">
+          <span class="nav-icon">📊</span>
+          <span class="nav-text">Dashboard</span>
+        </a>
+        <a class="nav-item" data-page="todo" href="#todo">
+          <span class="nav-icon">✅</span>
+          <span class="nav-text">To Do</span>
+          <span class="nav-badge hidden" id="nav-todo-badge">0</span>
+        </a>
+        <a class="nav-item" data-page="calendar" href="#calendar">
+          <span class="nav-icon">📅</span>
+          <span class="nav-text">Calendar</span>
+        </a>
+        <a class="nav-item" data-page="ai" href="#ai">
+          <span class="nav-icon">🤖</span>
+          <span class="nav-text">AI Assistant</span>
+        </a>
+        <a class="nav-item" data-page="guide" href="#guide">
+          <span class="nav-icon">📖</span>
+          <span class="nav-text">Hướng dẫn</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="theme-toggle" class="theme-toggle-btn" title="Đổi giao diện Sáng / Tối">
+          <span class="theme-icon-light">☀️</span>
+          <span class="theme-icon-dark">🌙</span>
+        </button>
+        <a class="nav-item sidebar-settings-link" data-page="settings" href="#settings" title="Cài đặt tài khoản, thông báo & giao diện">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-text">Cài đặt</span>
+        </a>
+        <button id="btn-logout" class="btn-icon" title="Đăng xuất">🚪</button>
+      </div>
+    </aside>
+
+    <!-- MAIN APP CONTENT -->
+    <main class="main-content">
+      <!-- HEADER BAR -->
+      <header class="app-header">
+        <div class="header-left">
+          <button id="btn-mobile-menu" class="btn-icon mobile-only" title="Mở menu">☰</button>
+          <div class="header-title-group">
+            <span class="header-title" id="app-header-title">Dashboard</span>
+            <span class="header-subtitle" id="app-header-subtitle">Tổng quan năng suất & lịch trình</span>
+          </div>
+        </div>
+
+        <div class="header-center">
+          <button class="command-search-trigger" id="btn-command-palette" title="Tìm kiếm nhanh công việc, sự kiện & lệnh (Ctrl+K)">
+            <span>🔍</span>
+            <span class="command-search-placeholder">Tìm kiếm công việc, lịch hẹn hoặc gõ lệnh...</span>
+            <kbd class="command-search-kbd">Ctrl K</kbd>
+          </button>
+        </div>
+
+        <div class="header-right">
+          <button class="btn btn-primary btn-sm header-quick-create-btn" id="btn-header-quick-create" title="Tạo nhanh Công việc hoặc Sự kiện (N)">
+            <span>＋</span>
+            <span class="hide-on-mobile">Tạo mới</span>
+          </button>
+          <button class="btn btn-secondary btn-sm header-ai-drawer-btn" id="btn-toggle-ai-drawer" title="Mở nhanh cửa sổ chat AI bên phải">
+            <span>🤖</span>
+            <span class="hide-on-mobile">Chat AI</span>
+          </button>
+          <div class="user-profile-badge" id="user-profile-badge" title="Cài đặt tài khoản">
+            <div class="user-avatar" id="user-avatar-initial">U</div>
+            <span id="user-display-name" class="hide-on-mobile">Người dùng</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- PAGE BODY -->
+      <div id="page-container" class="page-container"></div>
+
+      <!-- MOBILE BOTTOM NAVIGATION BAR (5 TABS) -->
+      <nav id="mobile-bottom-nav" class="mobile-bottom-nav">
+        <a class="mobile-nav-item active" data-page="dashboard" href="#dashboard">
+          <span class="mobile-nav-icon">📊</span>
+          <span class="mobile-nav-label">Dashboard</span>
+        </a>
+        <a class="mobile-nav-item" data-page="todo" href="#todo">
+          <span class="mobile-nav-icon">✅</span>
+          <span class="mobile-nav-label">To Do</span>
+        </a>
+        <a class="mobile-nav-item" data-page="calendar" href="#calendar">
+          <span class="mobile-nav-icon">📅</span>
+          <span class="mobile-nav-label">Calendar</span>
+        </a>
+        <a class="mobile-nav-item" data-page="ai" href="#ai">
+          <span class="mobile-nav-icon">🤖</span>
+          <span class="mobile-nav-label">AI</span>
+        </a>
+        <a class="mobile-nav-item" data-page="guide" href="#guide">
+          <span class="mobile-nav-icon">📖</span>
+          <span class="mobile-nav-label">Hướng dẫn</span>
+        </a>
+      </nav>
+    </main>
+
+    <!-- RIGHT AI PANEL (Collapsible Slide-Over Drawer for Multi-tasking) -->
+    <aside id="ai-chat-panel" class="ai-panel hidden">
+      <div class="ai-header">
+        <div class="ai-header-title">
+          <span>🤖</span>
+          <span>Planify AI Assistant</span>
+        </div>
+        <button class="btn-icon" id="btn-close-ai" title="Đóng panel AI">&times;</button>
+      </div>
+
+      <div class="ai-messages-container" id="ai-messages-list">
+        <div class="ai-message assistant">
+          <div class="ai-avatar">🤖</div>
+          <div class="ai-bubble">
+            Xin chào! 👋 Tôi là <strong>Planify AI</strong>. Tôi có thể tự động lập kế hoạch hôm nay, tìm khung giờ trống, thêm việc cần làm / sự kiện và phân tích năng suất cho bạn.
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-input-area">
+        <div class="ai-quick-actions">
+          <button class="ai-chip" data-prompt="Hôm nay tôi có những công việc và sự kiện gì?">📅 Việc hôm nay</button>
+          <button class="ai-chip" data-prompt="Tìm khung giờ trống 60 phút hôm nay">🕒 Tìm giờ trống</button>
+          <button class="ai-chip" data-prompt="Xem báo cáo thống kê năng suất của tôi">📊 Thống kê</button>
+          <button class="ai-chip" data-prompt="Dời các việc quá hạn sang hôm nay">⚠️ Dời việc quá hạn</button>
+        </div>
+        <div class="ai-input-box">
+          <input type="text" class="ai-input" id="ai-message-input" placeholder="Yêu cầu AI tạo việc, lên lịch, tìm giờ trống...">
+          <button class="btn btn-primary btn-sm" id="btn-send-ai">Gửi</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- FLOATING CONTAINERS -->
+  <div id="modal-container"></div>
+  <div id="toast-container"></div>
+
+  <!-- JS BOOTSTRAPPER (ES MODULE) -->
+  <script type="module" src="js/app.js?v=6.0.0"></script>
+</body>
 </html>

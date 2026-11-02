@@ -1,5 +1,21 @@
 # PROJECT PROGRESS
 
+## Source import hiện tại — 2026-11-02
+
+- User xác nhận thay source trên origin/main bằng project trong todo-list-pro/todo-list, giữ tài liệu cũ và lịch sử Git.
+- Đã fetch/fast-forward tới 96ed0b8 trước khi thay source; không force-push, không bỏ các commit trước đó.
+- Source hiện tại: Planify Pro, frontend HTML/CSS/Vanilla JavaScript, FastAPI async/SQLAlchemy/asyncpg, PostgreSQL + Redis, /api/v1, JWT Bearer và AI tools Groq/OpenAI-compatible. Đây là khác biệt của bản user cung cấp, không tự redesign implementation để khớp baseline cũ.
+- Toàn bộ kế hoạch/evidence cũ trong docs được giữ; README trước import ở README_PLANNING.md. 21 file kế hoạch local chưa commit được lưu đúng cấu trúc ở docs/planning-baseline; Git stash backup cũng được giữ local.
+- Thay backend/frontend/migrations/tests/config bằng bản mới; bỏ 78 file runtime/test/CI/deploy chỉ thuộc bản cũ để không trộn hai ứng dụng. Có thể khôi phục từ lịch sử tại 96ed0b8; không xóa folder todo-list-pro gốc.
+- Không import .env hoặc secrets thật. Chỉ bổ sung safeguards .gitignore, thay JWT secret mẫu trong .env.example, cập nhật README clone setup và sửa whitespace ở ba file Python; không thay business logic.
+- Checks lượt này: python -m compileall -q backend tests PASS; node --input-type=module --check trên 52 module JS PASS; docker compose --env-file .env.example config --no-env-resolution --quiet PASS. So sánh đủ 218 file import và 21 snapshot kế hoạch PASS; không file .env/secrets/cache hoặc merge marker trong index.
+- Git diff --check trước stage chỉ xét file tracked và PASS; check --cached sau khi thêm file mới phát hiện whitespace/blank-EOF có sẵn trong source, gồm Markdown hard line breaks. Giữ format source thay vì rewrite hàng loạt; không tuyên bố toàn bộ staged whitespace check pass.
+- Không khởi động containers/app, không migrate/reset database, không chạy API/UI/LLM integration hoặc full regression. Những báo cáo test có sẵn của cả hai bản là evidence lịch sử, không phải kết quả chạy lại cho source import này.
+- Known issues: default admin/password/JWT fallback trong source cần cấu hình lại trước public; dependency ranges chưa phải lockfile hoàn chỉnh. Push Git không chứng minh deploy/acceptance/security pass.
+- Xem [SOURCE_IMPORT_2026-11-02](SOURCE_IMPORT_2026-11-02.md) cho phạm vi, setup và giới hạn. Các trạng thái/commands từ đợt 21–29/10 bên dưới là lịch sử của implementation trước import, không áp dụng tự động cho bản mới.
+
+---
+
 > Cập nhật chuẩn bị bàn giao Git ngày 2026-10-29. Các evidence ngày 21–22/10 được giữ nguyên ngày chạy; các session cũ bên dưới là lịch sử, không thay kết quả mới.
 
 ## 1. Current status

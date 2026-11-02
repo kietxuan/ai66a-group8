@@ -1,0 +1,14 @@
+services:
+  workspace:
+    image: mcr.microsoft.com/devcontainers/base:bullseye
+    volumes:
+      - .:/workspace:cached
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db-postgre:5432/${POSTGRES_DB:-web_base}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-}@redis:6379/0
+    command: sleep infinity
+    depends_on:
+      - db-postgre
+      - backend
+      - frontend
+      - redis

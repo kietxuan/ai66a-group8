@@ -1,76 +1,63 @@
-from pathlib import Path
-from functools import lru_cache
-from urllib.parse import urlsplit
-
-from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy.engine import make_url
-
-ROOT = Path(__file__).resolve().parents[3]
-
+from typing import Optional
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=ROOT / ".env", extra="ignore")
-    database_url: str
-    test_database_url: str | None = None
-    jwt_secret_key: str
-    jwt_expire_minutes: int = 60
-    cors_origins: str = "http://localhost:5173"
-    cookie_secure: bool = False
-    groq_api_key: SecretStr = Field(default=SecretStr(""), repr=False)
-    groq_model: str = "openai/gpt-oss-20b"
-    ai_timeout_seconds: int = 20
-    ai_max_completion_tokens: int = 1024
-    chat_execution_enabled: bool = True
-    db_connect_timeout: int = Field(default=5, ge=1, le=30)
-    db_statement_timeout_ms: int = Field(default=15000, ge=1000, le=60000)
-    db_lock_timeout_ms: int = Field(default=5000, ge=500, le=30000)
-    max_request_bytes: int = Field(default=32768, ge=8192, le=1048576)
-    rate_limit_enabled: bool = True
+    # 1. Cấu hình API chung
+    PROJECT_NAME: str = "Planify Pro API"
+    API_V1_STR: str = "/api/v1"
 
-    @field_validator("jwt_secret_key")
-    @classmethod
-    def secret(cls, value):
-        if len(value.strip()) < 32 or any(x in value.lower() for x in ("replace", "example", "change-me")):
-            raise ValueError("JWT_SECRET_KEY must be a random secret of at least 32 characters")
-        return value
+    # 2. Tài khoản Admin
+    ADMIN_USERNAME: str = "Admin"
+    ADMIN_EMAIL: str = "admin@planify.local"
+    ADMIN_PASSWORD: str = "Admin@123456"
 
-    @field_validator("database_url")
-    @classmethod
-    def database(cls, value):
-        if make_url(value).drivername != "postgresql+psycopg":
-            raise ValueError("DATABASE_URL must use postgresql+psycopg")
-        return value
+    # 3. Cấu hình Bảo mật (JWT)
+    SECRET_KEY: str = "planify_super_secret_jwt_key_2026_secure"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 11520
 
-    @model_validator(mode="after")
-    def limits(self):
-        if not 1 <= self.jwt_expire_minutes <= 1440 or not 1 <= self.ai_timeout_seconds <= 60:
-            raise ValueError("Invalid JWT expiry or AI timeout")
-        if not 256 <= self.ai_max_completion_tokens <= 4096:
-            raise ValueError("AI_MAX_COMPLETION_TOKENS must be between 256 and 4096")
-        if not self.groq_model.strip() or self.groq_model != self.groq_model.strip():
-            raise ValueError("GROQ_MODEL must be a nonempty model ID without surrounding whitespace")
-        if not self.origins or "*" in self.origins:
-            raise ValueError("Explicit CORS_ORIGINS required")
-        for origin in self.origins:
-            parsed = urlsplit(origin)
-            try:
-                valid_port = parsed.port
-            except ValueError:
-                raise ValueError("Invalid origin port") from None
-            if (parsed.scheme not in ("http", "https") or not parsed.hostname
-                    or parsed.username or parsed.password or parsed.path
-                    or parsed.query or parsed.fragment or "*" in origin):
-                raise ValueError("Origins must contain only scheme, host and optional port")
-        if self.cookie_secure and any(not x.startswith("https://") for x in self.origins):
-            raise ValueError("Secure cookies require HTTPS origins")
-        return self
+    # 4. Cấu hình kết nối Cơ sở dữ liệu
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "postgres"
+    POSTGRES_DB: str = "web_base"
+    HOST_PORT_DB: str = "5432"
+    DATABASE_URL: Optional[str] = None
+
+    # 5. Cấu hình kết nối Redis
+    HOST_PORT_REDIS: str = "6379"
+    REDIS_PASSWORD: Optional[str] = None
+    REDIS_URL: Optional[str] = None
+
+    # 6. Cấu hình AI Agent (Groq / OpenAI compatible)
+    AI_API_KEY: Optional[str] = None
+    API_KEY: Optional[str] = None
+    AI_MODEL: str = "openai/gpt-oss-120b"
 
     @property
-    def origins(self):
-        return [x.strip().rstrip("/") for x in self.cors_origins.split(",") if x.strip()]
+    def get_ai_api_key(self) -> str:
+        key = (self.AI_API_KEY or self.API_KEY or "").strip()
+        if key in ("", "your_groq_api_key_here", "none", "null"):
+            return ""
+        return key
 
+    @property
+    def get_redis_url(self) -> str:
+        if self.REDIS_URL:
+            return self.REDIS_URL
+        password_part = f":{self.REDIS_PASSWORD}@" if self.REDIS_PASSWORD else ""
+        return f"redis://{password_part}localhost:{self.HOST_PORT_REDIS}/0"
 
-@lru_cache
-def get_settings():
-    return Settings()
+    @property
+    def get_database_url(self) -> str:
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@localhost:{self.HOST_PORT_DB}/{self.POSTGRES_DB}"
+
+    model_config = SettingsConfigDict(
+        case_sensitive=True,
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
+
+settings = Settings()

@@ -1,0 +1,327 @@
+/* ===== Responsive & Mobile Design System ===== */
+
+/* 1. Large Tablet / Compact Desktop Breakpoint */
+@media (max-width: 1240px) {
+  .dash-kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  }
+  .dash-charts-grid,
+  .dash-secondary-grid,
+  .dash-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+  /* Make 4-column Kanban wrap into a clean 2x2 grid on medium screens so columns never get squished */
+  .todo-kanban-board {
+    grid-template-columns: repeat(2, minmax(240px, 1fr)) !important;
+    overflow-y: auto !important;
+    height: auto !important;
+    max-height: 100%;
+  }
+  .kanban-column {
+    min-height: 290px;
+    max-height: 440px;
+  }
+}
+
+/* 2. Tablet & Mobile Breakpoint (<= 768px) */
+@media (max-width: 768px) {
+  .mobile-only {
+    display: inline-flex !important;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  /* Slide-Over Main Sidebar on Mobile */
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-xl);
+    width: 270px;
+    z-index: 420;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  /* Header Compact */
+  .app-header {
+    padding: 0 12px;
+    height: 52px;
+    gap: 8px;
+  }
+
+  .header-left {
+    min-width: auto;
+  }
+
+  .header-subtitle {
+    display: none;
+  }
+
+  .command-search-kbd {
+    display: none;
+  }
+
+  .command-search-trigger {
+    padding: 6px 10px;
+    font-size: 12px;
+    max-width: 185px;
+  }
+
+  /* Reserve space at bottom for Mobile Bottom Navigation Bar */
+  .page-container {
+    padding-bottom: 60px;
+  }
+
+  /* Fixed Mobile Bottom Nav (5 Tabs) */
+  .mobile-bottom-nav {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    z-index: 350;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: var(--color-text-tertiary);
+    font-size: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color var(--transition-fast);
+  }
+
+  .mobile-nav-item.active {
+    color: var(--color-primary);
+  }
+
+  .mobile-nav-icon {
+    font-size: 18px;
+    line-height: 1.1;
+  }
+
+  /* Dashboard, Guide, Settings Mobile Adjustments */
+  .dashboard-page,
+  .guide-page,
+  .settings-page {
+    padding: 14px 14px 80px !important;
+  }
+
+  .dash-hero-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 18px;
+  }
+
+  .dash-score-card {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .dash-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .dash-donut-layout {
+    flex-direction: column;
+  }
+
+  .eisenhower-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Calendar Mobile Adjustments */
+  .calendar-page {
+    flex-direction: column;
+  }
+
+  .calendar-sidebar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 60;
+    width: 268px;
+    transform: translateX(-100%);
+    transition: transform var(--transition-normal);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .calendar-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .calendar-toolbar {
+    height: auto;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .calendar-title {
+    font-size: 14px;
+    min-width: auto;
+  }
+
+  .view-toggle-group {
+    width: 100%;
+    justify-content: space-between;
+    overflow-x: auto;
+  }
+
+  .view-toggle-btn {
+    padding: 6px 8px;
+    font-size: 12px;
+    flex: 1;
+    text-align: center;
+  }
+
+  .month-day-cell {
+    min-height: 92px !important;
+    padding: 4px !important;
+  }
+
+  /* To-Do Mobile Adjustments */
+  .todo-page {
+    flex-direction: column;
+  }
+
+  .todo-sidebar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 60;
+    width: 268px;
+    transform: translateX(-100%);
+    transition: transform var(--transition-normal);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .todo-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .todo-main {
+    padding: 12px;
+    overflow-y: auto;
+  }
+
+  .todo-header {
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .todo-title {
+    font-size: 17px;
+  }
+
+  .todo-kanban-board {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto !important;
+    height: auto !important;
+    gap: 12px;
+    padding-bottom: 40px;
+  }
+
+  .kanban-column {
+    min-height: 200px;
+    max-height: 380px;
+  }
+
+  .task-detail-container {
+    position: fixed;
+    right: 0;
+    top: 52px;
+    bottom: 60px;
+    width: 100% !important;
+    max-width: 100% !important;
+    z-index: 320;
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* AI Panel Mobile Full Width */
+  .ai-panel {
+    width: 100vw;
+    z-index: 450;
+  }
+
+  .ai-workspace-page {
+    flex-direction: column !important;
+  }
+
+  .ai-workspace-sidebar {
+    width: 100% !important;
+    max-height: 180px;
+    border-right: none !important;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  /* Modal Responsive on Mobile */
+  .modal-content,
+  .modal-card {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* Landing Page Mobile */
+  .landing-navbar {
+    padding: 0 16px;
+  }
+
+  .landing-hero {
+    padding: 40px 16px;
+  }
+
+  .landing-title {
+    font-size: 28px;
+  }
+
+  .landing-cta-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-hero-primary,
+  .btn-hero-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .theme-options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .dash-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dash-kpi-value {
+    font-size: 20px;
+  }
+  .command-search-placeholder {
+    display: none;
+  }
+}
