@@ -35,25 +35,10 @@ docker compose up -d --build
 
 Backup database trước khi nâng cấp. Entrypoint chạy Alembic; không dùng down -v hoặc reset DB để chữa migration. File requirements.lock khóa môi trường Python 3.11/Linux của Docker đã kiểm thử.
 
-## Kiểm thử an toàn
+## Tài liệu
 
-Không chạy các probe lịch sử vào web/database đang sử dụng. Chúng đã được đánh dấu skip vì có giả định user đầu tiên, Chrome Linux hoặc provider thật.
-
-```bash
-docker compose -p planify-test -f docker-compose.test.yml up -d --build --wait
-docker compose -p planify-test -f docker-compose.test.yml exec -T backend python -m unittest discover -s tests/regression -v
-node --test frontend/tests/regressions.test.mjs
-node --experimental-vm-modules --test --test-isolation=none tests/frontend/auth-ui.test.mjs
-docker compose -p planify-test -f docker-compose.test.yml down
-```
-
-Stack test dùng DB *_test và Redis riêng, PostgreSQL tmpfs, không đọc .env thật, không gửi email hoặc gọi Groq. Toàn bộ dữ liệu của stack này là dữ liệu dùng một lần và mất khi dừng DB. Dùng Node 24 cho cả hai bộ frontend test; cảnh báo ExperimentalWarning của VM Modules không phải ca kiểm thử thất bại.
-
-## Tài liệu và kết quả
-
-- [Bản sửa lỗi và phạm vi kiểm chứng 2026-11-03](docs/BUGFIX_VERIFICATION_2026-11-03.md).
 - [Tổng quan source](docs/00-tong-quan-du-an.md), [API thiết kế](docs/02-api-design.md).
 - [Lịch sử import source](docs/SOURCE_IMPORT_2026-11-02.md), [README trước import](docs/README_PLANNING.md).
 - [Snapshot kế hoạch local](docs/planning-baseline/README.md).
 
-Các checkbox/báo cáo cũ không thay thế kiểm thử mới. Không có cam kết “không còn bất kỳ lỗi nào”; xem phạm vi đã chạy và giới hạn trong báo cáo. Nhánh sửa lỗi không tự cập nhật web đang chạy từ folder todo-list-pro.
+Nhánh sửa lỗi không tự cập nhật web đang chạy từ folder todo-list-pro. Các tài liệu lịch sử không thay thế kiểm chứng cho source hiện tại.
