@@ -12,10 +12,22 @@ class UserService:
     async def get_all_users(self, page: int, limit: int, current_user: User, db: AsyncSession) -> List[User]:
         return await user_crud.get_all_users(page=page, limit=limit, current_user_id=current_user.id, db=db)
 
-    async def register_new_user(self, db: AsyncSession, user_in: UserCreate) -> User:
+    async def register_new_user(self, db: AsyncSession, user_in: UserCreate, redis=None) -> User:
         existing_user = await user_crud.get_by_email(db, email=user_in.email)
         if existing_user:
             raise UserErrors.EMAIL_ALREADY_EXISTS.throw()
+
+        from app.helper.otp import verify_action_token
+        from app.services.auth_service import auth_service
+        from fastapi import HTTPException
+        if redis is None:
+            raise HTTPException(503, "Dịch vụ xác minh email chưa sẵn sàng.")
+        proof = user_in.verified_token
+        if not proof and user_in.otp:
+            proof = await auth_service.verify_otp_email(user_in.email, "verify-email", user_in.otp, redis)
+        if not proof:
+            raise HTTPException(400, "Cần xác minh email trước khi đăng ký.")
+        await verify_action_token(user_in.email, "verify-email", proof, redis)
 
         hashed_pwd = await hash_password(user_in.password)
         new_user = await user_crud.create(db, obj_in=user_in, hashed_password=hashed_pwd)

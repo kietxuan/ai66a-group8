@@ -1,3 +1,4 @@
+import { businessNow } from '../utils/date.js';
 import { createElement } from '../utils/dom.js';
 import { api } from '../api.js';
 import { Toast } from '../components/toast.js';
@@ -400,11 +401,12 @@ export class TaskDetail {
           onchange: async (e) => {
             const nextAllDay = e.target.checked;
             const updates = { is_all_day: nextAllDay };
+            if (nextAllDay) Object.assign(updates, { start_time: null, end_time: null, due_time: null });
             if (!nextAllDay && !t.start_time) {
               updates.start_time = '09:00:00';
               updates.end_time = '10:00:00';
               updates.duration_minutes = 60;
-              if (!dueInput.value) updates.due_date = formatDate(new Date(), 'YYYY-MM-DD');
+              if (!dueInput.value) updates.due_date = formatDate(businessNow(), 'YYYY-MM-DD');
             }
             try {
               await this.queueScheduleUpdate(t.id, updates);

@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { Toast } from '../components/toast.js';
 import { ChatMessage } from '../ai/message.js';
 import { ChatInput } from '../ai/chat-input.js';
+import { store } from '../store.js';
 
 const PROMPT_CATEGORIES = [
   {
@@ -42,6 +43,9 @@ export const aiPage = {
   chatInput: null,
 
   async render(container) {
+    const renderGeneration = this.renderGeneration = (this.renderGeneration || 0) + 1;
+    this.generation = (this.generation || 0) + 1;
+    this.sending = false;
     this.container = container;
     container.innerHTML = '';
 
@@ -108,7 +112,7 @@ export const aiPage = {
         createElement('span', { style: { fontSize: '22px' }, textContent: '🤖' }),
         createElement('div', {}, [
           createElement('div', { style: { fontWeight: '700', fontSize: '15px' }, textContent: 'Planify AI Agent — Trung tâm Điều phối Thông minh' }),
-          createElement('div', { style: { fontSize: '12px', color: 'var(--color-text-secondary)' }, textContent: 'Tích hợp 32 công cụ thao tác trực tiếp trên Lịch biểu, To Do, Subtasks & Thống kê (An toàn bảo mật 100%)' })
+          createElement('div', { style: { fontSize: '12px', color: 'var(--color-text-secondary)' }, textContent: 'Công cụ quản lý Lịch biểu, To Do, Subtasks & Thống kê. Kiểm tra kết quả trước khi tiếp tục.' })
         ])
       ])
     ]);
@@ -154,6 +158,7 @@ export const aiPage = {
     });
 
     await this.loadConversations();
+    if (renderGeneration !== this.renderGeneration || !this.container) return;
 
     // Check if there is a pre-queued prompt from Guide or Dashboard
     const pendingPrompt = sessionStorage.getItem('planify_ai_pending_prompt');
@@ -164,8 +169,11 @@ export const aiPage = {
   },
 
   async loadConversations() {
+    const generation = this.generation;
     try {
-      this.conversations = await api.get('/ai/conversations');
+      const conversations = await api.get('/ai/conversations');
+      if (generation !== this.generation || !this.container) return;
+      this.conversations = conversations;
       this.renderConversationList();
       if (this.conversations && this.conversations.length > 0) {
         await this.selectConversation(this.conversations[0].id);
@@ -210,8 +218,10 @@ export const aiPage = {
   },
 
   async startNewConversation() {
+    const generation = ++this.generation;
     try {
       const conv = await api.post('/ai/conversations', { title: 'Cuộc trò chuyện mới' });
+      if (generation !== this.generation || !this.container) return;
       this.conversations.unshift(conv);
       await this.selectConversation(conv.id);
     } catch (_) {
@@ -221,6 +231,9 @@ export const aiPage = {
   },
 
   async selectConversation(convId) {
+    const generation = ++this.generation;
+    this.sending = false;
+    this.chatInput?.setDisabled(false);
     this.currentConversationId = convId;
     this.renderConversationList();
     if (!this.messagesListEl) return;
@@ -228,6 +241,7 @@ export const aiPage = {
 
     try {
       const conv = await api.get(`/ai/conversations/${convId}`);
+      if (generation !== this.generation || !this.container) return;
       if (conv && conv.messages && conv.messages.length > 0) {
         conv.messages.forEach(msg => {
           let toolCalls = [];
@@ -276,7 +290,9 @@ export const aiPage = {
   },
 
   async sendMessage(content) {
-    if (!content || !content.trim() || !this.messagesListEl) return;
+    if (!content || !content.trim() || !this.messagesListEl || this.sending || !store.get('user')) return;
+    this.sending = true;
+    const generation = this.generation;
 
     this.messagesListEl.appendChild(ChatMessage.create({
       role: 'user',
@@ -304,10 +320,11 @@ export const aiPage = {
         resp = await api.post(`/ai/conversations/${this.currentConversationId}/messages`, { content });
       } else {
         resp = await api.post('/ai/chat', { content });
-        if (resp?.conversation_id) {
+        if (generation === this.generation && resp?.conversation_id) {
           this.currentConversationId = resp.conversation_id;
         }
       }
+      if (generation !== this.generation || !this.container) return;
       typingEl.remove();
 
       let toolCalls = [];
@@ -335,16 +352,27 @@ export const aiPage = {
       }
     } catch (err) {
       typingEl.remove();
+      if (generation !== this.generation || !this.container) return;
       Toast.error(err.message || 'Lỗi kết nối AI');
     } finally {
-      this.chatInput.setDisabled(false);
+      if (generation === this.generation) {
+        this.sending = false;
+        this.chatInput.setDisabled(false);
+      }
     }
   },
 
   destroy() {
+    this.renderGeneration = (this.renderGeneration || 0) + 1;
+    this.generation = (this.generation || 0) + 1;
+    this.currentConversationId = null;
+    this.conversations = [];
+    this.messagesListEl = null;
+    this.sending = false;
     if (this.container) {
       this.container.innerHTML = '';
       this.container = null;
     }
   }
 };
+store.on('session-reset', () => aiPage.destroy());

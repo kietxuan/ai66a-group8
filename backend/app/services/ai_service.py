@@ -57,7 +57,8 @@ class AIService:
             user_id=user.id,
             messages=history_msgs,
             db=db,
-            user_timezone=user.timezone or "Asia/Ho_Chi_Minh"
+            user_timezone=user.timezone or "Asia/Ho_Chi_Minh",
+            conversation_id=conversation_id
         )
 
         # 4. Save assistant reply to database

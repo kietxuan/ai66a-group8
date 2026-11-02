@@ -34,7 +34,7 @@ class CRUDUser(CRUDBase[User]):
             notify_minutes_before=getattr(obj_in, "notify_minutes_before", 15) or 15,
         )
         db.add(db_obj)
-        await db.commit()
+        await db.flush()
         await db.refresh(db_obj)
         return db_obj
 
@@ -48,6 +48,7 @@ class CRUDUser(CRUDBase[User]):
 
     async def update_password(self, db: AsyncSession, user: User, hashed_password: str) -> User:
         user.password_hashed = hashed_password
+        user.token_version += 1
         await db.commit()
         await db.refresh(user)
         return user

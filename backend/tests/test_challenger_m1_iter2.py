@@ -1,3 +1,6 @@
+from unittest import SkipTest as _LegacyProbeSkipped
+raise _LegacyProbeSkipped("Historical probe archived: unsafe live DB/provider assumptions. Run backend/tests/regression instead.")
+
 """
 Milestone M1 Iteration 2 Empirical Challenger Stress Harness
 Agent: teamwork_challenger_m1_iter2_3

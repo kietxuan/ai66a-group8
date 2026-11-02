@@ -17,15 +17,24 @@ router = APIRouter()
 @router.post("/login", response_model=Token)
 async def login_access_token(
     request: Request,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis)
 ):
     """
     Đăng nhập và nhận về Access Token.
     Hỗ trợ cả application/json ({email, password}) lẫn application/x-www-form-urlencoded (OAuth2 form).
     """
     content_type = request.headers.get("content-type", "")
+    from app.core.rate_limit import enforce_limit
+    await enforce_limit(redis, f"login:{request.client.host if request.client else 'unknown'}", 30, 60)
     if "application/json" in content_type:
-        body = await request.json()
+        from fastapi import HTTPException
+        try:
+            body = await request.json()
+        except ValueError:
+            raise HTTPException(400, "JSON không hợp lệ.")
+        if not isinstance(body, dict):
+            raise HTTPException(422, "Cần object email và password.")
         email = body.get("email") or body.get("username")
         password = body.get("password")
     else:
@@ -43,12 +52,7 @@ async def register_user_via_auth(
     redis: Redis = Depends(get_redis)
 ):
     """Đăng ký người dùng mới (hỗ trợ xác thực OTP hoặc verified_token)"""
-    if user_in.verified_token:
-        await verify_action_token(user_in.email, "verify-email", user_in.verified_token, redis)
-    elif user_in.otp:
-        await auth_service.verify_otp_email(user_in.email, "verify-email", user_in.otp, redis)
-
-    user = await user_service.register_new_user(db, user_in=user_in)
+    user = await user_service.register_new_user(db, user_in=user_in, redis=redis)
     return ApiResponse(
         message="Đăng ký tài khoản thành công",
         data=user

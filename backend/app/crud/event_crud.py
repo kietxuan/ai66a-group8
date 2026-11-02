@@ -78,7 +78,7 @@ class CRUDEvent(CRUDBase[Event]):
         return await self.get_with_reminders(db, db_obj.id)
 
     async def update(self, db: AsyncSession, db_obj: Event, obj_in: EventUpdate) -> Event:
-        update_data = obj_in.model_dump(exclude_unset=True, exclude={"scope", "reminders"})
+        update_data = obj_in.model_dump(exclude_unset=True, exclude={"scope", "reminders", "original_start"})
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 

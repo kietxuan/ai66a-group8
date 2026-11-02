@@ -42,6 +42,7 @@ TOOLS = [
                     "color": {"type": "string"},
                     "is_all_day": {"type": "boolean"},
                     "recurrence_rule": {"type": "string"},
+                    "original_start": {"type": "string", "description": "ISO8601 giờ bắt đầu GỐC của lần lặp được chọn; bắt buộc cho this/following, không dùng giờ mới."},
                     "scope": {"type": "string", "enum": ["this", "following", "all"], "description": "Phạm vi áp dụng với sự kiện lặp"}
                 },
                 "required": []
@@ -60,7 +61,9 @@ TOOLS = [
                     "title_query": {"type": "string", "description": "Từ khóa tiêu đề sự kiện"},
                     "new_start_at": {"type": "string", "description": "Thời gian bắt đầu mới (ISO 8601)"},
                     "new_end_at": {"type": "string", "description": "Thời gian kết thúc mới (ISO 8601)"},
-                    "shift_minutes": {"type": "integer", "description": "Số phút muốn dời (dương = lùi sau, âm = đẩy sớm)"}
+                    "shift_minutes": {"type": "integer", "description": "Số phút muốn dời (dương = lùi sau, âm = đẩy sớm)"},
+                    "original_start": {"type": "string", "description": "Giờ bắt đầu gốc của lần lặp cần dời (ISO8601)."},
+                    "scope": {"type": "string", "enum": ["this", "following", "all"]}
                 },
                 "required": []
             }
@@ -76,6 +79,7 @@ TOOLS = [
                 "properties": {
                     "event_id": {"type": "integer", "description": "ID sự kiện cần xóa"},
                     "title_query": {"type": "string", "description": "Tiêu đề sự kiện cần xóa (nếu không có event_id)"},
+                    "occurrence_date": {"type": "string", "description": "Giờ bắt đầu gốc của lần lặp cần xóa (ISO8601); bắt buộc cho this/following."},
                     "scope": {"type": "string", "enum": ["this", "following", "all"], "description": "Phạm vi xóa với sự kiện lặp"}
                 },
                 "required": []

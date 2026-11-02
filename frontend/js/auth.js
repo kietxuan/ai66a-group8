@@ -27,14 +27,20 @@ export class AuthManager {
 
     if (data?.access_token) {
       api.setToken(data.access_token);
-      await this.fetchCurrentUser();
+      const user = await this.fetchCurrentUser();
+      if (!user?.id) {
+        api.setToken(null);
+        throw new Error('Không tải được thông tin tài khoản. Vui lòng đăng nhập lại.');
+      }
+    } else {
+      throw new Error('Máy chủ không trả về phiên đăng nhập hợp lệ.');
     }
     return data;
   }
 
   static async sendOtp(email, reason = 'verify-email') {
     const cleanEmail = email.trim();
-    return await api.post(`/otp/send?email=${encodeURIComponent(cleanEmail)}&reason=${encodeURIComponent(reason)}`, {
+    return await api.post('/otp/send', {
       email: cleanEmail,
       reason
     });
@@ -43,7 +49,7 @@ export class AuthManager {
   static async verifyOtp(email, otp, reason = 'verify-email') {
     const cleanEmail = email.trim();
     const cleanOtp = String(otp).trim();
-    return await api.post(`/otp/verify?email=${encodeURIComponent(cleanEmail)}&otp=${encodeURIComponent(cleanOtp)}&reason=${encodeURIComponent(reason)}`, {
+    return await api.post('/otp/verify', {
       email: cleanEmail,
       otp: cleanOtp,
       reason
@@ -79,6 +85,7 @@ export class AuthManager {
     try {
       const response = await api.get('/users/me');
       const user = response?.data || response;
+      if (!user || !Number.isInteger(user.id) || typeof user.email !== 'string') throw new Error('Thông tin tài khoản không hợp lệ.');
       store.set('user', user);
 
       // Đồng bộ cài đặt thông báo vào localStorage
@@ -104,6 +111,8 @@ export class AuthManager {
       }
       return user;
     } catch (err) {
+      api.setToken(null);
+      store.set('user', null);
       console.warn('Failed to fetch current user:', err);
       return null;
     }
@@ -115,3 +124,11 @@ export class AuthManager {
     window.location.hash = '#login';
   }
 }
+
+// JWT storage is shared across tabs; discard the previous user's DOM/RAM immediately.
+window.addEventListener('storage', event => {
+  if (event.key === 'access_token' && event.oldValue !== event.newValue) {
+    store.set('user', null);
+    window.location.reload();
+  }
+});

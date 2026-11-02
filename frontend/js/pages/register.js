@@ -41,8 +41,8 @@ export const registerPage = {
           Toast.error('Địa chỉ email không hợp lệ.');
           return;
         }
-        if (!isValidPassword(password, 6)) {
-          Toast.error('Mật khẩu phải có ít nhất 6 ký tự.');
+        if (!isValidPassword(password, 8)) {
+          Toast.error('Mật khẩu phải có ít nhất 8 ký tự và không quá 72 bytes UTF-8.');
           return;
         }
 
@@ -118,7 +118,7 @@ export const registerPage = {
     const emailInput = emailGroup.querySelector('input');
 
     const passGroup = createElement('div', { className: 'form-group' }, [
-      createElement('label', { className: 'form-label', textContent: 'Mật khẩu (tối thiểu 6 ký tự)' }),
+      createElement('label', { className: 'form-label', textContent: 'Mật khẩu (tối thiểu 8 ký tự)' }),
       createElement('input', {
         type: 'password',
         className: 'input',
@@ -148,8 +148,8 @@ export const registerPage = {
           emailInput.focus();
           return;
         }
-        if (!isValidPassword(password, 6)) {
-          Toast.error('Mật khẩu phải có ít nhất 6 ký tự.');
+        if (!isValidPassword(password, 8)) {
+          Toast.error('Mật khẩu phải có ít nhất 8 ký tự và không quá 72 bytes UTF-8.');
           passwordInput.focus();
           return;
         }

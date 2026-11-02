@@ -4,6 +4,8 @@ import secrets
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import HTTPException
+from redis.exceptions import WatchError
 
 from app.crud.user_crud import user_crud
 from app.core.security import verify_password, create_access_token, hash_password
@@ -15,7 +17,7 @@ from app.helper.otp import send_email, verify_action_token
 class AuthService:
     async def authenticate_by_credentials(self, db: AsyncSession, email: str, password: str) -> dict:
         """Nghiệp vụ xác thực thông tin đăng nhập và cấp Token bằng email & password"""
-        if not email or not password:
+        if not isinstance(email, str) or not isinstance(password, str) or not email or not password:
             raise AuthErrors.INVALID_LOGIN.throw()
 
         user = await user_crud.get_by_email(db, email=email)
@@ -23,7 +25,7 @@ class AuthService:
         if not user or not user.is_activate or not await verify_password(password, user.password_hashed):
             raise AuthErrors.INVALID_LOGIN.throw()
 
-        access_token = create_access_token(subject=user.id, is_developer=user.is_developer)
+        access_token = create_access_token(subject=user.id, is_developer=user.is_developer, token_version=user.token_version)
         return {
             "access_token": access_token,
             "token_type": "bearer",
@@ -57,12 +59,17 @@ class AuthService:
         code = "".join(secrets.choice("0123456789") for _ in range(6))
         payload = json.dumps({"code": code, "attempts": 0})
 
-        if redis is not None:
-            try:
-                await redis.set(f"otp:{norm_reason}:{email}", payload, ex=300)
-            except Exception:
-                pass
-        await send_email(email=email, otp=code, reason=norm_reason)
+        if redis is None:
+            raise HTTPException(503, "Dịch vụ xác minh chưa sẵn sàng.")
+        # A cooldown and an hourly cap survive successful/failed verification and resends.
+        from app.core.rate_limit import enforce_limit
+        await enforce_limit(redis, f"otp-send:{email}", 5, 3600)
+        if not await redis.set(f"otp-cooldown:{email}", "1", nx=True, ex=60):
+            raise HTTPException(429, "Vui lòng đợi 60 giây trước khi gửi lại OTP.")
+        await redis.set(f"otp:{norm_reason}:{email}", payload, ex=300)
+        if not await send_email(email=email, otp=code, reason=norm_reason):
+            await redis.delete(f"otp:{norm_reason}:{email}")
+            raise HTTPException(503, "Không gửi được email. Vui lòng kiểm tra cấu hình SMTP.")
         return code
 
     async def verify_otp_email(self, email: str, reason: str, otp: str, redis: Redis) -> str:
@@ -70,29 +77,37 @@ class AuthService:
         norm_reason = "change-password" if reason in ("change-password", "reset-password", "forgot-password") else "verify-email"
         redis_key = f"otp:{norm_reason}:{email}"
 
-        otp_data = await redis.get(redis_key)
-
-        if not otp_data:
-            raise OTPErrors.OTP_EXPIRED.throw()
-
-        otp_data = json.loads(otp_data)
-
-        if otp_data.get("attempts", 0) >= 5:
-            await redis.delete(redis_key)
-            raise OTPErrors.OTP_LIMIT_EXCEEDED.throw()
-
-        if str(otp_data["code"]).strip() != str(otp).strip():
-            otp_data["attempts"] = otp_data.get("attempts", 0) + 1
-            remain = 5 - otp_data["attempts"]
-            await redis.set(redis_key, json.dumps(otp_data), ex=300)
-            raise OTPErrors.OTP_INVALID.throw(dynamic_message=f"Mã OTP không chính xác. Bạn còn {remain} lần thử.")
-
-        verification_token = secrets.token_hex(16)
-
-        await redis.set(f"verified-token:{norm_reason}:{email}", verification_token, ex=600)
-        await redis.delete(redis_key)
-
-        return verification_token
+        from app.core.rate_limit import enforce_limit
+        await enforce_limit(redis, f"otp-verify:{email}", 10, 600)
+        # WATCH prevents simultaneous correct submissions from minting two proofs.
+        for _ in range(5):
+            async with redis.pipeline() as pipe:
+                try:
+                    await pipe.watch(redis_key)
+                    raw = await pipe.get(redis_key)
+                    ttl = await pipe.ttl(redis_key)
+                    if not raw or ttl <= 0:
+                        raise OTPErrors.OTP_EXPIRED.throw()
+                    data = json.loads(raw)
+                    valid = secrets.compare_digest(str(data["code"]), str(otp).strip())
+                    data["attempts"] = data.get("attempts", 0) + 1
+                    token = secrets.token_hex(32)
+                    pipe.multi()
+                    if valid or data["attempts"] >= 5:
+                        pipe.delete(redis_key)
+                    else:
+                        pipe.set(redis_key, json.dumps(data), ex=ttl)
+                    if valid:
+                        pipe.set(f"verified-token:{norm_reason}:{email}", token, ex=600)
+                    await pipe.execute()
+                    if valid:
+                        return token
+                    if data["attempts"] >= 5:
+                        raise OTPErrors.OTP_LIMIT_EXCEEDED.throw()
+                    raise OTPErrors.OTP_INVALID.throw()
+                except WatchError:
+                    continue
+        raise HTTPException(409, "OTP đang được xác minh, vui lòng thử lại.")
 
     async def reset_password_with_otp(self, db: AsyncSession, redis: Redis, payload: ForgotPasswordReset) -> None:
         """Đặt lại mật khẩu sau khi xác thực OTP hoặc verified_token"""
@@ -104,7 +119,8 @@ class AuthService:
         if payload.verified_token:
             await verify_action_token(payload.email, norm_reason, payload.verified_token, redis)
         elif payload.otp:
-            await self.verify_otp_email(payload.email, norm_reason, payload.otp, redis)
+            proof = await self.verify_otp_email(payload.email, norm_reason, payload.otp, redis)
+            await verify_action_token(payload.email, norm_reason, proof, redis)
         else:
             raise OTPErrors.OTP_EXPIRED.throw()
 

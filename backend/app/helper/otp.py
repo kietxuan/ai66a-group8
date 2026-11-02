@@ -1,5 +1,6 @@
 import asyncio
 import smtplib
+from html import escape
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from redis.asyncio import Redis
@@ -12,16 +13,12 @@ from app.schemas.otp_schema import OTPErrors
 async def verify_action_token(email: str, reason: str, token: str, redis: Redis) -> None:
     """Hàm kiểm tra OTP đã được xác thực hay chưa"""
     token_key = f"verified-token:{reason}:{email}"
-    saved_token = await redis.get(token_key)
-
-    if not saved_token:
+    consumed = await redis.eval(
+        "if redis.call('GET',KEYS[1]) == ARGV[1] then return redis.call('DEL',KEYS[1]) else return 0 end",
+        1, token_key, token
+    )
+    if not consumed:
         raise OTPErrors.OTP_EXPIRED.throw()
-
-    saved_str = saved_token.decode("utf-8") if isinstance(saved_token, bytes) else str(saved_token)
-    if saved_str != token:
-        raise OTPErrors.OTP_EXPIRED.throw()
-
-    await redis.delete(token_key)
 
 
 def _get_otp_html_content(otp: str, reason: str = "verify-email") -> tuple[str, str]:
@@ -178,6 +175,7 @@ def _get_reminder_html_content(
     minutes_before: int = 15
 ) -> tuple[str, str]:
     """Trả về (Tiêu đề email, Nội dung HTML email) cho thông báo nhắc lịch hẹn / công việc"""
+    user_name, task_title, time_display, note, location = [escape(str(value or "")) for value in (user_name, task_title, time_display, note, location)]
     subject = f"⏰ Nhắc lịch: {task_title} ({time_display}) - Planify Pro"
     note_block = f'<p style="margin:8px 0 0;color:#475569;font-size:14px;"><strong>📝 Ghi chú:</strong> {note}</p>' if note else ""
     loc_block = f'<p style="margin:8px 0 0;color:#475569;font-size:14px;"><strong>📍 Địa điểm:</strong> {location}</p>' if location else ""
@@ -222,8 +220,8 @@ def _get_reminder_html_content(
 
 def _send_email_sync(to_email: str, subject: str, html_content: str, debug_tag: str = "") -> bool:
     """Hàm gửi email đồng bộ chạy trong thread pool qua Gmail SMTP"""
-    sender_email = (settings.ADMIN_EMAIL or "").strip()
-    raw_password = (settings.ADMIN_PASSWORD or "").strip()
+    sender_email = (settings.SMTP_FROM_EMAIL or settings.SMTP_USERNAME or "").strip()
+    raw_password = (settings.SMTP_PASSWORD or "").strip()
     # Gmail App Password thường có dạng 'xxxx xxxx xxxx xxxx' -> loại bỏ khoảng trắng để đăng nhập SMTP chuẩn xác
     sender_password = raw_password.replace(" ", "")
 
@@ -237,25 +235,25 @@ def _send_email_sync(to_email: str, subject: str, html_content: str, debug_tag: 
 
     try:
         if not sender_email or not sender_password or raw_password in ["YOUR_SECRET_PASSWORD", "MAT_KHAU_ADMIN"]:
-            logger.info(f"📧 [DEV EMAIL] Gửi tới {to_email} | Tiêu đề: {subject} | Nội dung: {debug_tag}")
+            logger.warning("SMTP credentials missing; email was not sent.")
             return False
 
-        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=8.0)
+        server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=8.0)
         server.starttls()
-        server.login(sender_email, sender_password)
+        server.login(settings.SMTP_USERNAME, sender_password)
         server.send_message(message)
         server.quit()
         logger.info(f"✅ Đã gửi email '{subject}' tới {to_email} thành công.")
         return True
     except Exception as e:
-        logger.warning(f"⚠️ Không thể gửi SMTP thực tế ({e}). 📧 [DEV FALLBACK] {to_email}: {debug_tag}")
+        logger.warning("SMTP delivery failed (%s).", type(e).__name__)
         return False
 
 
 async def send_email(email: str, otp: str, reason: str = "verify-email") -> bool:
     """Hàm gửi mã OTP cho người dùng bất đồng bộ"""
     subject, html_content = _get_otp_html_content(otp, reason=reason)
-    return await asyncio.to_thread(_send_email_sync, email, subject, html_content, f"OTP={otp}")
+    return await asyncio.to_thread(_send_email_sync, email, subject, html_content)
 
 
 async def send_reminder_email(

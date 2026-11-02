@@ -1,3 +1,4 @@
+import { businessNow, parseLocalDate } from '../utils/date.js';
 import { createElement } from '../utils/dom.js';
 import { api } from '../api.js';
 import { Toast } from '../components/toast.js';
@@ -23,7 +24,7 @@ export class MyDaySuggestions {
   }
 
   getSuggestions() {
-    const today = new Date();
+    const today = businessNow();
     today.setHours(0, 0, 0, 0);
 
     // Filter uncompleted tasks not in My Day
@@ -36,7 +37,7 @@ export class MyDaySuggestions {
 
     candidates.forEach(t => {
       if (t.due_date) {
-        const d = new Date(t.due_date);
+        const d = parseLocalDate(t.due_date);
         d.setHours(0, 0, 0, 0);
         if (d.getTime() === today.getTime()) {
           dueToday.push(t);

@@ -44,7 +44,7 @@ export const landingPage = {
     const hero = createElement('section', { className: 'landing-hero' }, [
       createElement('div', { className: 'landing-badge' }, [
         createElement('span', { textContent: '🚀' }),
-        createElement('span', { textContent: 'Hợp nhất Google Calendar + Outlook Calendar + Microsoft To Do + AI Agent' })
+        createElement('span', { textContent: 'Calendar + To Do + AI Agent trong một workspace cá nhân' })
       ]),
       createElement('h1', { className: 'landing-title' }, [
         createElement('span', { textContent: 'Nền tảng Quản lý ' }),
@@ -135,18 +135,18 @@ export const landingPage = {
       createElement('div', { className: 'features-grid' }, [
         createElement('div', { className: 'feature-card', id: 'calendar-feature' }, [
           createElement('div', { className: 'feature-icon-wrapper', style: { backgroundColor: '#EEF2FF', color: '#4F46E5' }, textContent: '📅' }),
-          createElement('h3', { className: 'feature-title', textContent: 'Google & Outlook Calendar Pro' }),
-          createElement('p', { className: 'feature-desc', textContent: '5 chế độ xem (Ngày, Tuần làm việc 5 ngày, Tuần 7 ngày, Tháng, Lịch biểu). Quét giữ chuột trái trên lưới giờ để tạo sự kiện, kéo thả đổi giờ, kéo cạnh dưới chỉnh thời lượng và xuất file .ics.' })
+          createElement('h3', { className: 'feature-title', textContent: 'Calendar cá nhân' }),
+          createElement('p', { className: 'feature-desc', textContent: '4 chế độ xem: Ngày, Tuần, Tháng, Lịch biểu. Kéo thả đổi giờ, chỉnh thời lượng và xuất .ics. Chưa có đồng bộ tài khoản Google/Outlook.' })
         ]),
         createElement('div', { className: 'feature-card', id: 'todo-feature' }, [
           createElement('div', { className: 'feature-icon-wrapper', style: { backgroundColor: '#ECFDF5', color: '#10B981' }, textContent: '✅' }),
-          createElement('h3', { className: 'feature-title', textContent: 'Microsoft To Do + Kanban + Pomodoro' }),
-          createElement('p', { className: 'feature-desc', textContent: 'Danh sách thông minh (My Day, Quan trọng, Đã lên lịch, Quá hạn), chuyển đổi linh hoạt giữa Danh sách và Bảng Kanban, kéo thả việc vào lịch, thao tác hàng loạt và đồng hồ Pomodoro 25 phút.' })
+          createElement('h3', { className: 'feature-title', textContent: 'To Do + Kanban' }),
+          createElement('p', { className: 'feature-desc', textContent: 'Bảng Kanban theo trạng thái, danh sách tùy chỉnh, bước con, tìm kiếm, đánh dấu quan trọng và kéo thả task vào lịch.' })
         ]),
         createElement('div', { className: 'feature-card', id: 'ai-feature' }, [
           createElement('div', { className: 'feature-icon-wrapper', style: { backgroundColor: '#F5F3FF', color: '#7C3AED' }, textContent: '🤖' }),
           createElement('h3', { className: 'feature-title', textContent: 'AI Agent 32 Tools Toàn Năng' }),
-          createElement('p', { className: 'feature-desc', textContent: 'Tự động lập kế hoạch My Day, tìm khung giờ trống, kiểm tra trùng lịch, dời toàn bộ việc quá hạn, quản lý bước con (subtasks), danh sách và báo cáo năng suất (bảo vệ an toàn tuyệt đối các tác vụ bảo mật).' })
+          createElement('p', { className: 'feature-desc', textContent: 'Lập kế hoạch My Day, tìm giờ trống, kiểm tra lịch bận, quản lý tasks và bước con. Thao tác xóa cần xác nhận; AI không đổi mật khẩu hoặc quyền quản trị.' })
         ])
       ])
     ]);

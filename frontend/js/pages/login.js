@@ -187,7 +187,7 @@ export const loginPage = {
     const fpNewPassInput = createElement('input', {
       type: 'password',
       className: 'input',
-      placeholder: 'Mật khẩu mới (tối thiểu 6 ký tự)'
+      placeholder: 'Mật khẩu mới (tối thiểu 8 ký tự)'
     });
 
     const fpConfirmPassInput = createElement('input', {
@@ -211,8 +211,8 @@ export const loginPage = {
           Toast.error('Vui lòng nhập mã OTP đã nhận qua email.');
           return;
         }
-        if (!isValidPassword(newPass, 6)) {
-          Toast.error('Mật khẩu mới phải có ít nhất 6 ký tự.');
+        if (!isValidPassword(newPass, 8)) {
+          Toast.error('Mật khẩu mới phải có ít nhất 8 ký tự và không quá 72 bytes UTF-8.');
           return;
         }
         if (newPass !== confirmPass) {

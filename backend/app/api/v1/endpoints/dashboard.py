@@ -1,3 +1,4 @@
+from app.core.time import business_today, local_now, BUSINESS_TZ
 from datetime import datetime, date, time, timedelta
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +19,7 @@ from app.schemas.dashboard_schema import (
 from app.services.event_service import event_service
 from app.services.task_service import task_service
 from app.services.task_list_service import task_list_service
+from app.services.recurrence import expand_event_rows
 
 router = APIRouter()
 
@@ -29,13 +31,14 @@ async def get_today_dashboard(
     current_user: User = Depends(get_current_user)
 ):
     """Lấy thông tin tổng hợp lịch và công việc trong ngày hôm nay"""
-    today = date.today()
-    start_of_day = datetime.combine(today, time.min)
-    end_of_day = datetime.combine(today, time.max)
+    today = business_today()
+    start_of_day = datetime.combine(today, time.min, BUSINESS_TZ)
+    end_of_day = datetime.combine(today + timedelta(days=1), time.min, BUSINESS_TZ)
 
     events_today = await event_service.get_events_in_range(
         db, user_id=current_user.id, start_at=start_of_day, end_at=end_of_day
     )
+    events_today = expand_event_rows(events_today, start_of_day, end_of_day)
     tasks_my_day = await task_service.get_tasks(
         db, user_id=current_user.id, view="my_day"
     )
@@ -58,7 +61,7 @@ async def get_today_dashboard(
         Task.user_id == current_user.id,
         Task.is_completed == True,
         Task.completed_at >= start_of_day,
-        Task.completed_at <= end_of_day
+        Task.completed_at < end_of_day
     )
     completed_today_count = (await db.execute(completed_today_stmt)).scalar() or 0
 
@@ -79,7 +82,7 @@ async def get_dashboard_stats(
     current_user: User = Depends(get_current_user)
 ):
     """Lấy toàn bộ dữ liệu biểu đồ thống kê và phân tích năng suất cho trang Dashboard"""
-    today = date.today()
+    today = business_today()
     start_of_day = datetime.combine(today, time.min)
     end_of_day = datetime.combine(today, time.max)
 
@@ -100,7 +103,7 @@ async def get_dashboard_stats(
     completed_today_count = 0
     for t in all_tasks:
         if t.is_completed and t.completed_at:
-            comp_date = t.completed_at.date() if isinstance(t.completed_at, datetime) else today
+            comp_date = t.completed_at.astimezone(BUSINESS_TZ).date() if isinstance(t.completed_at, datetime) else today
             if comp_date == today:
                 completed_today_count += 1
 
@@ -133,11 +136,11 @@ async def get_dashboard_stats(
         start_at=datetime.combine(trend_start_date, time.min),
         end_at=datetime.combine(upcoming_end_date, time.max)
     )
-    active_events = [e for e in events_window if not e.is_cancelled]
+    active_events = expand_event_rows(events_window, datetime.combine(trend_start_date, time.min, BUSINESS_TZ), datetime.combine(upcoming_end_date + timedelta(days=1), time.min, BUSINESS_TZ))
 
     events_today = [
         e for e in active_events
-        if e.start_at.date() <= today <= e.end_at.date()
+        if e.start_at < datetime.combine(today + timedelta(days=1), time.min, BUSINESS_TZ) and e.end_at > datetime.combine(today, time.min, BUSINESS_TZ)
     ]
     upcoming_events = [
         e for e in active_events
@@ -147,7 +150,7 @@ async def get_dashboard_stats(
     busy_hours_today = 0.0
     for e in events_today:
         if not e.is_all_day:
-            dur = max(0.0, (e.end_at - e.start_at).total_seconds() / 3600.0)
+            dur = max(0.0, (min(e.end_at, datetime.combine(today + timedelta(days=1), time.min, BUSINESS_TZ)) - max(e.start_at, datetime.combine(today, time.min, BUSINESS_TZ))).total_seconds() / 3600.0)
             busy_hours_today += dur
     for t in all_tasks:
         if t.due_date == today and not t.is_all_day and t.start_time:
@@ -163,7 +166,7 @@ async def get_dashboard_stats(
 
         comp_cnt = sum(
             1 for t in all_tasks
-            if t.is_completed and t.completed_at and t.completed_at.date() == d
+            if t.is_completed and t.completed_at and t.completed_at.astimezone(BUSINESS_TZ).date() == d
         )
         due_cnt = sum(1 for t in all_tasks if t.due_date == d)
         ev_day = [e for e in active_events if e.start_at.date() == d]

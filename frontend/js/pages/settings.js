@@ -5,6 +5,7 @@ import { AuthManager } from '../auth.js';
 import { ReminderNotifier } from '../components/reminder-notifier.js';
 import { Toast } from '../components/toast.js';
 import { api } from '../api.js';
+import { buildCalendarIcs } from '../utils/ical.js';
 
 export const settingsPage = {
   container: null,
@@ -252,26 +253,13 @@ export const settingsPage = {
           textContent: '📅 Xuất Lịch chuẩn .ICS (iCalendar)',
           onclick: async () => {
             try {
-              const tasks = await api.get('/tasks');
-              const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Planify Pro//VN'];
-              (tasks || []).forEach(t => {
-                if (!t.due_date) return;
-                const dClean = String(t.due_date).slice(0, 10).replace(/-/g, '');
-                lines.push('BEGIN:VEVENT');
-                lines.push(`UID:planify-task-${t.id}@planify.local`);
-                lines.push(`DTSTART;VALUE=DATE:${dClean}`);
-                lines.push(`DTEND;VALUE=DATE:${dClean}`);
-                lines.push(`SUMMARY:${t.title || ''}`);
-                if (t.location) lines.push(`LOCATION:${t.location}`);
-                if (t.recurrence_rule) lines.push(`RRULE:${t.recurrence_rule}`);
-                lines.push('END:VEVENT');
-              });
-              lines.push('END:VCALENDAR');
-              const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+              const [tasks, events] = await Promise.all([api.get('/tasks'), api.get('/events', {start:'0001-01-01T00:00:00Z', end:'9999-12-31T23:59:59Z'})]);
+              const blob = new Blob([buildCalendarIcs(tasks, events)], { type: 'text/calendar;charset=utf-8' });
               const a = document.createElement('a');
               a.href = URL.createObjectURL(blob);
               a.download = 'planify-calendar.ics';
               a.click();
+              setTimeout(() => URL.revokeObjectURL(a.href), 1000);
               Toast.success('Đã xuất file lịch planify-calendar.ics!');
             } catch (err) {
               Toast.error('Không thể xuất file .ics');
@@ -284,12 +272,13 @@ export const settingsPage = {
           textContent: '📋 Xuất Toàn bộ Công việc & Sự kiện (.JSON)',
           onclick: async () => {
             try {
-              const tasks = await api.get('/tasks');
-              const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: 'application/json' });
+              const [tasks, events] = await Promise.all([api.get('/tasks'), api.get('/events', {start:'0001-01-01T00:00:00Z', end:'9999-12-31T23:59:59Z'})]);
+              const blob = new Blob([JSON.stringify({timezone:'Asia/Ho_Chi_Minh', tasks, events}, null, 2)], { type: 'application/json' });
               const a = document.createElement('a');
               a.href = URL.createObjectURL(blob);
               a.download = 'planify-tasks.json';
               a.click();
+              setTimeout(() => URL.revokeObjectURL(a.href), 1000);
               Toast.success('Đã tải về file planify-tasks.json!');
             } catch (err) {
               Toast.error('Không thể xuất danh sách công việc');
@@ -311,8 +300,8 @@ export const settingsPage = {
           Toast.error('Vui lòng điền đủ mật khẩu cũ và mới.');
           return;
         }
-        if (newPassInput.value.length < 6) {
-          Toast.error('Mật khẩu mới phải có ít nhất 6 ký tự.');
+        if (newPassInput.value.length < 8 || new TextEncoder().encode(newPassInput.value).length > 72) {
+          Toast.error('Mật khẩu mới phải có ít nhất 8 ký tự và không quá 72 bytes UTF-8.');
           return;
         }
         try {

@@ -1,26 +1,26 @@
 # Fast API
-fastapi>=0.100.0
-uvicorn[standard]>=0.23.0
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
 
 # Validation
-pydantic[email]>=2.0
-pydantic-settings>=2.0
+pydantic[email]==2.14.2
+pydantic-settings==2.16.2
 
 # Cơ sở dữ liệu
-sqlalchemy[asyncio]>=2.0
-asyncpg>=0.28.0
-alembic>=1.11.0
+sqlalchemy[asyncio]==2.1.6
+asyncpg==0.32.0
+alembic==1.20.1
 
 # JWT Token
-python-jose[cryptography]>=3.3.0
-passlib>=1.7.4
+python-jose[cryptography]==3.5.0
+passlib==1.7.4
 bcrypt==4.0.1
 
 # File uploads
-python-multipart>=0.0.7
+python-multipart==0.0.33
 
 # Redis client
-redis>=5.0.1
+redis==8.1.0
 
 # HTTP client for Groq AI
-httpx>=0.25.0
+httpx==0.28.1

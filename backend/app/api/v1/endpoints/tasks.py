@@ -1,3 +1,4 @@
+from app.core.time import business_today, local_now, BUSINESS_TZ
 from typing import List, Optional
 from datetime import date, timedelta
 from fastapi import APIRouter, Depends, Query, status
@@ -74,7 +75,7 @@ async def batch_task_action(
     all_tasks = await task_service.get_tasks(db, user_id=current_user.id, view="all")
     target_ids = set(body.task_ids or [])
     affected = 0
-    today = date.today()
+    today = business_today()
 
     if body.action == "clear_completed":
         for t in all_tasks:

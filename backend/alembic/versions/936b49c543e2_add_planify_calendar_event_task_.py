@@ -164,8 +164,8 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_task_steps_id'), 'task_steps', ['id'], unique=False)
     op.create_index(op.f('ix_task_steps_task_id'), 'task_steps', ['task_id'], unique=False)
-    op.add_column('users', sa.Column('theme_preference', sa.String(length=20), nullable=False))
-    op.add_column('users', sa.Column('timezone', sa.String(length=50), nullable=False))
+    op.add_column('users', sa.Column('theme_preference', sa.String(length=20), server_default='light', nullable=False))
+    op.add_column('users', sa.Column('timezone', sa.String(length=50), server_default='Asia/Ho_Chi_Minh', nullable=False))
     # ### end Alembic commands ###
 
 

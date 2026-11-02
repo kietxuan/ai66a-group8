@@ -54,6 +54,7 @@ class Task(Base):
     reminder_sent = Column(Boolean, default=False, nullable=False)
 
     recurrence_rule = Column(String(500), nullable=True)
+    recurrence_source_id = Column(Integer, ForeignKey("tasks.id", ondelete="SET NULL"), unique=True, nullable=True)
     position = Column(Integer, default=0, nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())

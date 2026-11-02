@@ -25,6 +25,17 @@ export class ChatPanel {
     this.currentConversationId = null;
     this.conversations = [];
     this.chatInput = null;
+    this.generation = 0;
+    this.sending = false;
+    store.on('session-reset', () => {
+      this.generation++;
+      this.currentConversationId = null;
+      this.conversations = [];
+      this.sending = false;
+      if (this.messagesListEl) this.messagesListEl.innerHTML = '';
+      if (this.inputEl) this.inputEl.value = '';
+      this.chatInput?.setDisabled(false);
+    });
 
     if (this.panelEl) {
       this.setup();
@@ -91,8 +102,12 @@ export class ChatPanel {
   }
 
   async loadConversations() {
+    if (!store.get('user')) return;
+    const generation = this.generation;
     try {
-      this.conversations = await api.get('/ai/conversations');
+      const conversations = await api.get('/ai/conversations');
+      if (generation !== this.generation) return;
+      this.conversations = conversations;
       if (this.conversations && this.conversations.length > 0) {
         if (!this.currentConversationId) {
           // Select most recent conversation
@@ -108,17 +123,23 @@ export class ChatPanel {
   }
 
   async startNewConversation() {
+    const generation = ++this.generation;
     try {
       const conv = await api.post('/ai/conversations', { title: 'Cuộc trò chuyện mới' });
+      if (generation !== this.generation) return;
       this.conversations.unshift(conv);
       this.selectConversation(conv.id);
     } catch (err) {
+      if (generation !== this.generation) return;
       console.warn('Failed to start new conversation, fallback to quick chat mode');
       this.currentConversationId = null;
     }
   }
 
   async selectConversation(conversationId) {
+    const generation = ++this.generation;
+    this.sending = false;
+    this.chatInput?.setDisabled(false);
     this.currentConversationId = conversationId;
     if (!this.messagesListEl) return;
 
@@ -126,6 +147,7 @@ export class ChatPanel {
 
     try {
       const conv = await api.get(`/ai/conversations/${conversationId}`);
+      if (generation !== this.generation) return;
       if (conv && conv.messages && conv.messages.length > 0) {
         conv.messages.forEach(msg => {
           let toolCalls = [];
@@ -149,6 +171,7 @@ export class ChatPanel {
       }
       this.scrollToBottom();
     } catch (err) {
+      if (generation !== this.generation) return;
       console.error('Failed to load conversation messages:', err);
       this.renderWelcomeMessage();
     }
@@ -196,7 +219,9 @@ export class ChatPanel {
   }
 
   async sendMessage(content) {
-    if (!content.trim()) return;
+    if (!content.trim() || this.sending || !store.get('user')) return;
+    this.sending = true;
+    const generation = this.generation;
 
     // 1. Render user message in chat
     const userMsgEl = ChatMessage.create({
@@ -217,11 +242,12 @@ export class ChatPanel {
         resp = await api.post(`/ai/conversations/${this.currentConversationId}/messages`, { content });
       } else {
         resp = await api.post('/ai/chat', { content });
-        if (resp && resp.conversation_id) {
+        if (generation === this.generation && resp && resp.conversation_id) {
           this.currentConversationId = resp.conversation_id;
         }
       }
 
+      if (generation !== this.generation) return;
       this.hideTypingIndicator();
 
       // 3. Render Assistant Response
@@ -253,6 +279,7 @@ export class ChatPanel {
         }));
       }
     } catch (err) {
+      if (generation !== this.generation) return;
       this.hideTypingIndicator();
 
       let errorMsg = 'Xin lỗi, đã xảy ra lỗi trong quá trình xử lý yêu cầu của bạn. Vui lòng thử lại sau.';
@@ -269,7 +296,10 @@ export class ChatPanel {
       this.scrollToBottom();
       Toast.error(err.message || 'Lỗi kết nối AI');
     } finally {
-      this.chatInput.setDisabled(false);
+      if (generation === this.generation) {
+        this.sending = false;
+        this.chatInput.setDisabled(false);
+      }
     }
   }
 }

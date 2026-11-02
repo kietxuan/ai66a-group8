@@ -11,6 +11,7 @@ class User(Base):
     password_hashed = Column(String, nullable=False)
     is_activate = Column(Boolean, default=True)
     is_developer = Column(Boolean, default=False, nullable=False)
+    token_version = Column(Integer, default=0, server_default="0", nullable=False)
 
     theme_preference = Column(String(20), default="light", nullable=False)
     timezone = Column(String(50), default="Asia/Ho_Chi_Minh", nullable=False)

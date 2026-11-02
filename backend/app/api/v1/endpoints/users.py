@@ -1,3 +1,4 @@
+from app.core.time import business_today, local_now, BUSINESS_TZ
 from datetime import datetime, date
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,7 +8,8 @@ from app.schemas.common import ApiResponse
 from app.schemas.user_schema import UserCreate, UserUpdate, PasswordChange, UserResponse, UserListResponse
 from app.services.user_service import user_service
 from app.services.task_service import task_service
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_developer
+from app.core.redis import get_redis
 from app.models.user_model import User
 from app.helper.otp import send_reminder_email
 
@@ -16,10 +18,11 @@ router = APIRouter()
 @router.post("/register", response_model=ApiResponse[UserResponse], status_code=status.HTTP_201_CREATED)
 async def register_user(
     user_in: UserCreate, 
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis = Depends(get_redis)
 ):
     """Đăng ký người dùng mới"""
-    user = await user_service.register_new_user(db, user_in=user_in)
+    user = await user_service.register_new_user(db, user_in=user_in, redis=redis)
     return ApiResponse(
         message="Đăng ký tài khoản thành công",
         data=user
@@ -30,7 +33,7 @@ async def get_all_users(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_developer)
 ):
     """API xem toàn bộ người dùng"""
     users = await user_service.get_all_users(page=page, limit=limit, current_user=current_user, db=db)
@@ -90,10 +93,10 @@ async def check_and_send_reminders(
     nếu người dùng bật thông báo (notify_enabled=True).
     """
     notify_enabled = getattr(current_user, "notify_enabled", True)
-    notify_minutes = getattr(current_user, "notify_minutes_before", 15) or 15
+    notify_minutes = current_user.notify_minutes_before
 
-    today = date.today()
-    now = datetime.now()
+    today = business_today()
+    now = local_now()
     all_tasks = await task_service.get_tasks(db, user_id=current_user.id, view="all")
 
     triggered = []
@@ -110,9 +113,9 @@ async def check_and_send_reminders(
         if not start_t:
             continue
 
-        target_dt = datetime.combine(today, start_t)
+        target_dt = datetime.combine(today, start_t, BUSINESS_TZ)
         diff_minutes = (target_dt - now).total_seconds() / 60.0
-        item_remind_mins = getattr(t, "reminder_minutes", None) or notify_minutes
+        item_remind_mins = t.reminder_minutes if t.reminder_minutes is not None else notify_minutes
 
         # Nếu nằm trong khoảng sắp bắt đầu (từ -5 phút đến item_remind_mins phút trước giờ bắt đầu)
         if -5.0 <= diff_minutes <= float(item_remind_mins):
@@ -129,7 +132,7 @@ async def check_and_send_reminders(
                 location=getattr(t, "location", "") or "",
                 minutes_before=max(0, int(round(diff_minutes)))
             )
-            t.reminder_sent = True
+            t.reminder_sent = bool(sent_ok)
             triggered.append({
                 "id": t.id,
                 "title": t.title,
@@ -154,7 +157,7 @@ async def send_test_reminder_email(
 ):
     """Gửi thử một email nhắc lịch đến địa chỉ email của người dùng hiện tại"""
     now_str = datetime.now().strftime("%H:%M ngày %d/%m/%Y")
-    mins = getattr(current_user, "notify_minutes_before", 15) or 15
+    mins = current_user.notify_minutes_before
     sent_ok = await send_reminder_email(
         to_email=current_user.email,
         user_name=current_user.nickname,
@@ -165,7 +168,7 @@ async def send_test_reminder_email(
         minutes_before=mins
     )
     return {
-        "success": True,
+        "success": bool(sent_ok),
         "email_sent": sent_ok,
         "email": current_user.email,
         "message": f"Đã gửi thông báo thử nghiệm tới {current_user.email}" if sent_ok else f"Đã kích hoạt thông báo (kiểm tra cấu hình SMTP trong .env cho {current_user.email})"

@@ -1,58 +1,58 @@
-# ✨ Planify Pro — Hệ sinh thái Quản lý Thời gian, Công việc & AI Agent
+# Planify Pro
 
-**Planify Pro** là ứng dụng hợp nhất sức mạnh của **Google Calendar**, **Outlook Calendar** và **Microsoft To Do** kèm theo **Dashboard Thống kê Chuyên sâu** và **AI Agent 32 Tools**. Toàn bộ Frontend được xây dựng 100% bằng **HTML5, CSS3 và Vanilla JavaScript (ES Modules)** siêu nhẹ, mượt mà trên cả máy tính và điện thoại.
+Ứng dụng quản lý công việc và lịch cá nhân: Vanilla JavaScript ES Modules, FastAPI, SQLAlchemy async, PostgreSQL và Redis.
 
----
+## Chức năng hiện có
 
-## 🌟 Điểm nổi bật trong phiên bản nâng cấp toàn diện
+- Đăng ký xác minh email bằng OTP, đăng nhập JWT Bearer, profile và đặt lại mật khẩu.
+- To Do: Kanban theo trạng thái, danh sách tùy chỉnh, tìm kiếm, đánh dấu quan trọng, bước con, thời gian và lặp công việc.
+- Calendar: Tháng / Tuần / Ngày / Lịch biểu; kéo thả, resize và sự kiện lặp. Task có ngày dùng chung dữ liệu với To Do.
+- Dashboard, chat AI/workspace và NLP local, nhắc lịch, xuất ICS/JSON.
+- Sự kiện trong bảng events giữ định danh riêng; AI không tạo thêm bản sao task không liên kết.
 
-1. **Trang chủ Landing Page (`/`) & Luồng Đăng ký / Đăng nhập mượt mà**:
-   - Trang chủ hiện đại với nút **Đăng nhập** và **Đăng ký** trực quan.
-   - Sau khi đăng ký hoặc đăng nhập, hệ thống tự động chuyển hướng vào trang **Dashboard (`#dashboard`)** biểu đồ thống kê.
-2. **Bố cục 5 Thẻ Điều hướng Chính (Sidebar Trái trên Desktop & Bottom Bar trên Điện thoại)**:
-   - 📊 **1. Dashboard (`#dashboard`)**: Điểm năng suất cá nhân (0-100), 6 thẻ KPI, Biểu đồ cột xu hướng 7 ngày, Biểu đồ tròn phân bổ trạng thái công việc, Ma trận ưu tiên Eisenhower (2x2), Tiến độ theo danh sách và Trạm tập trung **Pomodoro 25 phút**.
-   - ✅ **2. To Do (`#todo`)**: 7 danh sách thông minh (*My Day, Important, Planned, Time-Blocked, Quá hạn, Đã hoàn thành, All Tasks*), Danh sách tùy chỉnh, chuyển đổi linh hoạt giữa **Danh sách** và **Bảng Kanban 4 cột**, Subtasks (Steps), chọn nhiều (**Bulk Actions**), nhấp đúp chuột trái để sửa tên nhanh.
-   - 📅 **3. Calendar (`#calendar`)**: 5 chế độ xem (*Ngày, Tuần làm việc T2-T6 chuẩn Outlook, Tuần 7 ngày, Tháng, Lịch biểu 30 ngày*), Khay **Việc cần xếp lịch** để kéo thả trực tiếp công việc từ To Do vào khung giờ trên lịch, Chuỗi sự kiện lặp lại (RFC 5545 RRULE) và xuất lịch chuẩn `.ICS`.
-   - 🤖 **4. AI Assistant (`#ai` + Panel trượt nhanh)**: Trang làm việc AI chuyên biệt kèm thư viện câu lệnh mẫu và cửa sổ trượt nhanh ở góc phải. AI được trang bị **32 Tools** thao tác toàn diện trên Sự kiện, Lịch, Công việc, Bước con, Thống kê và Tự động lập kế hoạch *My Day* (`auto_plan_my_day`), đồng thời tích hợp **Smart Hybrid NLP Engine** hoạt động mượt mà ngay cả khi chưa cấu hình khóa API ngoài. Có các kiểm tra giới hạn thao tác can thiệp mật khẩu/bảo mật; cần kiểm thử trước khi triển khai public.
-   - 📖 **5. Hướng dẫn (`#guide`)**: Trang cẩm nang tương tác hướng dẫn chi tiết từng phân hệ, thao tác chuột trái/phải, phím tắt và kịch bản thực hành AI.
-3. **Thao tác Chuột trái & Chuột phải Siêu mượt**:
-   - **Quét giữ chuột trái trên lưới giờ Calendar**: Chọn khoảng thời gian bất kỳ (bước nhảy 15 phút) để mở ngay cửa sổ tạo Sự kiện hoặc Time-Block.
-   - **Kéo thả bằng chuột trái**: Di chuyển sự kiện/công việc giữa các giờ và các ngày, kéo mép dưới thẻ để thay đổi thời lượng, kéo việc từ khay bên trái thả vào lịch, hoặc kéo thả thẻ giữa các cột Kanban.
-   - **Nhấp đúp chuột trái (Double-click)**: Đổi tên nhanh công việc ngay trên dòng.
-   - **Menu Chuột phải (Context Menu)**: Đầy đủ thao tác nhanh trên cả Sự kiện và Công việc.
+Không có đồng bộ tài khoản Google/Outlook. Pomodoro đã được bỏ khỏi khởi tạo app. Không coi các tính năng được nhắc trong tài liệu lịch sử là chức năng đang bật.
 
----
+## Khởi chạy
 
-## 🚀 Hướng dẫn Khởi chạy Nhanh (Docker Compose)
-
-Sau khi clone repository, tạo file `.env` local từ `.env.example` (file `.env` không được commit). Điền secrets riêng và đổi các mật khẩu mặc định trước khi chạy; không dùng cấu hình mẫu trên môi trường public:
+Chạy từ thư mục chứa docker-compose.yml. Nếu đã có .env, giữ nguyên và bổ sung trường còn thiếu; không ghi đè cấu hình thật:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Sau đó chạy Docker Compose:
+Điền secrets riêng: PostgreSQL, Redis và SECRET_KEY ngẫu nhiên tối thiểu 32 ký tự. Placeholder JWT sẽ bị từ chối khi startup. ADMIN_PASSWORD để trống sẽ không bootstrap admin; startup không xóa admin khác hoặc reset mật khẩu tài khoản có sẵn.
+
+OTP đăng ký/đặt lại mật khẩu cần SMTP_USERNAME, SMTP_PASSWORD và SMTP_FROM_EMAIL (cùng SMTP_HOST/SMTP_PORT). Chúng độc lập với mật khẩu đăng nhập admin. Không cấu hình SMTP thì API báo không gửi được email, không bỏ qua OTP hoặc báo gửi thành công giả.
+
+AI_API_KEY có thể trống để dùng NLP local. AI_MODEL giữ theo .env; không tự đổi provider/model. Không commit .env.
 
 ```bash
 docker compose up -d --build
 ```
 
-Hoặc sử dụng `Makefile`:
+- [Giao diện](http://localhost:3000)
+- [Swagger](http://localhost:8000/docs)
+
+Backup database trước khi nâng cấp. Entrypoint chạy Alembic; không dùng down -v hoặc reset DB để chữa migration. File requirements.lock khóa môi trường Python 3.11/Linux của Docker đã kiểm thử.
+
+## Kiểm thử an toàn
+
+Không chạy các probe lịch sử vào web/database đang sử dụng. Chúng đã được đánh dấu skip vì có giả định user đầu tiên, Chrome Linux hoặc provider thật.
 
 ```bash
-make dev
+docker compose -p planify-test -f docker-compose.test.yml up -d --build --wait
+docker compose -p planify-test -f docker-compose.test.yml exec -T backend python -m unittest discover -s tests/regression -v
+node --test frontend/tests/regressions.test.mjs
+docker compose -p planify-test -f docker-compose.test.yml down
 ```
 
-- **Giao diện người dùng (Frontend)**: [http://localhost:3000](http://localhost:3000)
-- **Tài liệu API (Swagger UI)**: [http://localhost:8000/docs](http://localhost:8000/docs)
+Stack test dùng DB *_test và Redis riêng, PostgreSQL tmpfs, không đọc .env thật, không gửi email hoặc gọi Groq. Toàn bộ dữ liệu của stack này là dữ liệu dùng một lần và mất khi dừng DB. Test frontend dùng Node 18+; workflow dùng Node 24.
 
+## Tài liệu và kết quả
 
-## Source hiện tại và tài liệu cũ
+- [Bản sửa lỗi và phạm vi kiểm chứng 2026-11-03](docs/BUGFIX_VERIFICATION_2026-11-03.md).
+- [Tổng quan source](docs/00-tong-quan-du-an.md), [API thiết kế](docs/02-api-design.md).
+- [Lịch sử import source](docs/SOURCE_IMPORT_2026-11-02.md), [README trước import](docs/README_PLANNING.md).
+- [Snapshot kế hoạch local](docs/planning-baseline/README.md).
 
-Source hiện tại được nhập từ `todo-list-pro/todo-list` theo xác nhận của nhóm ngày 2026-11-02. Xem [ghi chú import, kiểm tra và giới hạn](docs/SOURCE_IMPORT_2026-11-02.md).
-
-- [Tổng quan bản hiện tại](docs/00-tong-quan-du-an.md), [API bản hiện tại](docs/02-api-design.md), [kế hoạch implementation bản hiện tại](docs/07-implementation-plan.md).
-- [README bản trước trên GitHub](README_PLANNING.md); các tài liệu kế hoạch/kiểm thử cũ trong docs được giữ để tham khảo, không phải bằng chứng bản mới đã qua cùng bộ test.
-- [Snapshot kế hoạch local chưa commit](docs/planning-baseline/README.md) được lưu riêng, không ghi đè tài liệu đã có trên GitHub.
-
-Lượt import này không chứng nhận app hoàn thành hoặc đã deploy. Không chạy các script/migration từ phiên bản cũ với schema của phiên bản mới.
+Các checkbox/báo cáo cũ không thay thế kiểm thử mới. Không có cam kết “không còn bất kỳ lỗi nào”; xem phạm vi đã chạy và giới hạn trong báo cáo. Nhánh sửa lỗi không tự cập nhật web đang chạy từ folder todo-list-pro.

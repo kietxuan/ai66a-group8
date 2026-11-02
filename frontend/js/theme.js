@@ -29,7 +29,10 @@ export class ThemeManager {
     store.set('theme', effectiveTheme);
 
     if (persistToServer && api.getToken()) {
-      api.put('/users/me', { theme_preference: effectiveTheme }).catch(() => {});
+      const token = api.getToken();
+      this.saveQueue = (this.saveQueue || Promise.resolve()).then(() => {
+        if (api.getToken() === token) return api.put('/users/me', { theme_preference: effectiveTheme });
+      }).catch(() => {});
     }
   }
 

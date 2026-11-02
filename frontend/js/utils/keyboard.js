@@ -1,3 +1,4 @@
+import { businessNow } from '../utils/date.js';
 /**
  * Global Keyboard Shortcuts Manager
  * Enables fast single-key navigation (like Google Calendar & Outlook)
@@ -42,7 +43,7 @@ class KeyboardManager {
     switch (key) {
       case 'T': // Today
         e.preventDefault();
-        store.set('selectedDate', new Date());
+        store.set('selectedDate', businessNow());
         Toast.info('📅 Đã chuyển về ngày hôm nay');
         break;
 

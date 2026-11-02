@@ -9,10 +9,10 @@ class Settings(BaseSettings):
     # 2. Tài khoản Admin
     ADMIN_USERNAME: str = "Admin"
     ADMIN_EMAIL: str = "admin@planify.local"
-    ADMIN_PASSWORD: str = "Admin@123456"
+    ADMIN_PASSWORD: str = ""
 
     # 3. Cấu hình Bảo mật (JWT)
-    SECRET_KEY: str = "planify_super_secret_jwt_key_2026_secure"
+    SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 11520
 
@@ -32,6 +32,22 @@ class Settings(BaseSettings):
     AI_API_KEY: Optional[str] = None
     API_KEY: Optional[str] = None
     AI_MODEL: str = "openai/gpt-oss-120b"
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = ""
+    SCHEDULER_ENABLED: bool = True
+
+    def validate_security(self) -> None:
+        if len(self.SECRET_KEY) < 32 or self.SECRET_KEY in {
+            "planify_super_secret_jwt_key_2026_secure", "CHANGE_ME_GENERATE_A_RANDOM_SECRET_KEY"
+        } or any(marker in self.SECRET_KEY.lower() for marker in ("your_", "change_me", "replace-with", "example")):
+            raise RuntimeError("SECRET_KEY must be a private random value of at least 32 characters.")
+        if self.ADMIN_PASSWORD and (len(self.ADMIN_PASSWORD) < 8 or self.ADMIN_PASSWORD in {
+            "Admin@123456", "YOUR_SECRET_PASSWORD", "MAT_KHAU_ADMIN"
+        }):
+            raise RuntimeError("Replace the example ADMIN_PASSWORD or leave it empty to disable bootstrap.")
 
     @property
     def get_ai_api_key(self) -> str:

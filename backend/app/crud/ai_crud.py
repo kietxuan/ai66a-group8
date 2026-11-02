@@ -3,6 +3,7 @@ import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+from sqlalchemy import update, func
 from app.crud.base import CRUDBase
 from app.models.ai_model import AIConversation, AIMessage
 
@@ -54,6 +55,7 @@ class CRUDAI(CRUDBase[AIConversation]):
             tool_results=json.dumps(tool_results, ensure_ascii=False) if tool_results else None
         )
         db.add(msg)
+        await db.execute(update(AIConversation).where(AIConversation.id == conversation_id).values(updated_at=func.now()))
         await db.commit()
         await db.refresh(msg)
         return msg

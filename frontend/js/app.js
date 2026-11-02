@@ -24,12 +24,18 @@ import { aiPage } from './pages/ai.js';
 import { guidePage } from './pages/guide.js';
 import { settingsPage } from './pages/settings.js';
 import { ChatPanel } from './ai/chat-panel.js';
+import { Modal } from './components/modal.js';
+import { ContextMenu } from './components/contextmenu.js';
 
 class App {
   static async init() {
     // 1. Initialize Theme & Toast
     ThemeManager.init();
     Toast.init();
+    store.on('session-reset', () => {
+      for (const modal of [...Modal.modalStack]) modal.close();
+      ContextMenu.close();
+    });
 
     // 2. Register All Routes (Landing + Auth + 5 Core Tabs + Settings)
     router.register('landing', landingPage);

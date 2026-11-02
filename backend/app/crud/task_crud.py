@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import or_
+from app.core.time import business_today, local_now
 from app.crud.base import CRUDBase
 from app.models.task_model import Task, TaskStep
 from app.schemas.task_schema import TaskCreate, TaskUpdate, TaskStepCreate, TaskStepUpdate, ItemReorder
@@ -35,10 +36,10 @@ class CRUDTask(CRUDBase[Task]):
             .where(Task.user_id == user_id)
         )
 
-        today = date.today()
+        today = business_today()
 
         if view == "my_day" or view == "today":
-            stmt = stmt.where(or_(Task.due_date == today, Task.is_in_my_day == True))
+            stmt = stmt.where(or_(Task.due_date == today, (Task.is_in_my_day == True) & (Task.my_day_date == today)))
         elif view == "important":
             stmt = stmt.where(Task.is_important == True)
         elif view == "planned":
@@ -71,9 +72,9 @@ class CRUDTask(CRUDBase[Task]):
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
-    async def create(self, db: AsyncSession, user_id: int, obj_in: TaskCreate) -> Task:
-        today = date.today()
-        is_today = (obj_in.due_date == today) if obj_in.due_date else bool(obj_in.is_in_my_day)
+    async def create(self, db: AsyncSession, user_id: int, obj_in: TaskCreate, commit: bool = True, recurrence_source_id=None) -> Task:
+        today = business_today()
+        is_today = bool(obj_in.is_in_my_day) or obj_in.due_date == today
         db_obj = Task(
             user_id=user_id,
             list_id=obj_in.list_id,
@@ -95,6 +96,7 @@ class CRUDTask(CRUDBase[Task]):
             reminder_minutes=getattr(obj_in, "reminder_minutes", 15),
             reminder_sent=False,
             recurrence_rule=obj_in.recurrence_rule,
+            recurrence_source_id=recurrence_source_id,
             position=getattr(obj_in, "position", 0) or 0
         )
         db.add(db_obj)
@@ -109,22 +111,25 @@ class CRUDTask(CRUDBase[Task]):
                 )
                 db.add(step_obj)
 
-        await db.commit()
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
         return await self.get_with_steps(db, db_obj.id)
 
     async def update(self, db: AsyncSession, db_obj: Task, obj_in: TaskUpdate) -> Task:
         update_data = obj_in.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             if field == "is_in_my_day" and value is True:
-                db_obj.my_day_date = date.today()
+                db_obj.my_day_date = business_today()
             elif field == "is_in_my_day" and value is False:
                 db_obj.my_day_date = None
             elif field == "due_date":
                 # Reset reminder_sent if due_date or time changes
                 db_obj.reminder_sent = False
-                if value == date.today():
+                if value == business_today():
                     db_obj.is_in_my_day = True
-                    db_obj.my_day_date = date.today()
+                    db_obj.my_day_date = business_today()
             elif field in ("start_time", "due_time"):
                 db_obj.reminder_sent = False
             setattr(db_obj, field, value)
@@ -145,7 +150,7 @@ class CRUDTask(CRUDBase[Task]):
 
     async def set_my_day(self, db: AsyncSession, db_obj: Task, is_in_my_day: bool) -> Task:
         db_obj.is_in_my_day = is_in_my_day
-        db_obj.my_day_date = date.today() if is_in_my_day else None
+        db_obj.my_day_date = business_today() if is_in_my_day else None
         await db.commit()
         return await self.get_with_steps(db, db_obj.id)
 

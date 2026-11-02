@@ -1,3 +1,4 @@
+from app.services.write_lock import serialized_write
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
@@ -15,13 +16,16 @@ class CalendarService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy lịch này.")
         return calendar
 
+    @serialized_write
     async def create_calendar(self, db: AsyncSession, user_id: int, calendar_in: CalendarCreate) -> Calendar:
         return await calendar_crud.create(db, user_id=user_id, obj_in=calendar_in)
 
+    @serialized_write
     async def update_calendar(self, db: AsyncSession, calendar_id: int, user_id: int, calendar_in: CalendarUpdate) -> Calendar:
         calendar = await self.get_calendar_by_id(db, calendar_id, user_id)
         return await calendar_crud.update(db, db_obj=calendar, obj_in=calendar_in)
 
+    @serialized_write
     async def delete_calendar(self, db: AsyncSession, calendar_id: int, user_id: int) -> None:
         calendar = await self.get_calendar_by_id(db, calendar_id, user_id)
         if calendar.is_default:

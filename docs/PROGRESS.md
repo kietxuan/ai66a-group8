@@ -1,5 +1,14 @@
 # PROJECT PROGRESS
 
+## Sửa lỗi audit và regression — 2026-11-03
+
+- Nhánh codex/fix-audit-regressions; chỉ bugfix chức năng sẵn có, không thêm feature từ bảng đề xuất. Đối chiếu L/S, modules, tests và giới hạn ở [BUGFIX_VERIFICATION_2026-11-03](BUGFIX_VERIFICATION_2026-11-03.md).
+- Sửa isolation/foreign parent, OTP/admin/JWT, AI confirmation/ambiguity/fallback, task/event recurrence/anchors, validation/all-day/timezone, free slots/auto-plan, Dashboard/export, cache/stale response và toolbar mobile.
+- PostgreSQL/Redis test riêng, provider/SMTP mock; 35 backend tests PASS (gồm migration và property test 250 tập khoảng bận), 21 frontend tests PASS cả TZ America/Los_Angeles. Fresh Docker build + pip check + Python/JS syntax và diff check PASS.
+- UI QA A → logout → B không còn cache A; Todo → Calendar → complete → Todo đồng bộ; mobile 390/320 không cắt nút sau sửa flex-wrap. Dùng computer-use kiểm tra DOM và ảnh, không giả nhận chỉ từ scrollWidth.
+- Không sửa .env hoặc app/DB web-template đang mount từ todo-list-pro; không gọi Groq/gửi email thật, không tự thêm sync Google/Outlook/Pomodoro/priority/category/filter mới. Các probe/benchmark cũ được đánh dấu lịch sử, không tính là bằng chứng mới.
+- Chưa xác minh provider/SMTP/cloud/thiết bị thật; không cam kết 0 lỗi tuyệt đối. Trước áp dụng thật phải backup DB, dùng đúng source/mount và bổ sung SMTP_* độc lập admin nếu dùng OTP/email.
+
 ## Sửa nút đổi giao diện ở sidebar — 2026-11-03
 
 - User báo nút mặt trời cạnh Cài đặt không đổi Sáng/Tối. `App.init()` gọi cả `ThemeManager.init()` và `Sidebar.init()`; cả hai gắn click handler cho `#theme-toggle`, khiến một click đổi theme hai lần rồi trở lại trạng thái cũ, đồng thời gửi hai request cập nhật preference nếu đã đăng nhập.

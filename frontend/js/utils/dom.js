@@ -45,6 +45,13 @@ export function createElement(tag, attrs = {}, children = []) {
       el.setAttribute(key, value);
     }
   });
+  if (attrs.onclick && attrs.className !== 'modal-backdrop' && !['button', 'input', 'textarea', 'select', 'a', 'label'].includes(tag.toLowerCase())) {
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+    el.addEventListener('keydown', e => {
+      if (e.target === el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); el.click(); }
+    });
+  }
   
   const childArray = Array.isArray(children) ? children : [children];
   childArray.forEach(child => {

@@ -7,15 +7,23 @@ from app.core.logger import logger
 AI_RATE_LIMIT_MAX = 30
 AI_RATE_LIMIT_WINDOW_SECONDS = 60
 
+async def enforce_limit(redis, key: str, maximum: int, window: int):
+    if redis is None:
+        raise HTTPException(503, "Dịch vụ giới hạn truy cập chưa sẵn sàng.")
+    count = await redis.eval(
+        "local n=redis.call('INCR',KEYS[1]); if n==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return n",
+        1, f"ratelimit:{key}", window
+    )
+    if count > maximum:
+        raise HTTPException(429, "Quá nhiều yêu cầu. Vui lòng thử lại sau.")
+
 async def check_ai_rate_limit(current_user: User = Depends(get_current_user)) -> None:
     """
     Kiểm tra rate limit AI Chat (tối đa 30 tin nhắn / phút / user).
     Sử dụng Redis fixed window counter.
     """
     if not redis_client.redis:
-        # Nếu Redis không khả dụng, cho phép bypass nhưng log cảnh báo
-        logger.warning("Redis không khả dụng, bỏ qua kiểm tra rate limit AI.")
-        return
+        raise HTTPException(503, "Dịch vụ giới hạn chat chưa sẵn sàng.")
 
     key = f"ratelimit:ai:{current_user.id}"
     try:
@@ -32,5 +40,6 @@ async def check_ai_rate_limit(current_user: User = Depends(get_current_user)) ->
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Lỗi khi kiểm tra rate limit: {str(e)}")
+        logger.error("Không kiểm tra được giới hạn chat.")
+        raise HTTPException(503, "Dịch vụ giới hạn chat chưa sẵn sàng.")
 

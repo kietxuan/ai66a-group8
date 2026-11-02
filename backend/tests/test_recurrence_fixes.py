@@ -1,3 +1,6 @@
+from unittest import SkipTest as _LegacyProbeSkipped
+raise _LegacyProbeSkipped("Historical probe archived: unsafe live DB/provider assumptions. Run backend/tests/regression instead.")
+
 """
 Recurrence Engine & Exception Handling Verification Suite
 Milestone M1 Verification:

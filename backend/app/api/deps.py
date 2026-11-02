@@ -32,13 +32,15 @@ async def get_current_user(
             raise AuthErrors.UNAUTHORIZED.throw()
 
         token_data = TokenData(user_id=user_id)
-    except JWTError as e:
+        if not str(user_id).isdigit():
+            raise AuthErrors.UNAUTHORIZED.throw()
+    except (JWTError, ValueError, TypeError) as e:
         logger.error(f"Lỗi kiểm tra JWT: {str(e)}")
         raise AuthErrors.UNAUTHORIZED.throw()
 
     user = await user_crud.get(db, id=int(token_data.user_id))
 
-    if user is None:
+    if user is None or not user.is_activate or payload.get("ver", 0) != user.token_version:
         raise AuthErrors.UNAUTHORIZED.throw()
 
     return user
