@@ -451,3 +451,24 @@ Screenshots: docs/screenshots/todo-desktop.jpg, todo-mobile.jpg, calendar-deskto
 - Kiểm tra follow-up: Node DOM giả lập xác nhận bật rồi tắt `Cả ngày` giữ nguyên panel/ô ngày, số ô giờ 2→0→2, mỗi lần đúng một API save và một refresh; file thử tạm đã xóa. JS syntax, `git diff --check`, và HTTP 200 cho asset đang phục vụ đều pass. Chưa kiểm tra tương tác trong phiên browser thật đã đăng nhập.
 - Follow-up tiếp theo: user vẫn thấy tải liên tục khi nhập ngày/giờ. Truy vết cho thấy `TaskDetail.notifyChanged()` sau từng `change` vẫn dẫn đến `GET /tasks`, `SmartListsSidebar.render()` và `TaskListView.render()` xóa/vẽ lại toàn bộ phần nền. Chuyển ba ô native date/time sang lưu khi `blur`, xếp tuần tự các PUT, gom một lần refresh khi rời nhóm ngày/giờ; checkbox `Cả ngày` dùng cùng cơ chế. Ô nhập và panel không bị thay trong quá trình chỉnh.
 - Kiểm tra follow-up tiếp theo: Node DOM giả lập xác nhận ba ô chỉ lưu trên blur và chỉ một refresh sau khi rời nhóm; kiểm tra syntax, diff và HTTP asset. Chưa có browser test trên phiên đăng nhập thật.
+
+## 2026-11-03 — Rà soát trang giới thiệu trước đăng nhập
+
+- Phát hiện: các liên kết `#features`/`#calendar-feature`/`#todo-feature`/`#ai-feature` bị SPA router hiểu là route, khách chưa đăng nhập có thể bị chuyển sang trang đăng nhập. `body` khóa cuộn nhưng landing chưa có vùng cuộn riêng; dưới 992px toàn bộ menu tính năng bị ẩn. Header ở màn hình hẹp dễ chật và footer của người đã đăng nhập vẫn dẫn đến login/register.
+- Nội dung chưa khớp source: câu chữ gợi ý có đồng bộ Google/Outlook/Microsoft To Do dù đây là các ứng dụng tham khảo; landing nói 5 kiểu xem lịch nhưng UI hiện có 4, quảng bá Pomodoro dù không xuất hiện trong luồng app; preview số liệu mẫu chưa được ghi rõ là minh họa; tuyên bố bảo vệ bảo mật "tuyệt đối" không có bằng chứng acceptance/security.
+- Sửa `frontend/js/pages/landing.js`, `frontend/css/pages/landing.css`, `frontend/css/responsive.css`: điều hướng cuộn trong landing không đổi hash; menu mobile có nút, trạng thái mở, Escape và đóng khi chọn mục; vùng cuộn riêng và bố cục header/hero/footer cho màn hình hẹp; nhãn theme cho trình đọc màn hình; nội dung mô tả khớp bốn kiểu xem lịch và 32 tool definitions hiện có. Footer phụ thuộc trạng thái đăng nhập. Giữ thiết kế tổng thể và CTA chính.
+- Kiểm tra live Chrome headless tại localhost:3000: desktop 1440px, mobile 390px và 320px; trang cuộn, section navigation giữ `#landing`, menu/ Escape, theme, login/register routes hoạt động; `scrollWidth == innerWidth` tại 390/320; không có JS exception. Kiểm tra syntax JS và `git diff --check`. Không tạo tài khoản, gửi OTP, hoặc kiểm tra đăng ký/đăng nhập end-to-end với email thực.
+
+## 2026-11-03 — Thiết kế lại trang chủ trước đăng nhập theo yêu cầu
+
+- Files: `frontend/js/pages/landing.js`, `frontend/css/pages/landing.css`, `frontend/css/responsive.css`, `frontend/js/pages/login.js`, `docs/PROGRESS.md`; ảnh kiểm tra tại `docs/screenshots/landing-redesign-desktop-2026-11-03.png` và `landing-redesign-mobile-2026-11-03.png`.
+- Header giữ logo, Trang chủ/Giới thiệu, Đăng nhập/Đăng ký; hero sáng với tên ứng dụng, mô tả ngắn và CTA. Bỏ preview giả lập cũ; phần Giới thiệu có đúng ba thẻ thông tin công việc/lịch/AI, không gắn hành động giả. Footer nền tối bốn cột, copyright đúng câu user yêu cầu.
+- User xác nhận email công khai `planify.appvn@gmail.com`; footer dùng `mailto:` này. Link GitHub lấy từ remote project đã kiểm tra. Không có URL/nội dung Điều khoản và Chính sách được cung cấp nên hiển thị trạng thái “Đang cập nhật”, không tạo link giả; không thêm Facebook khi chưa có link được xác nhận.
+- Link Hướng dẫn trỏ tới route được bảo vệ; sửa `login.js` để sau đăng nhập dùng `planify_redirect_after_login` do router lưu, giúp đi đến Hướng dẫn thay vì route cũ. Chưa thử đăng nhập thật/OTP.
+- Kiểm tra Chrome headless trên app localhost:3000: header chỉ hai mục; ba thẻ đúng nội dung; footer email/GitHub; Trang chủ/Giới thiệu ở header và footer cuộn đúng, giữ `#landing`; login/register đi `#login`/`#register`; Hướng dẫn chuyển login và lưu redirect `guide`; nền landing vẫn trắng khi workspace chọn dark; viewport 1440/390/320 không tràn ngang, không JS exception. JS syntax và `git diff --check` pass. Không deploy hay thay `.env`.
+
+## 2026-11-03 — Khôi phục nút đổi giao diện ở trang chủ
+
+- Theo phản hồi của user, thêm lại nút sáng/tối trong header trang chủ; dùng `ThemeManager` hiện có nên lựa chọn được lưu và dùng chung với ứng dụng sau đăng nhập.
+- `frontend/js/pages/landing.js` thêm nút có nhãn hỗ trợ truy cập và trạng thái `aria-pressed`; `frontend/css/pages/landing.css` bổ sung màu tối cho header, hero, chữ, thẻ giới thiệu và điều chỉnh kích thước nút trên mobile. Footer giữ nền tối như thiết kế.
+- Kiểm tra Chrome headless trên localhost:3000: nút đổi hai chiều, màu trang/thẻ/chữ đổi đúng, trạng thái vẫn giữ sau reload; viewport 390/320 không tràn ngang hay chồng logo với nút; không có JS exception. `git diff --check` pass. Chưa deploy.

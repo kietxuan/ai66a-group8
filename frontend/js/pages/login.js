@@ -46,8 +46,10 @@ export const loginPage = {
         try {
           await AuthManager.login(email, password);
           Toast.success('Đăng nhập thành công! Chào mừng bạn quay trở lại.');
+          const redirectRoute = sessionStorage.getItem('planify_redirect_after_login');
+          sessionStorage.removeItem('planify_redirect_after_login');
           const savedRoute = localStorage.getItem('planify_last_route') || 'dashboard';
-          window.location.hash = `#${savedRoute}`;
+          window.location.hash = `#${redirectRoute || savedRoute}`;
         } catch (err) {
           Toast.error(err.message || 'Đăng nhập thất bại.');
         } finally {

@@ -1,173 +1,182 @@
 import { createElement } from '../utils/dom.js';
-import { ThemeManager } from '../theme.js';
 import { AuthManager } from '../auth.js';
+import { ThemeManager } from '../theme.js';
+
+const PROJECT_GITHUB_URL = 'https://github.com/kietxuan/ai66a-group8';
+const CONTACT_EMAIL = 'planify.appvn@gmail.com';
 
 export const landingPage = {
   container: null,
 
-  async render(container) {
+  render(container) {
     this.container = container;
     container.innerHTML = '';
 
-    const isAuth = AuthManager.isAuthenticated();
+    const isAuthenticated = AuthManager.isAuthenticated();
     const page = createElement('div', { className: 'landing-container' });
+    const scroller = container.parentElement;
+    const scrollBehavior = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    const scrollTo = (sectionId) => {
+      if (sectionId === 'home') {
+        scroller?.scrollTo({ top: 0, behavior: scrollBehavior });
+      } else {
+        page.querySelector(`#${sectionId}`)?.scrollIntoView({ behavior: scrollBehavior, block: 'start' });
+      }
+    };
+    const sectionButton = (label, sectionId, className = 'landing-text-link') => createElement('button', {
+      type: 'button',
+      className,
+      textContent: label,
+      onclick: () => scrollTo(sectionId)
+    });
 
-    // 1. NAVBAR with Login & Register buttons
-    const navbar = createElement('header', { className: 'landing-navbar' }, [
-      createElement('a', { href: '#landing', className: 'landing-logo' }, [
-        createElement('span', { style: { fontSize: '26px' }, textContent: '✨' }),
-        createElement('span', { className: 'landing-logo-gradient', textContent: 'Planify Pro' })
-      ]),
-      createElement('nav', { className: 'landing-nav-links' }, [
-        createElement('a', { href: '#features', className: 'landing-nav-link', textContent: 'Tính năng' }),
-        createElement('a', { href: '#calendar-feature', className: 'landing-nav-link', textContent: 'Google & Outlook Calendar' }),
-        createElement('a', { href: '#todo-feature', className: 'landing-nav-link', textContent: 'Microsoft To Do' }),
-        createElement('a', { href: '#ai-feature', className: 'landing-nav-link', textContent: 'AI Agent 32 Tools' })
-      ]),
-      createElement('div', { className: 'landing-nav-actions' }, [
-        createElement('button', {
-          className: 'btn-icon',
-          title: 'Đổi giao diện Sáng / Tối',
-          textContent: '🌓',
-          onclick: () => ThemeManager.toggle()
+    const brand = (className) => createElement('div', { className }, [
+      createElement('span', { className: 'landing-brand-icon', textContent: '✦', 'aria-hidden': 'true' }),
+      createElement('span', { textContent: 'Planify Pro' })
+    ]);
+
+    const themeButton = createElement('button', {
+      type: 'button',
+      className: 'landing-theme-toggle',
+      title: 'Đổi giao diện sáng/tối',
+      'aria-label': 'Đổi giao diện sáng/tối',
+      'aria-pressed': ThemeManager.getSavedTheme() === 'dark' ? 'true' : 'false',
+      onclick: () => {
+        ThemeManager.toggle();
+        themeButton.setAttribute('aria-pressed', ThemeManager.getSavedTheme() === 'dark' ? 'true' : 'false');
+      }
+    }, [
+      createElement('span', { className: 'landing-theme-icon-light', textContent: '☾', 'aria-hidden': 'true' }),
+      createElement('span', { className: 'landing-theme-icon-dark', textContent: '☀', 'aria-hidden': 'true' })
+    ]);
+
+    const header = createElement('header', { className: 'landing-navbar' }, [
+      createElement('div', { className: 'landing-navbar-inner' }, [
+        createElement('a', {
+          href: '#landing',
+          className: 'landing-logo',
+          'aria-label': 'Planify Pro — về đầu trang',
+          onclick: (event) => {
+            event.preventDefault();
+            scrollTo('home');
+          }
+        }, [brand('landing-brand')]),
+        createElement('nav', { className: 'landing-nav-links', 'aria-label': 'Điều hướng trang chủ' }, [
+          sectionButton('Trang chủ', 'home', 'landing-nav-link'),
+          sectionButton('Giới thiệu', 'about', 'landing-nav-link')
+        ]),
+        createElement('div', { className: 'landing-nav-actions' }, isAuthenticated
+          ? [
+              themeButton,
+              createElement('a', { href: '#dashboard', className: 'landing-button landing-button-primary', textContent: 'Vào ứng dụng' })
+            ]
+          : [
+              themeButton,
+              createElement('a', { href: '#login', className: 'landing-login-link', textContent: 'Đăng nhập' }),
+              createElement('a', { href: '#register', className: 'landing-button landing-button-primary', textContent: 'Đăng ký' })
+            ])
+      ])
+    ]);
+
+    const hero = createElement('section', { className: 'landing-hero', id: 'home' }, [
+      createElement('div', { className: 'landing-hero-glow', 'aria-hidden': 'true' }),
+      createElement('div', { className: 'landing-hero-content' }, [
+        createElement('p', { className: 'landing-eyebrow', textContent: 'SẮP XẾP NGÀY CỦA BẠN, THEO CÁCH DỄ DÀNG HƠN' }),
+        createElement('h1', { className: 'landing-title' }, [
+          createElement('span', { textContent: 'Planify Pro' }),
+          createElement('span', { className: 'landing-title-highlight', textContent: 'Mọi kế hoạch trong tầm tay.' })
+        ]),
+        createElement('p', {
+          className: 'landing-subtitle',
+          textContent: 'Quản lý công việc, sắp xếp lịch cá nhân và nhận hỗ trợ từ trợ lý AI trong cùng một không gian.'
         }),
-        isAuth
-          ? createElement('a', { href: '#dashboard', className: 'btn btn-primary', textContent: 'Vào Dashboard →' })
-          : createElement('div', { className: 'flex items-center gap-sm' }, [
-              createElement('a', { href: '#login', className: 'btn btn-secondary', id: 'landing-btn-login', textContent: 'Đăng nhập' }),
-              createElement('a', { href: '#register', className: 'btn btn-primary', id: 'landing-btn-register', textContent: 'Đăng ký miễn phí' })
-            ])
+        createElement('a', {
+          href: isAuthenticated ? '#dashboard' : '#register',
+          className: 'landing-button landing-button-primary landing-hero-cta',
+          textContent: isAuthenticated ? 'Vào ứng dụng  →' : 'Bắt đầu miễn phí  →'
+        }),
+        createElement('div', { className: 'landing-hero-points', 'aria-label': 'Các chức năng chính' }, [
+          createElement('span', { textContent: '✓ Công việc' }),
+          createElement('span', { textContent: '✓ Lịch biểu' }),
+          createElement('span', { textContent: '✓ Trợ lý AI' })
+        ])
       ])
     ]);
 
-    // 2. HERO SECTION
-    const hero = createElement('section', { className: 'landing-hero' }, [
-      createElement('div', { className: 'landing-badge' }, [
-        createElement('span', { textContent: '🚀' }),
-        createElement('span', { textContent: 'Hợp nhất Google Calendar + Outlook Calendar + Microsoft To Do + AI Agent' })
+    const featureCard = (icon, title, description, className) => createElement('article', {
+      className: `landing-feature-card ${className}`
+    }, [
+      createElement('div', { className: 'landing-feature-icon', textContent: icon, 'aria-hidden': 'true' }),
+      createElement('h3', { textContent: title }),
+      createElement('p', { textContent: description })
+    ]);
+
+    const about = createElement('section', { className: 'landing-about', id: 'about' }, [
+      createElement('div', { className: 'landing-section-heading' }, [
+        createElement('p', { className: 'landing-section-kicker', textContent: 'MỘT NƠI CHO MỌI KẾ HOẠCH' }),
+        createElement('h2', { textContent: 'Giới thiệu về Planify Pro' }),
+        createElement('p', { textContent: 'Ba công cụ thiết yếu giúp bạn lên kế hoạch và theo dõi mỗi ngày.' })
       ]),
-      createElement('h1', { className: 'landing-title' }, [
-        createElement('span', { textContent: 'Nền tảng Quản lý ' }),
-        createElement('span', { className: 'landing-title-highlight', textContent: 'Công việc & Lịch trình' }),
-        createElement('span', { textContent: ' Thông minh Toàn diện' })
-      ]),
-      createElement('p', {
-        className: 'landing-subtitle',
-        textContent: 'Trực quan hơn, mượt mà hơn với thao tác quét chuột trái tạo lịch, kéo thả Time-Blocking giữa To Do và Calendar, bảng thống kê Dashboard chuyên sâu và Trợ lý AI tự động hóa mọi tác vụ.'
+      createElement('div', { className: 'landing-feature-grid' }, [
+        featureCard('☑', 'Quản lý công việc', 'Tạo công việc, đặt hạn hoàn thành và theo dõi tiến độ.', 'landing-feature-todo'),
+        featureCard('▦', 'Lịch biểu cá nhân', 'Xem và sắp xếp công việc, sự kiện theo ngày, tuần hoặc tháng.', 'landing-feature-calendar'),
+        featureCard('✧', 'Trợ lý AI', 'Hỏi về lịch trình, tìm khung giờ trống và hỗ trợ quản lý công việc bằng ngôn ngữ tự nhiên.', 'landing-feature-ai')
+      ])
+    ]);
+
+    const footerLinks = (items) => createElement('div', { className: 'landing-footer-links' }, items);
+    const supportItems = [
+      createElement('a', {
+        href: '#guide',
+        textContent: 'Hướng dẫn sử dụng',
+        title: 'Đăng nhập để xem hướng dẫn trong ứng dụng'
       }),
-      createElement('div', { className: 'landing-cta-group' }, [
-        isAuth
-          ? createElement('a', { href: '#dashboard', className: 'btn-hero-primary', textContent: 'Mở Bảng điều khiển Dashboard 📊' })
-          : createElement('a', { href: '#register', className: 'btn-hero-primary', textContent: 'Đăng ký Tài khoản Miễn phí 🚀' }),
-        createElement('a', { href: isAuth ? '#calendar' : '#login', className: 'btn-hero-secondary', textContent: isAuth ? 'Mở Lịch biểu 📅' : 'Đăng nhập Ngay →' })
-      ]),
+      createElement('span', { className: 'landing-footer-pending', textContent: 'Điều khoản sử dụng · Đang cập nhật' }),
+      createElement('span', { className: 'landing-footer-pending', textContent: 'Chính sách bảo mật · Đang cập nhật' })
+    ];
+    const contactItems = CONTACT_EMAIL
+      ? [createElement('a', { href: `mailto:${CONTACT_EMAIL}`, textContent: CONTACT_EMAIL })]
+      : [createElement('span', { className: 'landing-footer-pending', textContent: 'Email liên hệ đang cập nhật' })];
+    contactItems.push(createElement('a', {
+      href: PROJECT_GITHUB_URL,
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      textContent: 'GitHub của dự án ↗'
+    }));
 
-      // Live Interactive-Looking Preview Card
-      createElement('div', { className: 'landing-preview' }, [
-        createElement('div', { className: 'landing-preview-header' }, [
-          createElement('span', { className: 'preview-dot', style: { backgroundColor: '#EF4444' } }),
-          createElement('span', { className: 'preview-dot', style: { backgroundColor: '#F59E0B' } }),
-          createElement('span', { className: 'preview-dot', style: { backgroundColor: '#10B981' } }),
-          createElement('span', {
-            style: { marginLeft: '12px', fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)' },
-            textContent: 'Planify Pro — 5 Phân hệ: Dashboard • To Do • Calendar • AI Assistant • Hướng dẫn'
-          })
-        ]),
-        createElement('div', { className: 'preview-body' }, [
-          // Sidebar mock showing 5 tabs
-          createElement('div', { className: 'preview-sidebar' }, [
-            createElement('div', { style: { fontSize: '11px', fontWeight: '700', color: 'var(--color-text-muted)', marginBottom: '6px' }, textContent: '5 THẺ ĐIỀU HƯỚNG CHÍNH' }),
-            createElement('div', { style: { padding: '8px 10px', borderRadius: '8px', backgroundColor: 'var(--color-bg-selected)', color: 'var(--color-accent)', fontWeight: '700', fontSize: '13px' }, textContent: '📊 1. Dashboard (Thống kê)' }),
-            createElement('div', { style: { padding: '8px 10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600' }, textContent: '✅ 2. To Do (Công việc)' }),
-            createElement('div', { style: { padding: '8px 10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600' }, textContent: '📅 3. Calendar (Lịch biểu)' }),
-            createElement('div', { style: { padding: '8px 10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600' }, textContent: '🤖 4. AI Assistant (32 Tools)' }),
-            createElement('div', { style: { padding: '8px 10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600' }, textContent: '📖 5. Hướng dẫn sử dụng' })
+    const footer = createElement('footer', { className: 'landing-footer' }, [
+      createElement('div', { className: 'landing-footer-inner' }, [
+        createElement('div', { className: 'landing-footer-grid' }, [
+          createElement('div', { className: 'landing-footer-brand-column' }, [
+            brand('landing-footer-brand'),
+            createElement('p', { textContent: 'Lên kế hoạch rõ ràng hơn với công việc, lịch biểu và trợ lý AI trong một nơi.' })
           ]),
-
-          // Center mock
-          createElement('div', { className: 'preview-main' }, [
-            createElement('div', { className: 'flex items-center justify-between', style: { paddingBottom: '8px', borderBottom: '1px solid var(--color-border-light)' } }, [
-              createElement('span', { style: { fontWeight: '700', fontSize: '14px' }, textContent: '📊 Thống kê Năng suất & Lịch trình Hôm nay' }),
-              createElement('span', { style: { fontSize: '11px', padding: '2px 8px', borderRadius: '99px', backgroundColor: '#EEF2FF', color: '#4F46E5', fontWeight: '700' }, textContent: 'Điểm năng suất: 94/100' })
-            ]),
-            createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' } }, [
-              createElement('div', { style: { padding: '10px', borderRadius: '8px', backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' } }, [
-                createElement('div', { style: { fontSize: '18px', fontWeight: '800', color: '#4F46E5' }, textContent: '88%' }),
-                createElement('div', { style: { fontSize: '11px', color: 'var(--color-text-secondary)' }, textContent: 'Tỷ lệ hoàn thành' })
-              ]),
-              createElement('div', { style: { padding: '10px', borderRadius: '8px', backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' } }, [
-                createElement('div', { style: { fontSize: '18px', fontWeight: '800', color: '#10B981' }, textContent: '6 việc' }),
-                createElement('div', { style: { fontSize: '11px', color: 'var(--color-text-secondary)' }, textContent: 'Ngày của tôi (My Day)' })
-              ]),
-              createElement('div', { style: { padding: '10px', borderRadius: '8px', backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' } }, [
-                createElement('div', { style: { fontSize: '18px', fontWeight: '800', color: '#F59E0B' }, textContent: '4.5h' }),
-                createElement('div', { style: { fontSize: '11px', color: 'var(--color-text-secondary)' }, textContent: 'Khung giờ Time-Block' })
-              ])
-            ]),
-            createElement('div', { className: 'flex flex-col gap-xs' }, [
-              createElement('div', {
-                style: { padding: '9px 12px', borderRadius: '8px', backgroundColor: '#4F46E5', color: '#fff', fontSize: '12px', fontWeight: '600' },
-                textContent: '📅 09:00 - 10:30: Họp chiến lược sản phẩm Q4 (Google Meet • Lặp hàng tuần)'
-              }),
-              createElement('div', {
-                style: { padding: '9px 12px', borderRadius: '8px', backgroundColor: '#10B981', color: '#fff', fontSize: '12px', fontWeight: '600' },
-                textContent: '☑️ 14:00 - 15:30: [Time-Blocking] Hoàn thiện thiết kế UI/UX & Kiểm thử'
-              })
+          createElement('div', {}, [
+            createElement('h2', { textContent: 'Khám phá' }),
+            footerLinks([
+              sectionButton('Trang chủ', 'home'),
+              sectionButton('Giới thiệu', 'about'),
+              createElement('a', { href: '#login', textContent: 'Đăng nhập' }),
+              createElement('a', { href: '#register', textContent: 'Đăng ký' })
             ])
           ]),
-
-          // Right AI mock
-          createElement('div', { className: 'preview-ai' }, [
-            createElement('div', { style: { fontWeight: '700', fontSize: '13px' }, textContent: '🤖 AI Agent Thông minh' }),
-            createElement('div', { style: { padding: '10px', borderRadius: '8px', backgroundColor: 'var(--color-bg-card)', border: '1px solid var(--color-border)', fontSize: '12px' }, textContent: '"Tự động xếp lịch các việc quan trọng vào giờ trống hôm nay giúp tôi"' }),
-            createElement('div', { style: { padding: '10px', borderRadius: '8px', backgroundColor: 'var(--color-accent-light)', color: 'var(--color-accent)', fontSize: '12px', fontWeight: '600' }, textContent: '⚙️ Đã gọi: auto_plan_my_day & find_free_slots → Đã xếp 4 việc vào lịch hôm nay!' })
+          createElement('div', {}, [
+            createElement('h2', { textContent: 'Hỗ trợ' }),
+            footerLinks(supportItems)
+          ]),
+          createElement('div', {}, [
+            createElement('h2', { textContent: 'Liên hệ' }),
+            footerLinks(contactItems)
           ])
-        ])
-      ])
-    ]);
-
-    // 3. FEATURES SECTION
-    const features = createElement('section', { className: 'landing-features', id: 'features' }, [
-      createElement('div', { className: 'features-header' }, [
-        createElement('h2', { className: 'features-title', textContent: 'Thiết Kế Tinh Gọn — Đầy Đủ Mọi Tính Năng Cao Cấp' }),
-        createElement('p', { style: { color: 'var(--color-text-secondary)' }, textContent: 'Mượt mà trên cả Máy tính và Điện thoại di động với hệ thống thao tác chuột trái/phải trực quan.' })
-      ]),
-      createElement('div', { className: 'features-grid' }, [
-        createElement('div', { className: 'feature-card', id: 'calendar-feature' }, [
-          createElement('div', { className: 'feature-icon-wrapper', style: { backgroundColor: '#EEF2FF', color: '#4F46E5' }, textContent: '📅' }),
-          createElement('h3', { className: 'feature-title', textContent: 'Google & Outlook Calendar Pro' }),
-          createElement('p', { className: 'feature-desc', textContent: '5 chế độ xem (Ngày, Tuần làm việc 5 ngày, Tuần 7 ngày, Tháng, Lịch biểu). Quét giữ chuột trái trên lưới giờ để tạo sự kiện, kéo thả đổi giờ, kéo cạnh dưới chỉnh thời lượng và xuất file .ics.' })
         ]),
-        createElement('div', { className: 'feature-card', id: 'todo-feature' }, [
-          createElement('div', { className: 'feature-icon-wrapper', style: { backgroundColor: '#ECFDF5', color: '#10B981' }, textContent: '✅' }),
-          createElement('h3', { className: 'feature-title', textContent: 'Microsoft To Do + Kanban + Pomodoro' }),
-          createElement('p', { className: 'feature-desc', textContent: 'Danh sách thông minh (My Day, Quan trọng, Đã lên lịch, Quá hạn), chuyển đổi linh hoạt giữa Danh sách và Bảng Kanban, kéo thả việc vào lịch, thao tác hàng loạt và đồng hồ Pomodoro 25 phút.' })
-        ]),
-        createElement('div', { className: 'feature-card', id: 'ai-feature' }, [
-          createElement('div', { className: 'feature-icon-wrapper', style: { backgroundColor: '#F5F3FF', color: '#7C3AED' }, textContent: '🤖' }),
-          createElement('h3', { className: 'feature-title', textContent: 'AI Agent 32 Tools Toàn Năng' }),
-          createElement('p', { className: 'feature-desc', textContent: 'Tự động lập kế hoạch My Day, tìm khung giờ trống, kiểm tra trùng lịch, dời toàn bộ việc quá hạn, quản lý bước con (subtasks), danh sách và báo cáo năng suất (bảo vệ an toàn tuyệt đối các tác vụ bảo mật).' })
-        ])
+        createElement('div', { className: 'landing-footer-bottom', textContent: '© 2026 Planify Pro. All rights reserved.' })
       ])
     ]);
 
-    // 4. FOOTER
-    const footer = createElement('footer', { className: 'landing-footer' }, [
-      createElement('div', {}, [
-        createElement('span', { style: { fontWeight: '700' }, textContent: 'Planify Pro' }),
-        createElement('span', { textContent: ' — Hệ sinh thái Quản lý Thời gian, Công việc & AI © 2026' })
-      ]),
-      createElement('div', { className: 'flex items-center gap-md' }, [
-        createElement('a', { href: '#login', className: 'landing-nav-link', textContent: 'Đăng nhập' }),
-        createElement('a', { href: '#register', className: 'landing-nav-link', textContent: 'Đăng ký' })
-      ])
-    ]);
-
-    page.appendChild(navbar);
+    page.appendChild(header);
     page.appendChild(hero);
-    page.appendChild(features);
+    page.appendChild(about);
     page.appendChild(footer);
-
     container.appendChild(page);
   },
 
