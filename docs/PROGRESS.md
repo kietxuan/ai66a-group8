@@ -11,6 +11,14 @@
 
 - Tích hợp origin/main cedef4b để giữ Landing/auth trượt mới của nhóm, giải quyết bốn conflict thủ công. Sửa thêm retry sau OTP đã tiêu thụ, Settings stale render/local preference, logout sau đổi mật khẩu, mở đúng form từ Lịch biểu và callback refresh Event. UI sau tích hợp: Guide redirect, lưu profile, tải/đọc ICS+JSON, tuần → lịch biểu sửa → complete → Dashboard; workspace A/B không reload, mobile composer nhìn thấy. Không suy ra remote CI pass từ kiểm thử local.
 - Kiểm tra cuối phát hiện JWT secret mẫu trong .env riêng ai66a-group8. User đã duyệt đổi SECRET_KEY và push nhánh: sinh khóa ngẫu nhiên 48 bytes chỉ trong .env ignored, không in/commit và không chạm .env todo-list-pro. Settings.validate_security và Compose config PASS. Khi chạy bản mới cần đăng nhập lại; email SMTP thật chưa xác minh.
+- Tích hợp tiếp main 33ef7ef (ảnh/mô tả Landing do nhóm thêm trong lúc audit); giữ đủ ba ảnh. Browser QA trên nhánh tích hợp ở 320px xác nhận cả ba ảnh tải được, nằm trong viewport và trang không tràn ngang. Chỉnh alt ảnh Calendar thành lịch tuần đúng nội dung minh họa. Không tự phát triển thêm Landing trong nhánh bugfix.
+## Mở rộng phần giới thiệu tính năng trên landing — 2026-11-03
+
+- Thay ba thẻ mô tả ngắn bằng ba mục Công việc, Lịch biểu, Trợ lý AI có mô tả và ví dụ thao tác cụ thể, dựa trên chức năng của frontend hiện tại. Giữ nội dung chỉ để giới thiệu, không gắn thao tác giả.
+- Tạo đúng một ảnh cho mỗi mục trong `frontend/assets/landing/feature-{todo,calendar,ai}.png`: chụp giao diện frontend hiện tại trên localhost:3000 với API trả dữ liệu mẫu trong phiên Chrome tạm. Không dùng ảnh cũ trong `docs/screenshots` vì chúng thuộc giao diện trước source import; không dùng dữ liệu tài khoản thật. Ảnh Lịch chụp ở chế độ Tuần, có trục giờ. Mỗi ảnh có chú thích dữ liệu mẫu và liên kết mở kích thước gốc.
+- `frontend/js/pages/landing.js` và `frontend/css/pages/landing.css`: bố cục mục giới thiệu theo hàng, ảnh chỉ một bản, giữ đúng tỉ lệ 940:550 bằng `width: 100%; height: auto`, responsive và có màu nền phù hợp sáng/tối.
+- Chrome headless trên localhost:3000: ba mục có đúng một ảnh, tất cả ảnh tải được và giữ tỉ lệ gốc ở 1440/390/320px, không tràn ngang; nút theme vẫn hoạt động, không có JS exception. Chưa deploy, không kiểm tra chức năng AI với provider thật.
+
 ## Giải quyết merge conflict trang đăng nhập — 2026-11-03
 
 - Conflict duy nhất ở `frontend/js/pages/login.js` khi ghép thiết kế auth mới với thay đổi landing đã commit. Giữ `createLoginForm()` của nhánh auth để tương thích `auth-page.js`, đồng thời giữ điều hướng `planify_redirect_after_login` của nhánh landing; sau đăng nhập ưu tiên trang được yêu cầu trước đó, rồi mới dùng `planify_last_route`.

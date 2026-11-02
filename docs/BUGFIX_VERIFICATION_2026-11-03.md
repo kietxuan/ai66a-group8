@@ -2,7 +2,7 @@
 
 ## Phạm vi
 
-Nhánh `codex/fix-audit-regressions`, xuất phát từ `753788f`, tích hợp thêm `origin/main` tại `cedef4b` khi nhóm cập nhật giao diện auth/Landing. Giữ thiết kế mới và điều hướng về trang đã yêu cầu, áp dụng validation/OTP bugfix vào factory form mới. Chỉ sửa lỗi của chức năng có sẵn; không thêm Google/Outlook sync, Pomodoro, bộ lọc/category/ba mức priority mới, framework mới hay tool AI mới.
+Nhánh `codex/fix-audit-regressions`, xuất phát từ `753788f`, tích hợp thêm `origin/main` tại `cedef4b` (auth/Landing) và `33ef7ef` (ảnh/mô tả Landing mới của nhóm). Giữ các cập nhật đó và điều hướng về trang đã yêu cầu, áp dụng validation/OTP bugfix vào factory form mới. Chỉ sửa lỗi của chức năng có sẵn; không thêm Google/Outlook sync, Pomodoro, bộ lọc/category/ba mức priority mới, framework mới hay tool AI mới.
 
 Source được sửa là checkout `ai66a-group8`. Web cổng 3000 đang mount từ `todo-list-pro/todo-list` là bản độc lập, không tự nhận các bản sửa này. Không sửa source, .env, database hoặc container `web-template` của bản đang sử dụng.
 
@@ -69,6 +69,7 @@ Lệnh tái lập có trong [README](../README.md). Workflow theo tài liệu ch
 - To Do 390×844 và 320×640: không tràn trang; mọi nút toolbar nằm trong viewport sau sửa wrap. Theme đổi sang dark đúng một lần. Có kiểm tra ảnh render, không chỉ scrollWidth.
 - Sau tích hợp main: Landing/auth ở 320px, protected Guide → login → trở lại Guide, Settings lưu hồ sơ QA; tải ICS/JSON và đọc nội dung file; Calendar tuần tạo task → Lịch biểu sửa title/Quan trọng bằng phím → hoàn thành → Dashboard 1/2 và 1 mục hoàn thành hôm nay. Tháng/Ngày cũng render trong lượt QA; không thay bằng mock UI.
 - Workspace AI dùng fallback local, A gửi dấu QA_WORKSPACE_A_FINAL → logout → B login cùng tab: DOM/profile B và không có dấu/chat/task A. Composer mobile 390×844 nhìn thấy phía trên bottom nav. Các log 401/stale token cũ xảy ra khi fixture tự động thay ID user trong DB test, không tính là lỗi UI mới hoặc che log.
+- Landing bổ sung từ main 33ef7ef được QA lại ở 320px: cả ba ảnh complete/naturalWidth hợp lệ, right < 320 và scrollWidth = 320; ảnh giữ trong thẻ, không tràn trang. Điều chỉnh alt Calendar cho đúng chế độ tuần trong ảnh mẫu.
 - Kiểm tra responsive viewport không thay cho iOS/Android/touch thật. Không chứng nhận mọi breakpoint, browser, concurrency/load hoặc mọi câu nói tự nhiên.
 - Không chạy SMTP/Groq thật, cloud deploy, database migration của user hoặc security penetration test độc lập. Không có cam kết “an toàn/không lỗi 100%”.
 

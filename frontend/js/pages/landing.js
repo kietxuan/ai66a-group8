@@ -103,24 +103,81 @@ export const landingPage = {
       ])
     ]);
 
-    const featureCard = (icon, title, description, className) => createElement('article', {
-      className: `landing-feature-card ${className}`
+    const featureCard = ({ number, icon, label, title, description, highlights, image, imageAlt }) => createElement('article', {
+      className: `landing-feature-card landing-feature-${image}`
     }, [
-      createElement('div', { className: 'landing-feature-icon', textContent: icon, 'aria-hidden': 'true' }),
-      createElement('h3', { textContent: title }),
-      createElement('p', { textContent: description })
+      createElement('div', { className: 'landing-feature-copy' }, [
+        createElement('div', { className: 'landing-feature-label' }, [
+          createElement('span', { className: 'landing-feature-icon', textContent: icon, 'aria-hidden': 'true' }),
+          createElement('span', { textContent: `${number} / ${label}` })
+        ]),
+        createElement('h3', { textContent: title }),
+        createElement('p', { textContent: description }),
+        createElement('ul', { className: 'landing-feature-list' }, highlights.map(highlight =>
+          createElement('li', { textContent: highlight })
+        ))
+      ]),
+      createElement('figure', { className: 'landing-feature-visual' }, [
+        createElement('div', { className: 'landing-feature-frame' }, [
+          createElement('img', {
+            className: 'landing-feature-image',
+            src: `/assets/landing/feature-${image}.png`,
+            alt: imageAlt,
+            width: '940', height: '550', loading: 'lazy', decoding: 'async'
+          })
+        ]),
+        createElement('figcaption', {}, [
+          createElement('span', { textContent: 'Giao diện minh họa · Dữ liệu mẫu' }),
+          createElement('a', {
+            href: `/assets/landing/feature-${image}.png`,
+            target: '_blank', rel: 'noopener noreferrer',
+            textContent: 'Xem ảnh lớn ↗',
+            'aria-label': `Xem ảnh lớn: ${title}`
+          })
+        ])
+      ])
     ]);
 
     const about = createElement('section', { className: 'landing-about', id: 'about' }, [
       createElement('div', { className: 'landing-section-heading' }, [
         createElement('p', { className: 'landing-section-kicker', textContent: 'MỘT NƠI CHO MỌI KẾ HOẠCH' }),
         createElement('h2', { textContent: 'Giới thiệu về Planify Pro' }),
-        createElement('p', { textContent: 'Ba công cụ thiết yếu giúp bạn lên kế hoạch và theo dõi mỗi ngày.' })
+        createElement('p', { textContent: 'Từ việc cần làm đến lịch trình và trợ lý AI, mọi kế hoạch được sắp xếp trong cùng một không gian.' })
       ]),
       createElement('div', { className: 'landing-feature-grid' }, [
-        featureCard('☑', 'Quản lý công việc', 'Tạo công việc, đặt hạn hoàn thành và theo dõi tiến độ.', 'landing-feature-todo'),
-        featureCard('▦', 'Lịch biểu cá nhân', 'Xem và sắp xếp công việc, sự kiện theo ngày, tuần hoặc tháng.', 'landing-feature-calendar'),
-        featureCard('✧', 'Trợ lý AI', 'Hỏi về lịch trình, tìm khung giờ trống và hỗ trợ quản lý công việc bằng ngôn ngữ tự nhiên.', 'landing-feature-ai')
+        featureCard({
+          number: '01', icon: '☑', label: 'CÔNG VIỆC', image: 'todo',
+          title: 'Quản lý công việc',
+          description: 'Tập hợp việc cần làm vào bảng chung hoặc từng danh sách. Ghi việc nhanh, chia thành bước nhỏ và theo dõi tiến độ mỗi ngày.',
+          highlights: [
+            'Bảng Kanban chia việc thành Cần làm, Hôm nay, Quá hạn và Đã xong.',
+            'Đặt ngày giờ, đánh dấu quan trọng, thêm bước nhỏ và nhắc việc.',
+            'Việc có lịch cũng xuất hiện trong Calendar.'
+          ],
+          imageAlt: 'Bảng To Do của Planify Pro với danh sách công việc và các cột Kanban'
+        }),
+        featureCard({
+          number: '02', icon: '▦', label: 'LỊCH BIỂU', image: 'calendar',
+          title: 'Lịch biểu cá nhân',
+          description: 'Xem công việc và sự kiện trong một lịch chung để biết ngày nào bận, ngày nào còn chỗ cho kế hoạch mới.',
+          highlights: [
+            'Chuyển giữa chế độ Tháng, Tuần, Ngày và Lịch biểu.',
+            'Tạo sự kiện hoặc kéo công việc chưa xếp lịch vào ngày phù hợp.',
+            'Thay đổi công việc được phản ánh ở cả To Do và Calendar.'
+          ],
+          imageAlt: 'Calendar Planify Pro ở chế độ tuần, hiển thị công việc, sự kiện và khay việc chưa xếp lịch'
+        }),
+        featureCard({
+          number: '03', icon: '✧', label: 'TRỢ LÝ AI', image: 'ai',
+          title: 'Trợ lý AI',
+          description: 'Diễn đạt điều bạn muốn bằng tiếng Việt. Trợ lý hỗ trợ tìm thông tin trong kế hoạch và thao tác với công việc, lịch biểu.',
+          highlights: [
+            'Hỏi lịch hôm nay hoặc các việc quan trọng cần làm.',
+            'Tìm khung giờ trống theo thời lượng bạn cần.',
+            'Yêu cầu tạo hoặc dời công việc, sự kiện bằng câu lệnh.'
+          ],
+          imageAlt: 'Giao diện trợ lý AI Planify Pro với các câu hỏi mẫu về kế hoạch, lịch và việc cần làm'
+        })
       ])
     ]);
 
