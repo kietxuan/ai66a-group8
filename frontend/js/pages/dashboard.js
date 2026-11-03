@@ -113,74 +113,17 @@ export const dashboardPage = {
       this.stats = stats;
     } catch (err) {
       if (generation !== this.generation || !this.container) return;
-      this.stats = await this.computeFallbackStats();
+      this.stats = null;
+      pageEl.innerHTML = '';
+      pageEl.appendChild(createElement('div', {
+        className: 'dash-panel-card',
+        role: 'alert',
+        textContent: 'Không tải được dữ liệu Dashboard. Vui lòng tải lại trang hoặc thử lại sau.'
+      }));
+      return;
     }
     if (generation !== this.generation || !this.container) return;
     this.renderContent(pageEl, this.stats);
-  },
-
-  async computeFallbackStats() {
-    const todayStr = formatDate(businessNow(), 'YYYY-MM-DD');
-    let tasks = [];
-    let lists = [];
-    try {
-      [tasks, lists] = await Promise.all([
-        api.get('/tasks'),
-        api.get('/task-lists')
-      ]);
-    } catch (_) {}
-
-    const total = tasks.length;
-    const completed = tasks.filter(t => t.is_completed).length;
-    const pending = total - completed;
-    const rate = total > 0 ? Math.round((completed / total) * 1000) / 10 : 0;
-    const todayTasks = tasks.filter(t => !t.is_completed && t.due_date === todayStr);
-    const overdue = tasks.filter(t => !t.is_completed && t.due_date && t.due_date < todayStr);
-    const impPending = tasks.filter(t => !t.is_completed && t.is_important);
-
-    return {
-      date: todayStr,
-      summary: {
-        total_tasks: total,
-        completed_tasks: completed,
-        pending_tasks: pending,
-        completion_rate: rate,
-        important_pending_count: impPending.length,
-        my_day_total: todayTasks.length,
-        my_day_completed: completed,
-        overdue_count: overdue.length,
-        due_today_count: todayTasks.length,
-        completed_today_count: completed,
-        time_blocked_count: tasks.filter(t => !t.is_completed && !t.is_all_day && t.start_time).length,
-        events_today_count: todayTasks.filter(t => t.auto_complete).length,
-        events_week_count: tasks.filter(t => t.due_date >= todayStr).length,
-        busy_hours_today: 1.5,
-        productivity_score: total > 0 ? Math.min(100, Math.max(25, Math.round(rate + 20))) : 82
-      },
-      status_breakdown: {
-        completed,
-        in_my_day: todayTasks.length,
-        overdue: overdue.length,
-        scheduled: tasks.filter(t => !t.is_completed && t.due_date && t.due_date > todayStr).length,
-        unscheduled: tasks.filter(t => !t.is_completed && !t.due_date).length
-      },
-      weekly_trend: [],
-      list_breakdown: (lists || []).map(l => ({
-        id: l.id,
-        name: l.name,
-        icon: l.icon || '📝',
-        color: l.color || '#4F46E5',
-        total: l.task_count || 0,
-        completed: l.completed_count || 0,
-        pending: (l.task_count || 0) - (l.completed_count || 0),
-        completion_rate: l.task_count ? Math.round(((l.completed_count || 0) / l.task_count) * 100) : 0
-      })),
-      events_today: todayTasks.slice(0, 6),
-      upcoming_events: tasks.filter(t => !t.is_completed && t.due_date && t.due_date >= todayStr).slice(0, 8),
-      tasks_my_day: todayTasks.slice(0, 8),
-      tasks_important: impPending.slice(0, 8),
-      tasks_overdue: overdue.slice(0, 8)
-    };
   },
 
   drawScoreRingCanvas(canvas, score) {
@@ -375,6 +318,7 @@ export const dashboardPage = {
     const user = store.get('user') || {};
     const s = data?.summary || {};
     const breakdown = data?.status_breakdown || {};
+    const todayColumnCount = breakdown.in_my_day || 0;
     const hour = businessNow().getHours();
     const greeting = hour < 12 ? 'Chào buổi sáng' : (hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối');
 
@@ -389,7 +333,7 @@ export const dashboardPage = {
         createElement('h1', { className: 'dash-hero-greeting', textContent: `${greeting}, ${user.nickname || 'bạn'}! 👋` }),
         createElement('p', {
           className: 'dash-hero-subtitle',
-          textContent: `Hôm nay bạn có ${s.due_today_count || 0} công việc / sự kiện trong cột Hôm nay, ${s.overdue_count || 0} việc quá hạn và đã hoàn thành ${s.completion_rate || 0}% tổng khối lượng công việc.`
+          textContent: `Hôm nay bạn có ${todayColumnCount} công việc / sự kiện trong cột Hôm nay, ${s.overdue_count || 0} việc quá hạn và đã hoàn thành ${s.completion_rate || 0}% tổng khối lượng công việc.`
         }),
         createElement('div', { className: 'dash-hero-actions' }, [
           createElement('button', {
@@ -434,7 +378,7 @@ export const dashboardPage = {
       },
       {
         icon: '☀️', bg: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B',
-        value: `${s.due_today_count || 0}`,
+        value: `${todayColumnCount}`,
         badge: 'Cột Hôm nay',
         label: 'Công việc & Sự kiện hôm nay',
         onClick: () => { store.set('activeTodoList', 'board'); window.location.hash = '#todo'; }
@@ -515,7 +459,7 @@ export const dashboardPage = {
 
     const donutSegments = [
       { key: 'todo', label: '📌 Cần làm (Tương lai / Vĩnh viễn)', count: needToDoCount, color: '#6366F1' },
-      { key: 'today', label: '☀️ Hôm nay', count: s.due_today_count || 0, color: '#F59E0B' },
+      { key: 'today', label: '☀️ Hôm nay', count: todayColumnCount, color: '#F59E0B' },
       { key: 'overdue', label: '⚠️ Quá hạn', count: s.overdue_count || 0, color: '#EF4444' },
       { key: 'completed', label: '✅ Hoàn thành', count: breakdown.completed || 0, color: '#10B981' }
     ];
@@ -574,7 +518,7 @@ export const dashboardPage = {
       {
         title: '📌 Việc Cần làm (Sắp tới / Vĩnh viễn)',
         color: '#6366F1',
-        items: impTasks.filter(t => !t.due_date).slice(0, 4)
+        items: (data?.tasks_todo || []).slice(0, 4)
       }
     ];
 

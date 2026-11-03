@@ -16,6 +16,9 @@ from app.schemas.calendar_schema import CalendarCreate, CalendarUpdate
 from app.schemas.category_schema import CategoryCreate
 from app.ai.confirmation import pending_actions
 from app.core.time import local_now, business_today, BUSINESS_TZ
+from app.ai.tools import TOOLS
+from app.ai.scheduling import constrain_creation, fold
+import re
 
 
 def parse_date(val):
@@ -64,8 +67,8 @@ def parse_time(val):
         val_str += ":00"
     try:
         return time.fromisoformat(val_str)
-    except Exception:
-        return None
+    except (ValueError, TypeError):
+        raise ValueError('Giờ không hợp lệ. Vui lòng dùng HH:MM trong khoảng 00:00–23:59.')
 
 
 def parse_datetime(val):
@@ -85,13 +88,43 @@ def parse_datetime(val):
 
 
 class ToolExecutor:
-    def __init__(self, user_id: int, db: AsyncSession, conversation_id=None):
+    def __init__(self, user_id: int, db: AsyncSession, conversation_id=None, request_text=None):
         self.user_id = user_id
         self.db = db
         self.context_key = (user_id, conversation_id)
         self.executions = []
         self.confirmed_action = None
         self.pending_snapshot = None
+        self.request_text = request_text
+
+    @staticmethod
+    def _validate_arguments(name, arguments):
+        schema = next((t['function']['parameters'] for t in TOOLS if t['function']['name'] == name), None)
+        if schema is None:
+            return
+        properties = schema.get('properties', {})
+        unknown = set(arguments) - set(properties) - {'_snapshot', 'confirmed'}
+        if unknown:
+            raise ValueError('Thông tin công cụ không hợp lệ: ' + ', '.join(sorted(unknown)) + '. Chưa thực hiện thao tác.')
+        for key in schema.get('required', []):
+            if arguments.get(key) is None:
+                raise ValueError(f'Thiếu thông tin bắt buộc: {key}. Chưa thực hiện thao tác.')
+        for key, value in arguments.items():
+            if key not in properties or value is None:
+                continue
+            spec = properties[key]
+            kind = spec.get('type')
+            valid = {'string': isinstance(value, str), 'integer': type(value) is int,
+                     'boolean': type(value) is bool, 'array': isinstance(value, list),
+                     'object': isinstance(value, dict), 'number': type(value) in (int, float)}
+            if kind in valid and not valid[kind]:
+                raise ValueError(f'Thông tin {key} sai kiểu dữ liệu. Chưa thực hiện thao tác.')
+            if 'enum' in spec and value not in spec['enum']:
+                raise ValueError(f'Giá trị {key} chưa được hỗ trợ. Chưa thực hiện thao tác.')
+            if kind == 'array':
+                item_kind = spec.get('items', {}).get('type')
+                if (item_kind == 'string' and any(not isinstance(item, str) for item in value)) or (item_kind == 'integer' and any(type(item) is not int for item in value)):
+                    raise ValueError(f'Danh sách {key} chứa giá trị không hợp lệ.')
 
     async def execute(self, tool_name: str, arguments: dict) -> dict:
         # Block any security/password tools strictly
@@ -144,11 +177,26 @@ class ToolExecutor:
             "auto_plan_my_day": self._auto_plan_my_day,
         }
 
-        handler = tool_map.get(tool_name)
-        if not handler:
-            return {"success": False, "error": f"Tool '{tool_name}' không tồn tại."}
-
         try:
+            if not isinstance(arguments, dict):
+                raise ValueError('Thông tin công cụ phải là một object hợp lệ. Chưa thực hiện thao tác.')
+            request = fold(re.sub(r'''["“”'‘’][^"“”'‘’]*["“”'‘’]''', '', self.request_text or ''))
+            read_request = re.match(r'^(?:hay\s+)?(?:xem|liet ke|tim|cho toi biet|hom nay toi co|toi co|co nhung|thong ke|bao cao)\b', request)
+            asks_write = re.search(r'\b(?:tao|them|xoa|sua|doi|danh dau|sap xep|lap ke hoach|dat lich|len lich)\b', request)
+            if read_request and not asks_write and not tool_name.startswith(('list_', 'get_', 'search_', 'find_', 'check_')):
+                raise ValueError('Bạn đang yêu cầu xem thông tin, nên mình không thực hiện thay đổi dữ liệu.')
+            self._validate_arguments(tool_name, arguments)
+            arguments = constrain_creation(tool_name, arguments, self.request_text)
+            tool_name, arguments = self._normalize_creation(tool_name, dict(arguments))
+            tool_name, arguments = await self._normalize_event_action(tool_name, arguments)
+            handler = tool_map.get(tool_name)
+            if not handler:
+                raise ValueError(f"Tool '{tool_name}' không tồn tại.")
+            # Normalized aliases must also be idempotent within the same agent turn.
+            if not tool_name.startswith(("list_", "get_", "search_", "find_", "check_")):
+                for name, args, previous in self.executions:
+                    if name == tool_name and args == arguments:
+                        return previous
             destructive = tool_name.startswith("delete_") or (tool_name == "batch_update_tasks" and (arguments or {}).get("action") in ("clear_completed", "delete_by_ids"))
             if destructive and self.confirmed_action != (tool_name, arguments):
                 frozen, label = await self._prepare_delete(tool_name, dict(arguments or {}))
@@ -171,6 +219,96 @@ class ToolExecutor:
             await self.db.rollback()
         self.executions.append((tool_name, arguments, result))
         return result
+
+    @staticmethod
+    def _normalize_creation(name, args):
+        """Match the unified form: ordinary calendar activities are scheduled Tasks.
+
+        Explicit calendar groups and multi-day events still need the legacy Event model.
+        Never create a second record merely to make an item visible in another view.
+        """
+        if name != "create_event" or args.get("calendar_id") or args.get("calendar_name"):
+            return name, args
+        from app.services.recurrence import aware
+        if not args.get("start_at"):
+            raise ValueError("Bạn muốn bắt đầu vào ngày nào và lúc mấy giờ?")
+        start = aware(parse_datetime(args.get("start_at")))
+        end = aware(parse_datetime(args["end_at"])) if args.get("end_at") else start + timedelta(days=1) if args.get("is_all_day") else start + timedelta(hours=1)
+        if end <= start:
+            raise ValueError("Giờ kết thúc phải sau giờ bắt đầu.")
+        all_day = bool(args.get("is_all_day", False))
+        if (not all_day and start.date() != end.date()) or (all_day and (start.time() != time.min or end != start + timedelta(days=1))):
+            return name, args
+        normalized = {
+            "title": args.get("title"), "note": args.get("description"),
+            "location": args.get("location"), "due_date": start.date().isoformat(),
+            "is_all_day": all_day, "auto_complete": True,
+            "is_in_my_day": start.date() == business_today(),
+            "recurrence_rule": args.get("recurrence_rule"), "color": args.get("color"),
+        }
+        if not all_day:
+            normalized.update(start_time=start.time().isoformat(), end_time=end.time().isoformat(),
+                              duration_minutes=int((end - start).total_seconds() // 60))
+        if "reminder_minutes" in args:
+            normalized["reminder_minutes"] = args["reminder_minutes"]
+        return "create_task", normalized
+
+    async def _normalize_event_action(self, name, args):
+        """Resolve unified event Tasks without confusing their IDs with legacy Event IDs."""
+        if name in {"update_event", "reschedule_event", "delete_event"} and args.get("event_id") and args.get("task_id"):
+            raise ValueError("Chỉ chọn một loại ID: task_id cho To Do hoặc event_id cho sự kiện thuộc nhóm lịch.")
+        if name not in {"update_event", "reschedule_event", "delete_event"} or args.get("event_id"):
+            return name, args
+        target = None
+        if args.get("task_id"):
+            target = await self._resolve_task(task_id=args["task_id"])
+        elif args.get("title_query"):
+            from sqlalchemy import select
+            from app.models.event_model import Event
+            tasks = await task_service.get_tasks(self.db, user_id=self.user_id, view="all")
+            candidates = [t for t in tasks if t.due_date]
+            q = args["title_query"].strip().lower()
+            if not q or not any(q in t.title.lower() for t in candidates):
+                return name, args
+            legacy = (await self.db.execute(select(Event).where(Event.user_id == self.user_id, Event.is_cancelled == False))).scalars().all()
+            candidates += list(legacy)
+            matches = [t for t in candidates if t.title.strip().lower() == q]
+            matches = matches or [t for t in candidates if q in t.title.lower()]
+            if len(matches) != 1:
+                raise ValueError("Có nhiều mục trùng tên. Vui lòng chọn đúng loại mục và ID (task_id cho To Do, event_id cho sự kiện thuộc nhóm lịch).")
+            from app.models.task_model import Task
+            if not isinstance(matches[0], Task):
+                return name, args
+            target = matches[0]
+        if target is None:
+            return name, args
+        if target.recurrence_rule and any(args.get(key) for key in ("scope", "original_start", "occurrence_date")):
+            raise ValueError("Mục này dùng chu kỳ công việc To Do, không dùng phạm vi lặp của nhóm lịch. Vui lòng chỉnh đúng công việc theo task_id.")
+        if name == "delete_event":
+            return "delete_task", {"task_id": target.id}
+        updates = {key: value for key, value in args.items() if key in TaskUpdate.model_fields}
+        if "description" in args:
+            updates["note"] = args["description"]
+        start_raw = args.get("new_start_at") if name == "reschedule_event" else args.get("start_at")
+        end_raw = args.get("new_end_at") if name == "reschedule_event" else args.get("end_at")
+        if start_raw or end_raw or name == "reschedule_event":
+            from app.services.recurrence import aware
+            if not target.due_date:
+                raise ValueError("Mục này chưa có ngày; vui lòng chọn ngày thực hiện.")
+            old_start = datetime.combine(target.due_date, target.start_time or target.due_time or time.min, BUSINESS_TZ)
+            old_end = datetime.combine(target.due_date, target.end_time, BUSINESS_TZ) if target.end_time else old_start + timedelta(days=1) if target.is_all_day else old_start + timedelta(minutes=target.duration_minutes)
+            start = aware(parse_datetime(start_raw)) if start_raw else old_start
+            if name == "reschedule_event" and not start_raw:
+                if args.get("shift_minutes") is None:
+                    raise ValueError("Cần cung cấp thời gian mới hoặc số phút muốn dời.")
+                start += timedelta(minutes=int(args["shift_minutes"]))
+            end = aware(parse_datetime(end_raw)) if end_raw else start + (old_end - old_start)
+            all_day = updates.get("is_all_day", target.is_all_day)
+            if end <= start or (not all_day and end.date() != start.date()) or (all_day and (start.time() != time.min or end != start + timedelta(days=1))):
+                raise ValueError("Khung giờ To Do phải nằm trong cùng một ngày và kết thúc sau bắt đầu.")
+            updates.update(due_date=start.date().isoformat(), is_in_my_day=start.date() == business_today(), is_all_day=all_day,
+                           start_time=None if all_day else start.time().isoformat(), end_time=None if all_day else end.time().isoformat())
+        return "update_task", {"task_id": target.id, **updates}
 
     async def _delete_snapshot(self, name, args):
         from sqlalchemy import select
@@ -311,9 +449,11 @@ class ToolExecutor:
         created = await event_service.create_event(self.db, user_id=self.user_id, event_in=event_in)
         return {
             "id": created.id,
+            "item_type": "event",
             "title": created.title,
             "start_at": created.start_at.isoformat(),
             "end_at": created.end_at.isoformat(),
+            "is_all_day": created.is_all_day,
             "location": created.location,
             "calendar_id": created.calendar_id,
             "recurrence_rule": created.recurrence_rule
@@ -385,10 +525,14 @@ class ToolExecutor:
         events = await event_service.get_events_in_range(
             self.db, user_id=self.user_id, start_at=start_dt, end_at=end_dt, calendar_id=calendar_id
         )
-        return [
+        from app.services.recurrence import expand_event_rows
+        events = expand_event_rows(events, start_dt, end_dt)
+        result = [
             {
                 "id": e.id,
+                "item_type": "event",
                 "title": e.title,
+                "description": e.description,
                 "start_at": e.start_at.isoformat(),
                 "end_at": e.end_at.isoformat(),
                 "is_all_day": e.is_all_day,
@@ -397,29 +541,27 @@ class ToolExecutor:
             }
             for e in events if not e.is_cancelled
         ]
+        if calendar_id is None:
+            from app.services.recurrence import aware
+            lo, hi = aware(start_dt), aware(end_dt)
+            tasks = await task_service.get_tasks(self.db, user_id=self.user_id, due_after=lo.date(), due_before=hi.date())
+            for task in tasks:
+                start = datetime.combine(task.due_date, time.min if task.is_all_day else task.start_time or task.due_time or time.min, BUSINESS_TZ)
+                end = start + timedelta(days=1) if task.is_all_day else datetime.combine(task.due_date, task.end_time, BUSINESS_TZ) if task.end_time else start + timedelta(minutes=task.duration_minutes)
+                if start < hi and end > lo:
+                    result.append({"id": task.id, "task_id": task.id, "item_type": "task", "title": task.title,
+                                   "description": task.note, "location": task.location, "start_at": start.isoformat(),
+                                   "end_at": end.isoformat(), "is_all_day": task.is_all_day,
+                                   "is_completed": task.is_completed, "recurrence_rule": task.recurrence_rule})
+        return sorted(result, key=lambda item: parse_datetime(item["start_at"]).timestamp())
 
     async def _search_events(self, query: str, days_window: int = 60, **kwargs):
         q = (query or "").strip().lower()
         today = business_today()
         start_dt = datetime.combine(today - timedelta(days=15), time.min)
         end_dt = datetime.combine(today + timedelta(days=int(days_window or 60)), time.max)
-        events = await event_service.get_events_in_range(self.db, user_id=self.user_id, start_at=start_dt, end_at=end_dt)
-        matched = [
-            {
-                "id": e.id,
-                "title": e.title,
-                "start_at": e.start_at.isoformat(),
-                "end_at": e.end_at.isoformat(),
-                "location": e.location
-            }
-            for e in events
-            if not e.is_cancelled and (
-                q in (e.title or "").lower()
-                or q in (e.description or "").lower()
-                or q in (e.location or "").lower()
-            )
-        ]
-        return matched
+        events = await self._list_events(start_date=start_dt.isoformat(), end_date=end_dt.isoformat())
+        return [e for e in events if any(q in (e.get(field) or "").lower() for field in ("title", "description", "location"))]
 
     async def _check_conflicts(self, start_at: str, end_at: str, **kwargs):
         from app.services.availability import busy_intervals
@@ -472,7 +614,7 @@ class ToolExecutor:
 
     # ==================== 3. TASK TOOLS ====================
     async def _create_task(self, title: str, steps: list = None, **kwargs):
-        start_time_val = parse_time(kwargs.get("start_time"))
+        start_time_val = parse_time(kwargs.get("start_time") or kwargs.get("due_time"))
         end_time_val = parse_time(kwargs.get("end_time"))
         list_id_val = await self._resolve_list_id(kwargs.get("list_id"), kwargs.get("list_name"))
 
@@ -487,6 +629,9 @@ class ToolExecutor:
         task_in = TaskCreate(
             title=title,
             note=kwargs.get("note"),
+            location=kwargs.get("location"),
+            auto_complete=kwargs.get("auto_complete", False),
+            reminder_minutes=kwargs.get("reminder_minutes", 15),
             list_id=list_id_val,
             due_date=due_date_val,
             due_time=parse_time(kwargs.get("due_time")),
@@ -497,12 +642,13 @@ class ToolExecutor:
             color=kwargs.get("color"),
             recurrence_rule=kwargs.get("recurrence_rule"),
             is_important=kwargs.get("is_important", False),
-            is_in_my_day=kwargs.get("is_in_my_day", False),
+            is_in_my_day=kwargs.get("is_in_my_day", due_date_val == business_today()),
             steps=[TaskStepCreate(title=str(s)) for s in steps] if steps else None
         )
         created = await task_service.create_task(self.db, user_id=self.user_id, task_in=task_in)
         return {
             "id": created.id,
+            "item_type": "task",
             "title": created.title,
             "list_id": created.list_id,
             "is_important": created.is_important,
@@ -510,6 +656,10 @@ class ToolExecutor:
             "due_date": str(created.due_date) if created.due_date else None,
             "start_time": str(created.start_time) if created.start_time else None,
             "end_time": str(created.end_time) if created.end_time else None,
+            "auto_complete": created.auto_complete,
+            "is_completed": created.is_completed,
+            "is_all_day": created.is_all_day,
+            "duration_minutes": created.duration_minutes,
             "recurrence_rule": created.recurrence_rule,
             "steps_count": len(created.steps or [])
         }
@@ -531,12 +681,20 @@ class ToolExecutor:
             if resolved_lid:
                 kwargs["list_id"] = resolved_lid
 
-        task_in = TaskUpdate(**{k: v for k, v in kwargs.items() if k in TaskUpdate.model_fields})
+        payload = {k: v for k, v in kwargs.items() if k in TaskUpdate.model_fields}
+        if not payload:
+            raise ValueError('Chưa có nội dung thay đổi hợp lệ để cập nhật công việc.')
+        task_in = TaskUpdate(**payload)
         updated = await task_service.update_task(self.db, task_id=target.id, user_id=self.user_id, task_in=task_in)
         return {
             "id": updated.id,
+            "item_type": "task",
             "title": updated.title,
             "due_date": str(updated.due_date) if updated.due_date else None,
+            "start_time": str(updated.start_time) if updated.start_time else None,
+            "end_time": str(updated.end_time) if updated.end_time else None,
+            "auto_complete": updated.auto_complete,
+            "recurrence_rule": updated.recurrence_rule,
             "is_important": updated.is_important,
             "is_in_my_day": updated.is_in_my_day,
             "is_completed": updated.is_completed
@@ -821,7 +979,10 @@ class ToolExecutor:
         end_dt = datetime.combine(target_date, time.max)
 
         events = await event_service.get_events_in_range(self.db, user_id=self.user_id, start_at=start_dt, end_at=end_dt)
-        my_day_tasks = await task_service.get_tasks(self.db, user_id=self.user_id, view="my_day")
+        from app.services.recurrence import expand_event_rows
+        events = expand_event_rows(events, start_dt, end_dt)
+        scheduled_tasks = await task_service.get_tasks(self.db, user_id=self.user_id, due_after=target_date, due_before=target_date)
+        my_day_tasks = await task_service.get_tasks(self.db, user_id=self.user_id, view="my_day") if target_date == business_today() else []
         overdue_tasks = await task_service.get_tasks(self.db, user_id=self.user_id, due_before=target_date - timedelta(days=1), is_completed=False)
         free_info = await self._find_free_slots(date=str(target_date), duration_minutes=60)
 
@@ -845,6 +1006,12 @@ class ToolExecutor:
                     "start_time": str(t.start_time)[:5] if t.start_time else None
                 }
                 for t in my_day_tasks
+            ],
+            "scheduled_tasks": [
+                {"id": t.id, "title": t.title, "due_date": str(t.due_date),
+                 "start_time": str(t.start_time) if t.start_time else None,
+                 "end_time": str(t.end_time) if t.end_time else None, "is_completed": t.is_completed}
+                for t in scheduled_tasks
             ],
             "overdue_tasks": [
                 {"id": t.id, "title": t.title, "due_date": str(t.due_date)}

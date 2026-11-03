@@ -40,7 +40,6 @@ async def background_scheduler_loop():
             async with AsyncSessionLocal() as session:
                 now = local_now()
                 today = now.date()
-                current_time = now.time()
 
                 # 1. Lấy các task chưa hoàn thành có due_date
                 stmt = select(Task, User).join(User, Task.user_id == User.id).where(
@@ -48,25 +47,12 @@ async def background_scheduler_loop():
                     Task.due_date.isnot(None)
                 )
                 rows = (await session.execute(stmt)).all()
+                await task_service.evaluate_auto_complete(session, [task for task, _ in rows])
+                # Catch-up may have inserted a current/future successor; reminders use fresh rows.
+                rows = (await session.execute(stmt)).all()
                 changed = False
 
                 for task, user in rows:
-                    # Kiểm tra tự động hoàn thành cho Sự kiện (auto_complete=True)
-                    if getattr(task, "auto_complete", False):
-                        should_complete = False
-                        if task.due_date < today:
-                            should_complete = True
-                        elif task.due_date == today and not task.is_all_day:
-                            end_t = task.end_time or task.due_time or task.start_time
-                            if end_t and end_t <= current_time:
-                                should_complete = True
-                        if should_complete:
-                            from app.services.write_lock import lock_owner
-                            await lock_owner(session, task.user_id)
-                            await task_service._complete_transition(session, task.id, task.user_id, True)
-                            changed = True
-                            continue
-
                     # Kiểm tra gửi email thông báo nhắc lịch hôm nay
                     if (
                         task.due_date == today

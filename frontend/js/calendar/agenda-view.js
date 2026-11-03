@@ -135,6 +135,10 @@ export class AgendaView {
         group.items.forEach(item => {
           const isEvent = item._type === 'event';
           const isTask = item._type === 'task' || !!item.is_task;
+          const isAutoEvent = isTask && !!item.auto_complete;
+          const eventLabel = isEvent || isAutoEvent;
+          const location = item.location || item.raw_task?.location;
+          const recurrenceRule = item.recurrence_rule || item.raw_task?.recurrence_rule;
           const startTimeStr = item.is_all_day ? 'Cả ngày' : formatDate(item._dateObj, 'HH:mm');
           const endTimeStr = (item.is_all_day || !item.end_at) ? '' : ` - ${formatDate(new Date(item.end_at), 'HH:mm')}`;
           const timeLabel = `${startTimeStr}${endTimeStr}`;
@@ -190,18 +194,18 @@ export class AgendaView {
               taskCheckbox,
               createElement('span', {
                 className: 'agenda-item-icon',
-                textContent: isEvent ? '🗓️' : '✅'
+                textContent: eventLabel ? '🗓️' : '✅'
               }),
               createElement('span', {
                 className: `agenda-item-title ${item.is_completed ? 'strikethrough' : ''}`,
                 textContent: item.title
               })
             ]),
-            item.location ? createElement('div', {
+            location ? createElement('div', {
               className: 'agenda-item-detail agenda-item-location',
-              textContent: `📍 ${item.location}`
+              textContent: `📍 ${location}`
             }) : null,
-            item.recurrence_rule ? createElement('div', {
+            recurrenceRule ? createElement('div', {
               className: 'agenda-item-detail agenda-item-recurrence',
               textContent: '🔄 Lặp lại'
             }) : null
@@ -209,8 +213,8 @@ export class AgendaView {
 
           // Type Pill
           const typePill = createElement('span', {
-            className: `agenda-type-pill ${isEvent ? 'event' : 'task'}`,
-            textContent: isEvent ? 'Sự kiện' : 'Việc cần làm'
+            className: `agenda-type-pill ${eventLabel ? 'event' : 'task'}`,
+            textContent: isAutoEvent ? 'Sự kiện (Tự hoàn thành)' : isEvent ? 'Sự kiện' : 'Việc cần làm'
           });
 
           itemCard.appendChild(timeBadge);

@@ -355,6 +355,8 @@ export class TaskItem {
           label: 'Xóa mục này',
           danger: true,
           onClick: async () => {
+            const when = task.due_date ? ` (${task.due_date}${task.start_time ? ` ${String(task.start_time).slice(0, 5)}` : ''})` : '';
+            if (!confirm(`Bạn có chắc chắn muốn xóa "${task.title}"${when}?`)) return;
             await api.delete(`/tasks/${task.id}`);
             Toast.success('Đã xóa thành công');
             window.dispatchEvent(new CustomEvent('planify:data-changed'));

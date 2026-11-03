@@ -423,6 +423,13 @@
   background-color: rgba(99, 102, 241, 0.14);
 }
 
+@media (max-width: 600px) {
+  .agenda-item-card { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .agenda-item-content, .agenda-item-title-row { min-width: 0; }
+  .agenda-type-pill { justify-self: start; max-width: 100%; }
+  .agenda-item-detail { overflow-wrap: anywhere; }
+}
+
 .agenda-empty-state {
   padding: 48px 16px;
   text-align: center;

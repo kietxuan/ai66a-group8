@@ -1,5 +1,6 @@
 import { AuthManager } from './auth.js';
 import { store } from './store.js';
+import { AiDemoAccess } from './ai/demo-access.js';
 
 const PAGE_META = {
   dashboard: { title: 'Dashboard', subtitle: 'Biểu đồ thống kê & tổng quan tiến độ công việc' },
@@ -26,6 +27,7 @@ export class Router {
   }
 
   async handleRoute() {
+    const navigation = this.navigation = (this.navigation || 0) + 1;
     const rawHash = window.location.hash.slice(1).trim();
     const isAuthenticated = AuthManager.isAuthenticated();
 
@@ -34,6 +36,11 @@ export class Router {
     if (targetPath === 'home' || targetPath === '/') targetPath = isAuthenticated ? savedRoute : 'landing';
 
     const [path, ...params] = targetPath.split('/');
+    if (path !== 'ai') {
+      // Approval lasts only for the current AI visit, never across other pages.
+      AiDemoAccess.reset();
+      if (store.get('isAiPanelOpen')) store.set('isAiPanelOpen', false);
+    }
 
     const publicRoutes = ['landing', 'login', 'register'];
     const isPublic = publicRoutes.includes(path);
@@ -51,6 +58,19 @@ export class Router {
       sessionStorage.removeItem('planify_redirect_after_login');
       window.location.hash = `#${redirectPath}`;
       return;
+    }
+
+    // Demo acknowledgement applies to direct links, sidebar/mobile links and queued prompts.
+    if (path === 'ai' && isAuthenticated) {
+      const userId = store.get('user')?.id;
+      const accepted = await AiDemoAccess.request();
+      if (navigation !== this.navigation || userId !== store.get('user')?.id || !AuthManager.isAuthenticated()) return;
+      if (!accepted) {
+        sessionStorage.removeItem('planify_ai_pending_prompt');
+        const previous = store.get('currentRoute');
+        this.navigate(['dashboard', 'todo', 'calendar', 'guide', 'settings'].includes(previous) ? previous : 'dashboard');
+        return;
+      }
     }
 
     // 3. Toggle containers visibility
