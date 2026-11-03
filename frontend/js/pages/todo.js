@@ -681,7 +681,7 @@ export const todoPage = {
       return;
     }
 
-    if (this.taskDetailComponent?.canLeave() === false) return;
+    if (this.taskDetailComponent?.canLeave?.() === false) return;
 
     this.activeTask = task;
     const detailContainer = this.container?.querySelector(
@@ -695,7 +695,7 @@ export const todoPage = {
   },
 
   closeDetail() {
-    if (this.taskDetailComponent?.canLeave() === false) return false;
+    if (this.taskDetailComponent?.canLeave?.() === false) return false;
     this.activeTask = null;
     const detailContainer = this.container?.querySelector(
       ".task-detail-container",
@@ -710,7 +710,11 @@ export const todoPage = {
   },
 
   canLeave() {
-    return this.taskDetailComponent?.canLeave() !== false;
+    try {
+      return this.taskDetailComponent?.canLeave?.() !== false;
+    } catch {
+      return true;
+    }
   },
 
   async toggleComplete(task, isCompleted) {
@@ -824,7 +828,7 @@ export const todoPage = {
     if (this.sidebarComponent?.destroy) {
       this.sidebarComponent.destroy();
     }
-    this.taskDetailComponent?.destroy();
+    try { this.taskDetailComponent?.destroy?.(); } catch {}
     if (this.container) {
       this.container.innerHTML = "";
       this.container = null;

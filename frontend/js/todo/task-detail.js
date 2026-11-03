@@ -30,6 +30,18 @@ export class TaskDetail {
     this.container.innerHTML = '';
   }
 
+  isDirty() {
+    return false;
+  }
+
+  canLeave() {
+    return true;
+  }
+
+  destroy() {
+    this.hide();
+  }
+
   notifyChanged(action = 'update', { preserveDetail = false } = {}) {
     window.dispatchEvent(new CustomEvent('planify:data-changed', {
       detail: { source: 'task-detail', action, type: 'task', id: this.task?.id }

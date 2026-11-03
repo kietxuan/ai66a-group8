@@ -59,10 +59,14 @@ export class Router {
       targetPath = isAuthenticated ? savedRoute : "landing";
 
     const [path, ...params] = targetPath.split('/');
-    if (isAuthenticated && path !== store.get('currentRoute') && this.currentController?.canLeave?.() === false) {
-      this.revertingHash = true;
-      window.location.hash = `#${store.get('currentRoute')}`;
-      return;
+    try {
+      if (isAuthenticated && path !== store.get('currentRoute') && this.currentController?.canLeave?.() === false) {
+        this.revertingHash = true;
+        window.location.hash = `#${store.get('currentRoute')}`;
+        return;
+      }
+    } catch (err) {
+      console.warn('Error in canLeave check:', err);
     }
     if (path !== store.get('currentRoute') && Modal.activeModal?.beforeClose) {
       if (Modal.activeModal.close() === false) {
