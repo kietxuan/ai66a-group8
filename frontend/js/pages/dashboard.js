@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { store } from '../store.js';
 import { Toast } from '../components/toast.js';
 import { EventForm } from '../calendar/event-form.js';
-import { formatVietnameseDate, formatDate } from '../utils/date.js';
+import { formatVietnameseDate } from '../utils/date.js';
 import { soundManager } from '../utils/sound.js';
 import { revisionOptions } from '../utils/revision.js';
 
@@ -24,9 +24,8 @@ const DASHBOARD_FALLBACK_CSS = `
 .dash-score-title { font-size:11px; font-weight:700; text-transform:uppercase; opacity:0.9; }
 .dash-score-status { font-size:17px; font-weight:800; color:#fff; }
 .dash-kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr)); gap:14px; }
-.dash-kpi-card { background:var(--color-surface); border:1px solid var(--color-border-light); border-radius:14px; padding:16px 18px; display:flex; flex-direction:column; gap:8px; cursor:pointer; }
+.dash-kpi-card { background:var(--color-surface); border:1px solid var(--color-border-light); border-radius:14px; padding:16px 18px; display:flex; flex-direction:column; gap:8px; }
 .dash-kpi-top { display:flex; align-items:center; justify-content:space-between; }
-.dash-kpi-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; }
 .dash-kpi-badge { font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; }
 .dash-kpi-value { font-size:24px; font-weight:800; color:var(--color-text-primary); }
 .dash-kpi-label { font-size:12.5px; font-weight:600; color:var(--color-text-secondary); }
@@ -43,14 +42,17 @@ const DASHBOARD_FALLBACK_CSS = `
 .dash-canvas-box { width:100%; min-height:215px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 .dash-donut-layout { display:flex; align-items:center; justify-content:space-around; gap:20px; flex-wrap:wrap; }
 .dash-donut-legend { display:flex; flex-direction:column; gap:8px; flex:1; min-width:170px; }
-.dash-donut-legend-row { display:flex; align-items:center; justify-content:space-between; padding:7px 10px; border-radius:8px; background:var(--color-bg-secondary); font-size:12.5px; cursor:pointer; }
+.dash-donut-legend-row { display:flex; align-items:center; justify-content:space-between; padding:7px 10px; border-radius:8px; background:var(--color-bg-secondary); font-size:12.5px; }
 .eisenhower-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
 .eisenhower-quadrant { background:var(--color-bg-secondary); border:1px solid var(--color-border-light); border-radius:12px; padding:12px 14px; display:flex; flex-direction:column; gap:8px; min-height:110px; }
 .eisenhower-q-header { display:flex; align-items:center; justify-content:space-between; font-size:12.5px; font-weight:800; }
 .eisenhower-q-list { display:flex; flex-direction:column; gap:6px; }
-.eisenhower-task-pill { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px; background:var(--color-surface); border:1px solid var(--color-border-light); font-size:12.5px; cursor:pointer; }
+.eisenhower-task-pill { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px; background:var(--color-surface); border:1px solid var(--color-border-light); font-size:12.5px; }
+.dash-task-complete { width:22px; height:22px; border:1.5px solid var(--color-text-tertiary); border-radius:50%; background:transparent; cursor:pointer; flex-shrink:0; }
+.dash-task-complete:hover, .dash-task-complete:focus-visible { border-color:var(--color-primary); outline:2px solid var(--color-primary); outline-offset:2px; }
+.dash-task-complete:disabled { cursor:wait; opacity:0.5; }
 .dash-list-progress-items { display:flex; flex-direction:column; gap:12px; }
-.dash-list-prog-row { display:flex; flex-direction:column; gap:6px; padding:8px 10px; border-radius:10px; background:var(--color-bg-secondary); cursor:pointer; }
+.dash-list-prog-row { display:flex; flex-direction:column; gap:6px; padding:8px 10px; border-radius:10px; background:var(--color-bg-secondary); }
 .dash-list-prog-top { display:flex; align-items:center; justify-content:space-between; font-size:13px; font-weight:700; }
 .dash-list-prog-track { width:100%; height:8px; border-radius:999px; background:var(--color-border-light); overflow:hidden; }
 .dash-list-prog-fill { height:100%; border-radius:999px; }
@@ -332,13 +334,13 @@ export const dashboardPage = {
 
     // 1. HERO BANNER
     const score = s.productivity_score;
-    const scoreStatus = score == null ? 'Chưa có dữ liệu' : score >= 80 ? 'Xuất sắc 🔥' : (score >= 60 ? 'Tốt 👍' : 'Cần tăng tốc ⚡');
+    const scoreStatus = score == null ? 'Chưa có dữ liệu' : score >= 80 ? 'Xuất sắc' : (score >= 60 ? 'Tốt' : 'Cần tăng tốc');
     const scoreCanvas = createElement('canvas');
 
     const heroBanner = createElement('section', { className: 'dash-hero-banner' }, [
       createElement('div', { className: 'dash-hero-left' }, [
-        createElement('div', { style: { fontSize: '12px', fontWeight: '600', opacity: '0.9' }, textContent: `📅 ${formatVietnameseDate(businessNow(), true)}` }),
-        createElement('h1', { className: 'dash-hero-greeting', textContent: `${greeting}, ${user.nickname || 'bạn'}! 👋` }),
+        createElement('div', { style: { fontSize: '12px', fontWeight: '600', opacity: '0.9' }, textContent: formatVietnameseDate(businessNow(), true) }),
+        createElement('h1', { className: 'dash-hero-greeting', textContent: `${greeting}, ${user.nickname || 'bạn'}!` }),
         createElement('p', {
           className: 'dash-hero-subtitle',
           textContent: `Hôm nay bạn có ${todayColumnCount} công việc / sự kiện trong cột Hôm nay, ${s.overdue_count || 0} việc quá hạn và đã hoàn thành ${s.completion_rate || 0}% tổng khối lượng công việc.`
@@ -360,7 +362,7 @@ export const dashboardPage = {
           createElement('button', {
             className: 'btn-dash-glass',
             textContent: '📅 Mở Lịch Tháng',
-            onclick: () => { window.location.hash = '#calendar'; }
+            onclick: () => { store.set('calendarView', 'month'); window.location.hash = '#calendar'; }
           })
         ])
       ]),
@@ -378,46 +380,40 @@ export const dashboardPage = {
     const needToDoCount = (breakdown.unscheduled || 0) + (breakdown.scheduled || 0);
     const kpiData = [
       {
-        icon: '📌', bg: 'rgba(99, 102, 241, 0.15)', color: '#6366F1',
+        bg: 'rgba(99, 102, 241, 0.15)', color: '#6366F1',
         value: `${needToDoCount}`,
         badge: 'Cột Cần làm',
-        label: 'Việc cần làm & tương lai',
-        onClick: () => { store.set('activeTodoList', 'board'); window.location.hash = '#todo'; }
+        label: 'Việc cần làm & tương lai'
       },
       {
-        icon: '☀️', bg: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B',
+        bg: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B',
         value: `${todayColumnCount}`,
         badge: 'Cột Hôm nay',
-        label: 'Công việc & Sự kiện hôm nay',
-        onClick: () => { store.set('activeTodoList', 'board'); window.location.hash = '#todo'; }
+        label: 'Công việc & Sự kiện hôm nay'
       },
       {
-        icon: '⚠️', bg: 'rgba(239, 68, 68, 0.15)', color: '#EF4444',
+        bg: 'rgba(239, 68, 68, 0.15)', color: '#EF4444',
         value: `${s.overdue_count || 0}`,
         badge: s.overdue_count > 0 ? 'Cần xử lý' : 'Tốt',
-        label: 'Công việc quá hạn',
-        onClick: () => { store.set('activeTodoList', 'board'); window.location.hash = '#todo'; }
+        label: 'Công việc quá hạn'
       },
       {
-        icon: '✅', bg: 'rgba(16, 185, 129, 0.15)', color: '#10B981',
+        bg: 'rgba(16, 185, 129, 0.15)', color: '#10B981',
         value: `${s.completed_tasks || 0}/${s.total_tasks || 0}`,
         badge: `${s.completion_rate || 0}%`,
-        label: 'Đã hoàn thành',
-        onClick: () => { store.set('activeTodoList', 'board'); window.location.hash = '#todo'; }
+        label: 'Đã hoàn thành'
       },
       {
-        icon: '⭐', bg: 'rgba(236, 72, 153, 0.15)', color: '#EC4899',
+        bg: 'rgba(236, 72, 153, 0.15)', color: '#EC4899',
         value: `${s.important_pending_count || 0}`,
-        badge: 'Gắn dấu sao',
-        label: 'Việc quan trọng chưa xong',
-        onClick: () => { store.set('activeTodoList', 'board'); window.location.hash = '#todo'; }
+        badge: 'Quan trọng',
+        label: 'Việc quan trọng chưa xong'
       }
     ];
 
     const kpiGrid = createElement('section', { className: 'dash-kpi-grid' },
-      kpiData.map(k => createElement('div', { className: 'dash-kpi-card', onclick: k.onClick }, [
+      kpiData.map(k => createElement('div', { className: 'dash-kpi-card' }, [
         createElement('div', { className: 'dash-kpi-top' }, [
-          createElement('div', { className: 'dash-kpi-icon', style: { backgroundColor: k.bg, color: k.color }, textContent: k.icon }),
           createElement('span', { className: 'dash-kpi-badge', style: { backgroundColor: k.bg, color: k.color }, textContent: k.badge })
         ]),
         createElement('div', { className: 'dash-kpi-value', textContent: k.value }),
@@ -432,7 +428,7 @@ export const dashboardPage = {
     const barChartCard = createElement('div', { className: 'dash-panel-card' }, [
       createElement('div', { className: 'dash-panel-header' }, [
         createElement('div', {}, [
-          createElement('h3', { className: 'dash-panel-title', textContent: '📈 Biểu đồ Hoạt động & Năng suất 7 Ngày' }),
+          createElement('h3', { className: 'dash-panel-title', textContent: 'Hoạt động & năng suất 7 ngày' }),
           createElement('p', { className: 'dash-panel-subtitle', textContent: 'So sánh mục đã hoàn thành, sự kiện và công việc theo từng ngày' })
         ]),
         createElement('div', { className: 'dash-bar-legend' }, [
@@ -454,26 +450,25 @@ export const dashboardPage = {
     ]);
 
     const donutSegments = [
-      { key: 'todo', label: '📌 Cần làm (Tương lai / Vĩnh viễn)', count: needToDoCount, color: '#6366F1' },
-      { key: 'today', label: '☀️ Hôm nay', count: todayColumnCount, color: '#F59E0B' },
-      { key: 'overdue', label: '⚠️ Quá hạn', count: s.overdue_count || 0, color: '#EF4444' },
-      { key: 'completed', label: '✅ Hoàn thành', count: breakdown.completed || 0, color: '#10B981' }
+      { key: 'todo', label: 'Cần làm (Tương lai / Vĩnh viễn)', count: needToDoCount, color: '#6366F1' },
+      { key: 'today', label: 'Hôm nay', count: todayColumnCount, color: '#F59E0B' },
+      { key: 'overdue', label: 'Quá hạn', count: s.overdue_count || 0, color: '#EF4444' },
+      { key: 'completed', label: 'Hoàn thành', count: breakdown.completed || 0, color: '#10B981' }
     ];
 
     const donutCanvas = createElement('canvas');
     const donutCard = createElement('div', { className: 'dash-panel-card' }, [
       createElement('div', { className: 'dash-panel-header' }, [
         createElement('div', {}, [
-          createElement('h3', { className: 'dash-panel-title', textContent: '🍩 Phân bổ 4 Cột Bảng Quản Lý Chung' }),
-          createElement('p', { className: 'dash-panel-subtitle', textContent: 'Click vào từng trạng thái để mở Bảng Kanban' })
+          createElement('h3', { className: 'dash-panel-title', textContent: 'Phân bổ trạng thái công việc' }),
+          createElement('p', { className: 'dash-panel-subtitle', textContent: 'Tổng số mục theo từng cột trên bảng quản lý chung' })
         ])
       ]),
       createElement('div', { className: 'dash-donut-layout' }, [
         createElement('div', { className: 'dash-donut-canvas-wrap' }, [donutCanvas]),
         createElement('div', { className: 'dash-donut-legend' },
           donutSegments.map(seg => createElement('div', {
-            className: 'dash-donut-legend-row',
-            onclick: () => { store.set('activeTodoList', 'board'); window.location.hash = '#todo'; }
+            className: 'dash-donut-legend-row'
           }, [
             createElement('div', { className: 'flex items-center gap-xs' }, [
               createElement('span', { className: 'dash-legend-dot', style: { backgroundColor: seg.color } }),
@@ -497,22 +492,22 @@ export const dashboardPage = {
 
     const quadrants = [
       {
-        title: '☀️ Công việc & Sự kiện Hôm nay',
+        title: 'Công việc & sự kiện hôm nay',
         color: '#F59E0B',
         items: myDayTasks.filter(t => !t.is_completed).slice(0, 4)
       },
       {
-        title: '⭐ Việc Quan trọng (Có gắn sao)',
+        title: 'Việc quan trọng',
         color: '#EC4899',
         items: impTasks.filter(t => !t.is_completed).slice(0, 4)
       },
       {
-        title: '⚠️ Công việc Quá hạn cần xử lý',
+        title: 'Công việc quá hạn cần xử lý',
         color: '#EF4444',
         items: overdueTasks.slice(0, 4)
       },
       {
-        title: '📌 Việc Cần làm (Sắp tới / Vĩnh viễn)',
+        title: 'Việc cần làm (Sắp tới / Vĩnh viễn)',
         color: '#6366F1',
         items: (data?.tasks_todo || []).slice(0, 4)
       }
@@ -521,10 +516,9 @@ export const dashboardPage = {
     const eisenhowerCard = createElement('div', { className: 'dash-panel-card' }, [
       createElement('div', { className: 'dash-panel-header' }, [
         createElement('div', {}, [
-          createElement('h3', { className: 'dash-panel-title', textContent: '🎯 Tóm tắt Nhanh Bảng Quản Lý Chung (Click để hoàn thành)' }),
-          createElement('p', { className: 'dash-panel-subtitle', textContent: 'Các mục tiêu biểu theo từng cột trạng thái' })
-        ]),
-        createElement('a', { href: '#todo', className: 'btn btn-secondary btn-sm', textContent: 'Mở Kanban →' })
+          createElement('h3', { className: 'dash-panel-title', textContent: 'Tóm tắt công việc' }),
+          createElement('p', { className: 'dash-panel-subtitle', textContent: 'Bấm ô tròn cạnh công việc để đánh dấu hoàn thành' })
+        ])
       ]),
       createElement('div', { className: 'eisenhower-grid' },
         quadrants.map(q => createElement('div', { className: 'eisenhower-quadrant' }, [
@@ -535,20 +529,25 @@ export const dashboardPage = {
           q.items.length === 0
             ? createElement('div', { style: { fontSize: '12px', color: 'var(--color-text-muted)', fontStyle: 'italic', marginTop: '8px' }, textContent: 'Không có mục tồn đọng' })
             : createElement('div', { className: 'eisenhower-q-list' },
-                q.items.map(t => createElement('div', {
-                  className: 'eisenhower-task-pill',
-                  title: 'Click chuột trái để đánh dấu hoàn thành ngay',
-                  onclick: async () => {
-                    try {
-                      await api.patch(`/tasks/${t.id}/complete`, { is_completed: true }, revisionOptions(t));
-                      soundManager.playTaskComplete();
-                      Toast.success(`Đã hoàn thành: "${t.title}"`);
-                      window.dispatchEvent(new CustomEvent('planify:data-changed'));
-                    } catch (err) { Toast.error(err.message || 'Không thể cập nhật công việc.'); }
-                  }
-                }, [
-                  createElement('span', { style: { color: q.color, fontWeight: 'bold' }, textContent: '☐' }),
-                  createElement('span', { className: 'truncate flex-1', textContent: (t.is_important ? '⭐ ' : '') + t.title })
+                q.items.map(t => createElement('div', { className: 'eisenhower-task-pill' }, [
+                  createElement('button', {
+                    type: 'button', className: 'dash-task-complete',
+                    'aria-label': `Hoàn thành công việc: ${t.title}`,
+                    title: 'Đánh dấu hoàn thành',
+                    onclick: async event => {
+                      const button = event.currentTarget;
+                      if (button.disabled) return;
+                      button.disabled = true;
+                      try {
+                        await api.patch(`/tasks/${t.id}/complete`, { is_completed: true }, revisionOptions(t));
+                        soundManager.playTaskComplete();
+                        Toast.success(`Đã hoàn thành: "${t.title}"`);
+                        window.dispatchEvent(new CustomEvent('planify:data-changed'));
+                      } catch (err) { Toast.error(err.message || 'Không thể cập nhật công việc.'); }
+                      finally { button.disabled = false; }
+                    }
+                  }),
+                  createElement('span', { className: 'truncate flex-1', textContent: t.title })
                 ]))
               )
         ]))
@@ -559,22 +558,18 @@ export const dashboardPage = {
     const listProgressCard = createElement('div', { className: 'dash-panel-card' }, [
       createElement('div', { className: 'dash-panel-header' }, [
         createElement('div', {}, [
-          createElement('h3', { className: 'dash-panel-title', textContent: '📁 Tiến độ Danh sách của tôi' }),
-          createElement('p', { className: 'dash-panel-subtitle', textContent: 'Click vào danh sách để mở chế độ xem danh sách chi tiết' })
+          createElement('h3', { className: 'dash-panel-title', textContent: 'Tiến độ danh sách của tôi' }),
+          createElement('p', { className: 'dash-panel-subtitle', textContent: 'Tỷ lệ hoàn thành công việc trong từng danh sách' })
         ])
       ]),
       listBreakdown.length === 0
         ? createElement('div', { style: { fontSize: '13px', color: 'var(--color-text-secondary)' }, textContent: 'Chưa có danh sách nào.' })
         : createElement('div', { className: 'dash-list-progress-items' },
             listBreakdown.map(lst => createElement('div', {
-              className: 'dash-list-prog-row',
-              onclick: () => {
-                store.set('activeTodoList', `list:${lst.id}`);
-                window.location.hash = '#todo';
-              }
+              className: 'dash-list-prog-row'
             }, [
               createElement('div', { className: 'dash-list-prog-top' }, [
-                createElement('span', { textContent: `${lst.icon || '📝'} ${lst.name}` }),
+                createElement('span', { textContent: lst.name }),
                 createElement('span', { style: { fontSize: '12px', color: 'var(--color-text-secondary)' }, textContent: `${lst.completed}/${lst.total} (${lst.completion_rate}%)` })
               ]),
               createElement('div', { className: 'dash-list-prog-track' }, [

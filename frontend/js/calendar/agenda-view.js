@@ -135,7 +135,7 @@ export class AgendaView {
         [
           createElement("span", {
             className: "agenda-day-title",
-            textContent: `📅 ${weekdayStr}, ${dateFormatted}`,
+            textContent: `${weekdayStr}, ${dateFormatted}`,
           }),
           isTod
             ? createElement("span", {
@@ -224,10 +224,6 @@ export class AgendaView {
               className: 'agenda-item-title-row'
             }, [
               taskCheckbox,
-              createElement('span', {
-                className: 'agenda-item-icon',
-                textContent: eventLabel ? '🗓️' : '✅'
-              }),
               createElement('span', {
                 className: `agenda-item-title ${item.is_completed ? 'strikethrough' : ''}`,
                 textContent: item.title

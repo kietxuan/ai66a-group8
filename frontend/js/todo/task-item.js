@@ -160,10 +160,10 @@ export class TaskItem {
 
     if (task.due_date) {
       const isTod = isToday(task.due_date);
-      let dateLabel = `📅 ${isTod ? 'Hôm nay' : task.due_date}`;
+      let dateLabel = isTod ? 'Hôm nay' : task.due_date;
       const startT = task.start_time || task.due_time;
       if (startT && !task.is_all_day) {
-        dateLabel += ` 🕒 ${String(startT).substring(0, 5)}`;
+        dateLabel += ` · ${String(startT).substring(0, 5)}`;
         if (task.end_time) {
           dateLabel += `-${String(task.end_time).substring(0, 5)}`;
         }
@@ -178,7 +178,7 @@ export class TaskItem {
     } else {
       metaRow.appendChild(createElement('span', {
         style: { color: 'var(--color-text-tertiary)', fontStyle: 'italic' },
-        textContent: '📌 Vĩnh viễn (Chưa đặt giờ)'
+        textContent: 'Chưa đặt thời gian'
       }));
     }
 
@@ -189,7 +189,7 @@ export class TaskItem {
           padding: '1px 6px',
           borderRadius: '4px'
         },
-        textContent: `📁 ${listName}`
+        textContent: listName
       }));
     }
 
@@ -244,25 +244,6 @@ export class TaskItem {
     item.appendChild(content);
     item.appendChild(starBtn);
     item.appendChild(menuBtn);
-
-    if (task.color) {
-      const tagDot = createElement('span', {
-        className: 'task-tag-dot',
-        style: {
-          width: '12px',
-          height: '12px',
-          borderRadius: '50%',
-          backgroundColor: task.color,
-          display: 'inline-block',
-          flexShrink: '0',
-          marginLeft: '6px',
-          marginRight: '2px',
-          boxShadow: `0 0 0 2px var(--color-bg-secondary), 0 0 6px ${task.color}88`,
-        },
-        title: `Thẻ phân loại (${task.color})`
-      });
-      item.appendChild(tagDot);
-    }
 
     return item;
   }

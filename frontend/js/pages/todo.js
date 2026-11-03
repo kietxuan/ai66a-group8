@@ -116,11 +116,6 @@ export const todoPage = {
         title: "Mở danh sách To Do",
         onclick: () => sidebarEl.classList.toggle("mobile-open"),
       }),
-      createElement("span", {
-        id: "todo-header-icon",
-        style: { fontSize: "28px" },
-        textContent: this.activeListIcon,
-      }),
       createElement("div", {}, [
         createElement("h1", {
           className: "todo-title",
@@ -147,7 +142,7 @@ export const todoPage = {
     const searchInput = createElement("input", {
       type: "text",
       className: "todo-search-input",
-      placeholder: "🔍 Tìm kiếm công việc...",
+      placeholder: "Tìm kiếm công việc...",
       value: this.searchQuery,
       oninput: (e) => {
         this.searchQuery = e.target.value;
@@ -326,9 +321,7 @@ export const todoPage = {
         if (matched) {
           this.activeListName = matched.name;
           this.activeListIcon = matched.icon || "📝";
-          const iconEl = document.getElementById("todo-header-icon");
           const titleEl = document.getElementById("todo-header-title");
-          if (iconEl) iconEl.textContent = this.activeListIcon;
           if (titleEl) titleEl.textContent = this.activeListName;
         }
       }
@@ -405,7 +398,6 @@ export const todoPage = {
 
     store.set("activeTodoList", id === "board" ? "board" : String(id));
 
-    const iconEl = document.getElementById("todo-header-icon");
     const titleEl = document.getElementById("todo-header-title");
     const subEl = document.getElementById("todo-header-subtitle");
     const headerEl = document.getElementById("todo-page-header");
@@ -415,7 +407,6 @@ export const todoPage = {
     }
     const mainEl = this.container?.querySelector('.todo-main');
     if (mainEl) mainEl.dataset.view = String(id) === 'board' ? 'board' : 'list';
-    if (iconEl) iconEl.textContent = icon;
     if (titleEl) titleEl.textContent = name;
     if (subEl) {
       subEl.textContent =

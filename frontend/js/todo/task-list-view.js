@@ -216,7 +216,7 @@ export class TaskListView {
     const columns = [
       {
         id: "todo",
-        title: "📌 Cần làm",
+        title: "Cần làm",
         subtitle: "Việc vĩnh viễn & tương lai",
         color: "#6366F1",
         items: this.sortTasks(colTodoItems, false),
@@ -240,7 +240,7 @@ export class TaskListView {
       },
       {
         id: "today",
-        title: "☀️ Hôm nay",
+        title: "Hôm nay",
         subtitle: "Công việc trong hôm nay",
         color: "#F59E0B",
         items: this.sortTasks(colTodayItems, false),
@@ -261,7 +261,7 @@ export class TaskListView {
       },
       {
         id: "overdue",
-        title: "⚠️ Quá hạn",
+        title: "Quá hạn",
         subtitle: "Chưa xong & đã quá thời gian",
         color: "#EF4444",
         items: this.sortTasks(colOverdueItems, false),
@@ -283,7 +283,7 @@ export class TaskListView {
       },
       {
         id: "completed",
-        title: "✅ Hoàn thành",
+        title: "Hoàn thành",
         subtitle: "Công việc đã hoàn thành",
         color: "#10B981",
         items: this.sortTasks(colCompletedItems, true),
