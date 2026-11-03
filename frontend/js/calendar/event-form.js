@@ -43,6 +43,7 @@ export class EventForm {
     onDeleted
   } = {}) {
     let modalRef = null;
+    const userId = store.get('user')?.id;
 
     // Gộp dữ liệu nếu đang sửa task hoặc event
     const existingItem = task || event || null;
@@ -54,6 +55,7 @@ export class EventForm {
     if (!taskLists.length) {
       try {
         taskLists = await api.get('/task-lists') || [];
+        if (store.get('user')?.id !== userId) return;
         store.set('taskLists', taskLists);
       } catch (_) {}
     }
@@ -61,10 +63,12 @@ export class EventForm {
     if (!store.get('categories')) {
       try {
         const catRes = await api.get('/categories');
+        if (store.get('user')?.id !== userId) return;
         store.set('categories', Array.isArray(catRes) ? catRes : (catRes?.data || []));
       } catch (_) {}
     }
 
+    if (store.get('user')?.id !== userId) return;
     // Trạng thái ban đầu của các trường
     let selectedColor = existingItem?.color || '#4F46E5';
     let isImportant = Boolean(existingItem?.is_important);
@@ -106,7 +110,7 @@ export class EventForm {
         isAllDay = Boolean(existingItem.is_all_day);
       }
     } else {
-      scheduleEnabled = false; // Mặc định lúc đầu chưa bật cài đặt thời gian
+      scheduleEnabled = Boolean(hasDate || fromCalendarSlot);
       if (startAt) {
         const sDt = new Date(startAt);
         const eDt = endAt ? new Date(endAt) : new Date(sDt.getTime() + 3600000);
@@ -372,13 +376,24 @@ export class EventForm {
       endTimeInput
     ]);
 
+    const allDayCheck = createElement('input', {
+      type: 'checkbox', 'aria-label': 'Cả ngày', checked: isAllDay,
+      onchange: (e) => { isAllDay = e.target.checked; refreshScheduleUI(); }
+    });
+    const allDayLabel = createElement('label', {
+      style: { display: 'flex', alignItems: 'center', gap: '8px', gridColumn: '1 / -1' }
+    }, [allDayCheck, createElement('span', { textContent: 'Cả ngày' })]);
+
     // Gắn vào lưới theo thứ tự: Trái trên (Ngày), Phải trên (Giờ bắt đầu), Trái dưới (Chu kỳ lặp), Phải dưới (Giờ kết thúc)
     scheduleFieldsGrid.appendChild(dateGroup);
     scheduleFieldsGrid.appendChild(startTimeGroup);
     scheduleFieldsGrid.appendChild(rruleGroup);
     scheduleFieldsGrid.appendChild(endTimeGroup);
+    scheduleFieldsGrid.appendChild(allDayLabel);
 
     const refreshScheduleUI = () => {
+      startTimeInput.disabled = isAllDay;
+      endTimeInput.disabled = isAllDay;
       if (scheduleEnabled) {
         toggleScheduleBtn.className = 'btn btn-secondary btn-sm';
         toggleScheduleBtn.textContent = 'Bỏ cài đặt thời gian';
@@ -428,6 +443,7 @@ export class EventForm {
     ]);
 
     const handleSave = async () => {
+      if (store.get('user')?.id !== userId) return;
       const title = titleInput.value.trim();
       if (!title) {
         Toast.error('Vui lòng nhập tiêu đề công việc.');
@@ -441,6 +457,10 @@ export class EventForm {
       let endTimeVal = null;
       let durationMins = 60;
 
+      if (scheduleEnabled && !dateInput.value) {
+        Toast.error('Vui lòng chọn ngày thực hiện.');
+        return;
+      }
       if (scheduleEnabled && dateInput.value) {
         dueDateVal = dateInput.value;
         if (!isAllDay) {

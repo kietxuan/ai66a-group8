@@ -22,9 +22,11 @@ export const settingsPage = {
     const currentTheme = ThemeManager.getSavedTheme();
 
     let user = store.get("user");
+    const userId = user?.id;
+    const isCurrent = () => generation === this.generation && this.container === container && store.get('user')?.id === userId;
     try {
       const response = await api.get("/users/me");
-      if (generation !== this.generation || this.container !== container)
+      if (!isCurrent())
         return;
       user = response?.data || response;
       store.set("user", user);
@@ -37,7 +39,7 @@ export const settingsPage = {
     let categories = [];
     try {
       const catRes = await api.get("/categories");
-      if (generation !== this.generation || this.container !== container)
+      if (!isCurrent())
         return;
       categories = Array.isArray(catRes)
         ? catRes
@@ -219,6 +221,7 @@ export const settingsPage = {
         try {
           if (editingCategoryId) {
             const res = await api.put(`/categories/${editingCategoryId}`, { name, color });
+            if (!isCurrent()) return;
             const updatedCat = res?.data || res;
             const idx = categories.findIndex((c) => c.id === editingCategoryId);
             if (idx !== -1) {
@@ -228,6 +231,7 @@ export const settingsPage = {
             Toast.success(`Đã cập nhật thẻ "${name}" thành công!`);
           } else {
             const res = await api.post("/categories", { name, color });
+            if (!isCurrent()) return;
             const createdCat = res?.data || res;
             categories.push(createdCat);
             store.set("categories", [...categories]);
@@ -310,6 +314,7 @@ export const settingsPage = {
                 if (!confirm(`Bạn có chắc chắn muốn xóa thẻ \"${cat.name}\" không?`)) return;
                 try {
                   await api.delete(`/categories/${cat.id}`);
+                  if (!isCurrent()) return;
                   categories = categories.filter((c) => c.id !== cat.id);
                   store.set("categories", [...categories]);
                   if (editingCategoryId === cat.id) {
@@ -493,6 +498,7 @@ export const settingsPage = {
             notify_enabled: enabled,
             notify_minutes_before: mins,
           });
+          if (!isCurrent()) return;
           const updatedUser = updated?.data || updated;
           localStorage.setItem(
             "planify_notify_enabled",
@@ -736,6 +742,7 @@ export const settingsPage = {
             email: targetEmail,
             reason: "verify-email",
           });
+          if (!isCurrent()) return;
           Toast.success(`Mã OTP đã được gửi đến ${targetEmail}!`);
           let cd = 60;
           sendOtpBtn.textContent = `Gửi lại (${cd}s)`;
@@ -837,6 +844,7 @@ export const settingsPage = {
           }
 
           const updated = await api.put("/users/me", payload);
+          if (!isCurrent()) return;
           const updatedUser = updated?.data || updated;
           user = { ...user, ...updatedUser };
           store.set("user", user);
@@ -1017,6 +1025,7 @@ export const settingsPage = {
             current_password: currentPassInput.value,
             new_password: newPassInput.value,
           });
+          if (!isCurrent()) return;
           Toast.success("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
           currentPassInput.value = "";
           newPassInput.value = "";
