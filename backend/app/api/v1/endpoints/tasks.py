@@ -74,6 +74,18 @@ async def batch_task_action(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    from app.services.write_lock import lock_owner, AtomicBatchSession
+    await lock_owner(db, current_user.id)
+    try:
+        result = await _batch_task_action(body, AtomicBatchSession(db), current_user)
+        await db.commit()
+        return result
+    except Exception:
+        await db.rollback()
+        raise
+
+
+async def _batch_task_action(body, db, current_user):
     """Thực hiện thao tác hàng loạt trên nhiều công việc"""
     all_tasks = await task_service.get_tasks(db, user_id=current_user.id, view="all")
     target_ids = set(body.task_ids or [])
@@ -89,7 +101,8 @@ async def batch_task_action(
 
     if body.action == "reschedule_overdue":
         new_due = body.due_date or today
-        targets = [t for t in all_tasks if not t.is_completed and t.due_date and t.due_date < today and (not target_ids or t.id in target_ids)]
+        from app.services.recurrence import is_task_overdue
+        targets = [t for t in all_tasks if is_task_overdue(t) and (not target_ids or t.id in target_ids)]
         if not body.allow_overlap:
             from app.services.schedule_conflict import check_task_overlap
             from app.core.time import BUSINESS_TZ
@@ -122,7 +135,7 @@ async def batch_task_action(
             await task_service.toggle_complete(db, task_id=t.id, user_id=current_user.id, is_completed=True)
             affected += 1
         elif body.action == "uncomplete":
-            await task_service.toggle_complete(db, task_id=t.id, user_id=current_user.id, is_completed=False)
+            await task_service.toggle_complete(db, task_id=t.id, user_id=current_user.id, is_completed=False, allow_overlap=body.allow_overlap)
             affected += 1
         elif body.action == "important":
             await task_service.toggle_important(db, task_id=t.id, user_id=current_user.id, is_important=True)
@@ -140,7 +153,7 @@ async def batch_task_action(
             await task_service.update_task(db, task_id=t.id, user_id=current_user.id, task_in=TaskUpdate(list_id=body.list_id))
             affected += 1
         elif body.action == "set_due_date":
-            await task_service.update_task(db, task_id=t.id, user_id=current_user.id, task_in=TaskUpdate(due_date=body.due_date))
+            await task_service.update_task(db, task_id=t.id, user_id=current_user.id, task_in=TaskUpdate(due_date=body.due_date, allow_overlap=body.allow_overlap))
             affected += 1
         elif body.action == "delete":
             await task_service.delete_task(db, task_id=t.id, user_id=current_user.id)

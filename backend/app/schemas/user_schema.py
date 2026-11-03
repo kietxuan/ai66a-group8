@@ -18,11 +18,14 @@ class UserCreate(UserBase, InputValidation):
     verified_token: Optional[str] = None
 
 class UserUpdate(InputValidation):
+    email: Optional[EmailStr] = None
     nickname: Optional[str] = None
     theme_preference: Optional[str] = None
     timezone: Optional[str] = None
     notify_enabled: Optional[bool] = None
     notify_minutes_before: Optional[int] = Field(None, ge=0, le=10080)
+    otp: Optional[str] = None
+    verified_token: Optional[str] = None
 
 class PasswordChange(InputValidation):
     current_password: str
@@ -59,5 +62,6 @@ class UserListResponse(BaseModel):
 
 class UserErrors:
     EMAIL_ALREADY_EXISTS = ErrorDetail("EMAIL_ALREADY_EXISTS", 400, "Email này đã tồn tại.")
+    OTP_REQUIRED = ErrorDetail("OTP_REQUIRED", 400, "Cần xác thực mã OTP trước khi đổi email.")
     USER_NOT_FOUND = ErrorDetail("USER_NOT_FOUND", 404, "Không tìm thấy người dùng này.")
     INVALID_CURRENT_PASSWORD = ErrorDetail("INVALID_CURRENT_PASSWORD", 400, "Mật khẩu hiện tại không đúng.")

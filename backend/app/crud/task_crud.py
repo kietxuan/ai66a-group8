@@ -16,6 +16,7 @@ class CRUDTask(CRUDBase[Task]):
             select(Task)
             .options(selectinload(Task.steps))
             .where(Task.id == task_id)
+            .execution_options(populate_existing=True)
         )
         result = await db.execute(stmt)
         return result.scalars().first()

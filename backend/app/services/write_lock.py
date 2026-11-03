@@ -5,6 +5,17 @@ from sqlalchemy import select
 from fastapi import HTTPException
 from app.models.user_model import User
 
+class AtomicBatchSession:
+    """Keep CRUD flushes in one owner-locked transaction for a batch action."""
+    def __init__(self, session):
+        self.session = session
+
+    def __getattr__(self, name):
+        return getattr(self.session, name)
+
+    async def commit(self):
+        await self.session.flush()
+
 async def lock_owner(db, user_id):
     if (await db.execute(select(User.id).where(User.id == user_id).with_for_update())).scalar_one_or_none() is None:
         raise HTTPException(404, "Không tìm thấy người dùng.")

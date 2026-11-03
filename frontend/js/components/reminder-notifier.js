@@ -147,7 +147,7 @@ export class ReminderNotifier {
             if (!this.notifiedSet.has(key) && nowMs >= alertWindowStart && nowMs <= startAt + 5 * 60 * 1000) {
               this.markNotified(key);
               this.notify(
-                t.auto_complete ? '📅 Sự kiện sắp diễn ra' : '⏰ Sắp đến giờ công việc',
+                '⏰ Sắp đến giờ công việc',
                 `"${t.title}" lúc ${rawTime} (nhắc trước ${itemMins} phút)`
               );
             }

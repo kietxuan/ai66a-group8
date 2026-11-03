@@ -6,6 +6,7 @@ import { Toast } from '../components/toast.js';
 import { EventForm } from '../calendar/event-form.js';
 import { formatVietnameseDate, formatDate } from '../utils/date.js';
 import { soundManager } from '../utils/sound.js';
+import { revisionOptions } from '../utils/revision.js';
 
 const DASHBOARD_FALLBACK_CSS = `
 .dashboard-page { width:100%; height:100%; overflow-y:auto; overflow-x:hidden; padding:22px 26px 48px; display:flex; flex-direction:column; gap:20px; background-color:var(--color-bg-primary); }
@@ -112,7 +113,9 @@ export const dashboardPage = {
     try {
       const stats = await api.get('/dashboard/stats');
       if (generation !== this.generation || !this.container) return;
-      if (!stats || !stats.summary || !stats.status_breakdown) throw new Error('Dữ liệu thống kê không hợp lệ.');
+      if (!stats || !stats.summary || !stats.status_breakdown ||
+          !['total_tasks', 'completed_tasks', 'overdue_count'].every(key => Number.isFinite(stats.summary[key])) ||
+          !Array.isArray(stats.weekly_trend)) throw new Error('Dữ liệu thống kê không hợp lệ.');
       this.stats = stats;
     } catch (err) {
       if (generation !== this.generation || !this.container) return;
@@ -536,10 +539,12 @@ export const dashboardPage = {
                   className: 'eisenhower-task-pill',
                   title: 'Click chuột trái để đánh dấu hoàn thành ngay',
                   onclick: async () => {
-                    soundManager.playTaskComplete();
-                    await api.patch(`/tasks/${t.id}/complete`, { is_completed: true });
-                    Toast.success(`Đã hoàn thành: "${t.title}"`);
-                    window.dispatchEvent(new CustomEvent('planify:data-changed'));
+                    try {
+                      await api.patch(`/tasks/${t.id}/complete`, { is_completed: true }, revisionOptions(t));
+                      soundManager.playTaskComplete();
+                      Toast.success(`Đã hoàn thành: "${t.title}"`);
+                      window.dispatchEvent(new CustomEvent('planify:data-changed'));
+                    } catch (err) { Toast.error(err.message || 'Không thể cập nhật công việc.'); }
                   }
                 }, [
                   createElement('span', { style: { color: q.color, fontWeight: 'bold' }, textContent: '☐' }),

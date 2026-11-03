@@ -37,7 +37,8 @@ export const guidePage = {
   render(container) {
     ensureGuideStyles();
     this.container = container;
-    this.activeTab = localStorage.getItem('planify_guide_tab') || 'overview';
+    const saved = localStorage.getItem('planify_guide_tab') || 'overview';
+    this.activeTab = ['overview', 'todo', 'mouse', 'calendar', 'ai'].includes(saved) ? saved : 'overview';
     this.updateView();
   },
 
@@ -62,12 +63,11 @@ export const guidePage = {
     ]);
 
     const tabs = [
-      { id: 'overview', icon: '🚀', label: '1. Tổng quan & Form Thống Nhất' },
+      { id: 'overview', icon: '🚀', label: '1. Tổng quan & Quản Lý Công Việc' },
       { id: 'todo', icon: '📋', label: '2. Bảng Quản Lý Chung (Kanban 4 Cột)' },
       { id: 'mouse', icon: '🖱️', label: '3. Chuột Phải, Chuột Trái & Kéo Thả' },
-      { id: 'calendar', icon: '📅', label: '4. Lịch Biểu & Cuộn Lịch Tháng' },
-      { id: 'ai', icon: '🤖', label: '5. Kịch Bản AI Agent & Thông Báo Email' },
-      { id: 'shortcuts', icon: '⌨️', label: '6. Phím Tắt Nhanh' }
+      { id: 'calendar', icon: '📅', label: '4. Lịch Biểu & Lịch Tháng' },
+      { id: 'ai', icon: '🤖', label: '5. Kịch Bản AI Agent & Thông Báo Email' }
     ];
 
     const tabsBar = createElement('div', { className: 'guide-tabs-bar' },
@@ -142,21 +142,21 @@ export const guidePage = {
     if (tabId === 'calendar') {
       return this.buildCardsGrid([
         {
-          badge: '📅 Mặc định Lịch Tháng & Cuộn chuột', bg: '#EEF2FF', color: '#4F46E5',
-          title: 'Chế độ Lịch Tháng Mặc định, Lăn chuột & Nổi bật Ngày Hôm Nay',
+          badge: '📅 Mặc định Lịch Tháng', bg: '#EEF2FF', color: '#4F46E5',
+          title: 'Chế độ Lịch Tháng Mặc định & Nổi bật Ngày Hôm Nay',
           steps: [
             'Khi mở trang Calendar, hệ thống mặc định hiển thị Lịch Tháng (Month View) và ghi nhớ chế độ xem kể cả khi bạn nhấn F5 tải lại trang.',
-            'Bạn có thể sử dụng con lăn chuột (Mouse Wheel) để cuộn dọc xem toàn bộ các tuần trong tháng và tự động chuyển sang tháng kế tiếp / tháng trước khi cuộn tới biên.',
+            'Toàn bộ các tuần trong tháng được bố trí trực quan, vừa vặn không gian màn hình giúp bạn quan sát tổng thể toàn bộ tháng dễ dàng.',
             'Ô ngày HÔM NAY (và cột Hôm nay trong Lịch Tuần) được đóng khung viền tím sáng kèm nhãn "HÔM NAY" nổi bật rõ ràng trong cả chế độ Sáng (Light Mode) và Tối (Dark Mode).'
           ]
         },
         {
-          badge: '⚡ Đồng bộ To Do & Calendar', bg: '#FFFBEB', color: '#F59E0B',
-          title: 'Thống nhất 1 Biểu mẫu Đầy đủ cho cả To Do và Calendar',
+          badge: '⚡ Đồng bộ Công Việc & Calendar', bg: '#FFFBEB', color: '#F59E0B',
+          title: 'Thống nhất Biểu mẫu Đầy đủ cho Công việc và Calendar',
           steps: [
-            'Mọi nút "+ Tạo mới" hay bấm vào ô lịch đều mở cùng một Biểu mẫu thống nhất với đầy đủ trường thông tin.',
-            'Mặc định khi tạo mới từ To Do, phần thời gian sẽ để trống (Vĩnh viễn -> nằm gọn ở cột Cần làm và không làm rối mặt Lịch cho tới khi bạn kéo vào Lịch hoặc bật Ngày/Giờ).',
-            'Mặc định chế độ hoàn thành là "Phải tích mới hoàn thành". Nếu bạn tích chọn "⚡ Sự kiện (Tự động hoàn thành)", mục đó sẽ tự động chuyển sang cột Hoàn thành ngay khi hết thời gian!'
+            'Mọi nút "+ Tạo mới" hay bấm vào ô lịch đều mở cùng một Biểu mẫu công việc với đầy đủ trường thông tin.',
+            'Mặc định khi tạo mới từ Công việc, phần thời gian có thể để trống (nằm gọn ở cột Cần làm và có thể xếp lịch bất cứ khi nào bạn muốn).',
+            'Khi đặt hạn chót hoặc khung giờ, công việc sẽ tự động đồng bộ và hiển thị trực tiếp trên Lịch biểu.'
           ]
         }
       ]);
@@ -164,9 +164,9 @@ export const guidePage = {
 
     if (tabId === 'ai') {
       const samplePrompts = [
-        { label: '📅 Kiểm tra toàn bộ công việc và sự kiện trong cột Hôm nay', prompt: 'Hôm nay tôi có những sự kiện và công việc gì?' },
+        { label: '📅 Kiểm tra toàn bộ công việc trong cột Hôm nay', prompt: 'Hôm nay tôi có những công việc gì?' },
         { label: '🕒 Tìm các khung giờ còn trống trong hôm nay để xếp việc', prompt: 'Tìm khung giờ trống 60 phút hôm nay' },
-        { label: '⚡ Tạo sự kiện họp có giờ bắt đầu & kết thúc hôm nay', prompt: "Hãy tạo cho tôi một sự kiện 'Họp nhóm dự án' bắt đầu từ 14:00 đến 15:30 hôm nay" },
+        { label: '⚡ Tạo công việc có giờ bắt đầu & kết thúc hôm nay', prompt: "Hãy tạo cho tôi một công việc 'Họp nhóm dự án' bắt đầu từ 14:00 đến 15:30 hôm nay" },
         { label: '📌 Tạo việc cần làm quan trọng', prompt: "Tạo việc cần làm 'Hoàn thiện báo cáo tổng kết' hạn hôm nay và đánh dấu quan trọng" },
         { label: '⚠️ Dời toàn bộ các công việc bị quá hạn sang hôm nay', prompt: 'Dời toàn bộ việc quá hạn sang hôm nay' },
         { label: '📊 Xem báo cáo phân tích năng suất & tiến độ công việc', prompt: 'Xem báo cáo thống kê năng suất của tôi' }
@@ -193,52 +193,24 @@ export const guidePage = {
       ]);
     }
 
-    if (tabId === 'shortcuts') {
-      const shortcuts = [
-        ['Ctrl + K', 'Mở bảng Tìm kiếm & Lệnh nhanh toàn cục (Command Palette)'],
-        ['M / W / D / A', 'Chuyển nhanh chế độ xem Lịch: Tháng (M), Tuần (W), Ngày (D), Lịch biểu (A)'],
-        ['T', 'Nhảy nhanh về ngày Hôm nay trên Lịch biểu'],
-        ['N', 'Mở Biểu mẫu thống nhất Tạo mới Công việc / Sự kiện'],
-        ['Escape', 'Đóng hộp thoại Modal, đóng Menu chuột phải hoặc đóng bảng chi tiết']
-      ];
-
-      return createElement('div', { className: 'dash-panel-card' }, [
-        createElement('h3', { className: 'dash-panel-title', textContent: '⌨️ Bảng Phím tắt Nhanh' }),
-        createElement('table', { className: 'guide-kbd-table' }, [
-          createElement('thead', {}, [
-            createElement('tr', {}, [
-              createElement('th', { textContent: 'Phím tắt' }),
-              createElement('th', { textContent: 'Chức năng thực hiện' })
-            ])
-          ]),
-          createElement('tbody', {},
-            shortcuts.map(([k, desc]) => createElement('tr', {}, [
-              createElement('td', {}, [createElement('span', { className: 'guide-kbd-pill', textContent: k })]),
-              createElement('td', { textContent: desc })
-            ]))
-          )
-        ])
-      ]);
-    }
-
     return this.buildCardsGrid([
       {
-        badge: '✨ Điểm mới 1 • Gộp Việc cần làm & Sự kiện', bg: '#EEF2FF', color: '#4F46E5',
-        title: 'Biểu mẫu Thống nhất (Unified Form) & Tự động hoàn thành',
+        badge: '✨ Điểm mới 1 • Quản Lý Công Việc Toàn Diện', bg: '#EEF2FF', color: '#4F46E5',
+        title: 'Biểu mẫu Công Việc Chi tiết & Linh hoạt',
         steps: [
-          'Việc cần làm (To Do) và Sự kiện (Calendar) được hợp nhất trong cùng một biểu mẫu đầy đủ trường thông tin.',
-          'Mặc định là "☑️ Phải tích mới hoàn thành". Nếu bạn tích chọn "⚡ Sự kiện (Tự động hoàn thành)", mục đó sẽ tự động chuyển sang cột Hoàn thành sau khi hết thời gian.',
-          'Mặc định khi tạo mới sẽ không đặt thời gian (Vĩnh viễn) để nằm gọn trong cột Cần làm và có thể kéo thả vào Lịch bất cứ lúc nào.'
+          'Quản lý công việc dễ dàng với biểu mẫu chi tiết đầy đủ thông tin: danh mục, độ ưu tiên, hạn chót và ghi chú.',
+          'Mặc định công việc được hoàn thành khi bạn tích chọn ô đánh dấu hoàn thành.',
+          'Mặc định khi tạo mới có thể không cần đặt thời gian để nằm gọn trong cột Cần làm và có thể xếp lịch bất cứ lúc nào.'
         ]
       },
       {
         badge: '📋 Điểm mới 2 • Bảng Quản Lý Chung 4 Cột', bg: '#ECFDF5', color: '#10B981',
         title: 'Kanban 4 Cột Tự động Sắp xếp theo Thời gian',
         steps: [
-          '📌 Cần làm: Việc vĩnh viễn (không đặt giờ) và việc trong tương lai.',
-          '☀️ Hôm nay: Toàn bộ công việc & sự kiện diễn ra trong ngày hôm nay.',
+          '📌 Cần làm: Việc không đặt giờ hoặc việc cần làm trong tương lai.',
+          '☀️ Hôm nay: Toàn bộ công việc diễn ra trong ngày hôm nay.',
           '⚠️ Quá hạn: Việc chưa hoàn thành và đã qua thời gian hạn.',
-          '✅ Hoàn thành: Việc đã tích xong hoặc Sự kiện đã qua thời gian kết thúc.'
+          '✅ Hoàn thành: Công việc đã tích chọn hoàn thành.'
         ]
       },
       {
@@ -246,14 +218,14 @@ export const guidePage = {
         title: 'OTP Đăng ký, Quên mật khẩu & Thông báo Lịch hẹn',
         steps: [
           'Hỗ trợ gửi mã OTP 6 chữ số qua Email khi Đăng ký tài khoản mới và khi Quên mật khẩu.',
-          'Trong trang Cài đặt (⚙️), bạn có thể bật/tắt thông báo nhắc lịch và tùy chỉnh báo trước bao nhiêu phút (5, 10, 15, 30, 60 phút) qua cả Email và Trình duyệt.'
+          'Trong trang Cài đặt (⚙️), bạn có thể bật/tắt thông báo nhắc lịch và tùy chỉnh báo trước bao nhiêu phút qua cả Email và Trình duyệt.'
         ]
       },
       {
-        badge: '📅 Điểm mới 4 • Lịch Tháng Cuộn Mượt & Lưu Trạng Thái F5', bg: '#F5F3FF', color: '#7C3AED',
+        badge: '📅 Điểm mới 4 • Lịch Tháng Trực Quan & Lưu Trạng Thái F5', bg: '#F5F3FF', color: '#7C3AED',
         title: 'Mặc định Lịch Tháng, Làm nổi bật Hôm nay & Nhớ vị trí khi F5',
         steps: [
-          'Trang Calendar mặc định mở Lịch Tháng, hỗ trợ cuộn dọc và làm nổi bật rõ nét ô/cột HÔM NAY trong cả chế độ Dark Mode.',
+          'Trang Calendar mặc định mở Lịch Tháng trực quan, vừa vặn không gian màn hình và làm nổi bật rõ nét ô/cột HÔM NAY trong cả chế độ Dark Mode.',
           'Mọi lựa chọn của bạn (trang đang mở, danh sách đang xem, chế độ lịch, giao diện Sáng/Tối) đều được lưu bền vững khi nhấn F5 Refresh.'
         ]
       }

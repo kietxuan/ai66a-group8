@@ -16,11 +16,11 @@ import { isScheduleDismissal } from '../utils/api-error.js';
 export const todoPage = {
   container: null,
   tasks: [],
-  activeListId: 'board',
-  activeListName: 'Bảng quản lý chung',
-  activeListIcon: '📋',
+  activeListId: "board",
+  activeListName: "Bảng quản lý chung",
+  activeListIcon: "📋",
   activeTask: null,
-  sortBy: 'time',
+  sortBy: "time",
   onlyImportant: false,
   searchQuery: '',
   dateFilter: 'all',
@@ -34,32 +34,49 @@ export const todoPage = {
   taskDetailComponent: null,
 
   restoreSavedListSelection() {
-    const saved = store.get('activeTodoList') || localStorage.getItem('planify_todo_active_list') || 'board';
-    if (!saved || saved === 'board' || ['my_day', 'important', 'planned', 'all', 'overdue', 'completed', 'time_blocked'].includes(String(saved))) {
-      this.activeListId = 'board';
-      this.activeListName = 'Bảng quản lý chung';
-      this.activeListIcon = '📋';
-      store.set('activeTodoList', 'board');
+    const saved =
+      store.get("activeTodoList") ||
+      localStorage.getItem("planify_todo_active_list") ||
+      "board";
+    if (
+      !saved ||
+      saved === "board" ||
+      [
+        "my_day",
+        "important",
+        "planned",
+        "all",
+        "overdue",
+        "completed",
+        "time_blocked",
+      ].includes(String(saved))
+    ) {
+      this.activeListId = "board";
+      this.activeListName = "Bảng quản lý chung";
+      this.activeListIcon = "📋";
+      store.set("activeTodoList", "board");
       return;
     }
 
-    const cleanId = String(saved).startsWith('list:') ? String(saved).split(':')[1] : String(saved);
+    const cleanId = String(saved).startsWith("list:")
+      ? String(saved).split(":")[1]
+      : String(saved);
     const numId = parseInt(cleanId, 10);
     if (!isNaN(numId)) {
       this.activeListId = numId;
-      const lists = store.get('taskLists') || [];
-      const matched = lists.find(l => l.id === numId);
+      const lists = store.get("taskLists") || [];
+      const matched = lists.find((l) => l.id === numId);
       if (matched) {
         this.activeListName = matched.name;
-        this.activeListIcon = matched.icon || '📝';
+        this.activeListIcon = matched.icon || "📝";
       } else {
-        this.activeListName = 'Danh sách công việc';
-        this.activeListIcon = '📝';
+        this.activeListName = "Danh sách công việc";
+        this.activeListIcon = "📝";
       }
     } else {
-      this.activeListId = 'board';
-      this.activeListName = 'Bảng quản lý chung';
-      this.activeListIcon = '📋';
+      this.activeListId = "board";
+      this.activeListName = "Bảng quản lý chung";
+      this.activeListIcon = "📋";
     }
   },
 
@@ -71,56 +88,71 @@ export const todoPage = {
 
     this.restoreSavedListSelection();
 
-    const page = createElement('div', { className: 'todo-page' });
+    const page = createElement("div", { className: "todo-page" });
 
     // 1. Sidebar Container
-    const sidebarEl = createElement('aside', { className: 'todo-sidebar', id: 'todo-sub-sidebar' });
+    const sidebarEl = createElement("aside", {
+      className: "todo-sidebar",
+      id: "todo-sub-sidebar",
+    });
 
     // 2. Main Content Container
-    const mainEl = createElement('div', {
-      className: 'todo-main flex-1 flex flex-col overflow-hidden',
-      dataset: { view: String(this.activeListId) === 'board' ? 'board' : 'list' }
+    const mainEl = createElement("div", {
+      className: "todo-main flex-1 flex flex-col overflow-hidden",
+      dataset: { view: String(this.activeListId) === 'board' ? 'board' : 'list' },
     });
 
     // Header
-    const headerEl = createElement('div', {
-      className: 'todo-header',
-      id: 'todo-page-header',
-      dataset: { listTheme: String(this.activeListId) }
+    const headerEl = createElement("div", {
+      className: "todo-header",
+      id: "todo-page-header",
+      dataset: { listTheme: String(this.activeListId) },
     });
 
-    const titleRow = createElement('div', { className: 'todo-title-row' }, [
-      createElement('button', {
-        className: 'btn-icon mobile-only',
-        textContent: '☰',
-        title: 'Mở danh sách To Do',
-        onclick: () => sidebarEl.classList.toggle('mobile-open')
+    const titleRow = createElement("div", { className: "todo-title-row" }, [
+      createElement("button", {
+        className: "btn-icon mobile-only",
+        textContent: "☰",
+        title: "Mở danh sách To Do",
+        onclick: () => sidebarEl.classList.toggle("mobile-open"),
       }),
-      createElement('span', { id: 'todo-header-icon', style: { fontSize: '28px' }, textContent: this.activeListIcon }),
-      createElement('div', {}, [
-        createElement('h1', { className: 'todo-title', id: 'todo-header-title', textContent: this.activeListName }),
-        createElement('span', {
-          className: 'todo-date-subtitle',
-          id: 'todo-header-subtitle',
-          textContent: String(this.activeListId) === 'board'
-            ? `${formatVietnameseDate(businessNow())} • Sắp xếp tự động theo thời gian`
-            : 'Chế độ Danh sách • Sắp xếp mặc định theo thời gian'
-        })
-      ])
+      createElement("span", {
+        id: "todo-header-icon",
+        style: { fontSize: "28px" },
+        textContent: this.activeListIcon,
+      }),
+      createElement("div", {}, [
+        createElement("h1", {
+          className: "todo-title",
+          id: "todo-header-title",
+          textContent: this.activeListName,
+        }),
+        createElement("span", {
+          className: "todo-date-subtitle",
+          id: "todo-header-subtitle",
+          textContent:
+            String(this.activeListId) === "board"
+              ? `${formatVietnameseDate(businessNow())} • Sắp xếp tự động theo thời gian`
+              : "Chế độ Danh sách • Sắp xếp mặc định theo thời gian",
+        }),
+      ]),
     ]);
 
-    const headerActions = createElement('div', { className: 'todo-header-actions flex items-center gap-xs flex-wrap' });
+    const headerActions = createElement("div", {
+      className: "todo-header-actions flex items-center gap-xs flex-wrap",
+      style: { marginLeft: "auto" },
+    });
 
-    // Search Input
-    const searchInput = createElement('input', {
-      type: 'text',
-      className: 'todo-search-input',
-      placeholder: '🔍 Tìm nhanh công việc / sự kiện...',
+    // Search Input (nằm bên trái Filter & Sắp xếp, cùng một dòng)
+    const searchInput = createElement("input", {
+      type: "text",
+      className: "todo-search-input",
+      placeholder: "🔍 Tìm kiếm công việc...",
       value: this.searchQuery,
       oninput: (e) => {
         this.searchQuery = e.target.value;
         this.updateComponents();
-      }
+      },
     });
     const clearSearchBtn = createElement('button', { type: 'button', className: 'btn btn-secondary btn-sm', textContent: '✕ Từ khóa', onclick: () => {
       searchInput.value = ''; this.searchQuery = ''; this.updateComponents();
@@ -143,63 +175,50 @@ export const todoPage = {
     const resetFiltersBtn = createElement('button', { type: 'button', className: 'btn btn-secondary btn-sm', textContent: 'Đặt lại bộ lọc', onclick: () => {
       this.searchQuery = ''; this.dateFilter = 'all'; this.dateFrom = ''; this.dateTo = ''; this.statusFilter = 'all'; this.onlyImportant = false;
       searchInput.value = ''; dateSelect.value = 'all'; statusSelect.value = 'all'; dateFromInput.value = ''; dateToInput.value = ''; rangeWrap.style.display = 'none';
-      filterImpBtn.classList.remove('active'); filterImpBtn.textContent = '☆ Lọc Quan trọng'; this.updateComponents();
+      filterBtn.classList.remove('active'); this.updateComponents();
     } });
     this.matchCountEl = createElement('span', { role: 'status', style: { fontSize: '12px' } });
 
-    // Filter Important (⭐) toggle button
-    const filterImpBtn = createElement('button', {
-      type: 'button',
-      className: `btn btn-secondary btn-sm ${this.onlyImportant ? 'active' : ''}`,
-      textContent: this.onlyImportant ? '⭐ Đang lọc Quan trọng' : '☆ Lọc Quan trọng',
-      title: 'Chỉ hiển thị các mục có đánh dấu sao Quan trọng',
-      onclick: () => {
-        this.onlyImportant = !this.onlyImportant;
-        filterImpBtn.classList.toggle('active', this.onlyImportant);
-        filterImpBtn.textContent = this.onlyImportant ? '⭐ Đang lọc Quan trọng' : '☆ Lọc Quan trọng';
-        this.updateComponents();
-      }
+    // Filter button (icon viền đen đơn giản)
+    const filterBtn = createElement("button", {
+      type: "button",
+      className: `btn btn-secondary btn-sm ${this.onlyImportant || (this.statusFilter && this.statusFilter !== "all") ? "active" : ""}`,
+      id: "btn-filter-tasks",
+      title: "Lọc công việc",
+      onclick: (e) => this.showFilterDropdown(e, filterBtn),
     });
+    filterBtn.innerHTML = `
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-1px; margin-right:4px;">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+      </svg>Filter
+    `.trim();
+    this.filterControls = { statusSelect, filterBtn };
 
-    // Sort Dropdown button
-    const sortBtn = createElement('button', {
-      type: 'button',
-      className: 'btn btn-secondary btn-sm',
-      id: 'btn-sort-tasks',
-      textContent: '⇅ Theo thời gian',
-      onclick: (e) => this.showSortDropdown(e, sortBtn)
+    // Sắp xếp button (icon viền đen đơn giản)
+    const sortBtn = createElement("button", {
+      type: "button",
+      className: "btn btn-secondary btn-sm",
+      id: "btn-sort-tasks",
+      title: "Sắp xếp danh sách",
+      onclick: (e) => this.showSortDropdown(e, sortBtn),
     });
-
-    // Open Full Unified Form button
-    const fullFormBtn = createElement('button', {
-      type: 'button',
-      className: 'btn btn-primary btn-sm',
-      textContent: '＋ Tạo Công việc / Sự kiện',
-      onclick: () => {
-        EventForm.showFullModal({
-          hasDate: false,
-          defaultListId: typeof this.activeListId === 'number' ? this.activeListId : null,
-          onCreated: () => this.fetchTasks()
-        });
-      }
-    });
+    sortBtn.innerHTML = `<span style="font-size:14px; margin-right:4px; font-weight:bold; line-height:1;">⇅</span>Sắp xếp`;
 
     headerActions.appendChild(searchInput);
     headerActions.appendChild(clearSearchBtn);
     headerActions.appendChild(dateSelect);
     headerActions.appendChild(rangeWrap);
     headerActions.appendChild(statusSelect);
-    headerActions.appendChild(filterImpBtn);
+    headerActions.appendChild(filterBtn);
     headerActions.appendChild(resetFiltersBtn);
     headerActions.appendChild(this.matchCountEl);
     headerActions.appendChild(sortBtn);
-    headerActions.appendChild(fullFormBtn);
 
     headerEl.appendChild(titleRow);
     headerEl.appendChild(headerActions);
 
     // Quick Task Form Input Bar Container
-    const formContainer = createElement('div');
+    const formContainer = createElement("div");
 
     // Task Items List / Kanban Container
     const listContainer = createElement('div', { className: 'todo-list-container' });
@@ -209,7 +228,10 @@ export const todoPage = {
     mainEl.appendChild(listContainer);
 
     // 3. Task Detail Panel Container
-    const detailEl = createElement('div', { className: 'task-detail-container', style: { display: 'none' } });
+    const detailEl = createElement("div", {
+      className: "task-detail-container",
+      style: { display: "none" },
+    });
 
     page.appendChild(sidebarEl);
     page.appendChild(mainEl);
@@ -222,10 +244,10 @@ export const todoPage = {
       activeListId: this.activeListId,
       tasks: this.tasks,
       onSelectList: (id, name, icon) => {
-        sidebarEl.classList.remove('mobile-open');
+        sidebarEl.classList.remove("mobile-open");
         this.switchList(id, name, icon);
       },
-      onListsChanged: () => this.fetchTasks()
+      onListsChanged: () => this.fetchTasks(),
     });
 
     this.taskListComponent = new TaskListView({
@@ -237,21 +259,23 @@ export const todoPage = {
       onlyImportant: this.onlyImportant,
       searchQuery: this.searchQuery,
       onSelectTask: (task) => this.selectTask(task),
-      onToggleComplete: (task, isCompleted) => this.toggleComplete(task, isCompleted),
-      onToggleImportant: (task, isImportant) => this.toggleImportant(task, isImportant),
+      onToggleComplete: (task, isCompleted) =>
+        this.toggleComplete(task, isCompleted),
+      onToggleImportant: (task, isImportant) =>
+        this.toggleImportant(task, isImportant),
       onReorderTasks: (srcId, targetId) => this.reorderTasks(srcId, targetId),
-      onRefresh: () => this.fetchTasks()
+      onRefresh: () => this.fetchTasks(),
     });
 
     this.taskFormComponent = new TaskForm({
       container: formContainer,
-      listId: typeof this.activeListId === 'number' ? this.activeListId : null,
-      onCreated: () => this.fetchTasks()
+      listId: typeof this.activeListId === "number" ? this.activeListId : null,
+      onCreated: () => this.fetchTasks(),
     });
 
     this.taskDetailComponent = new TaskDetail(detailEl, {
       onUpdate: (options) => this.fetchTasks(options),
-      onClose: () => this.closeDetail()
+      onClose: () => this.closeDetail(),
     });
 
     this.setupShortcuts();
@@ -261,10 +285,10 @@ export const todoPage = {
       const refreshLists = event.detail?.source === 'ai' && Array.isArray(calls) && calls.some(call =>
         call?.result?.success === true && /^(create|update|delete)_task_list$/.test(call.name || call.tool || '')
       );
-      this.fetchTasks({ refreshLists });
+      this.fetchTasks({ refreshLists, preserveDetail: true });
     };
-    window.addEventListener('planify:data-changed', this.dataChangedListener);
-    document.addEventListener('task-changed', this.dataChangedListener);
+    window.addEventListener("planify:data-changed", this.dataChangedListener);
+    document.addEventListener("task-changed", this.dataChangedListener);
 
     await this.fetchTasks({ refreshLists: true });
   },
@@ -296,25 +320,26 @@ export const todoPage = {
         }
       }
       // Update header title if custom list was restored from localStorage
-      if (typeof this.activeListId === 'number') {
-        const lists = store.get('taskLists') || [];
-        const matched = lists.find(l => l.id === this.activeListId);
+      if (typeof this.activeListId === "number") {
+        const lists = store.get("taskLists") || [];
+        const matched = lists.find((l) => l.id === this.activeListId);
         if (matched) {
           this.activeListName = matched.name;
-          this.activeListIcon = matched.icon || '📝';
-          const iconEl = document.getElementById('todo-header-icon');
-          const titleEl = document.getElementById('todo-header-title');
+          this.activeListIcon = matched.icon || "📝";
+          const iconEl = document.getElementById("todo-header-icon");
+          const titleEl = document.getElementById("todo-header-title");
           if (iconEl) iconEl.textContent = this.activeListIcon;
           if (titleEl) titleEl.textContent = this.activeListName;
         }
       }
 
       if (this.activeTask) {
-        const updatedActive = this.tasks.find(t => t.id === this.activeTask.id);
+        const updatedActive = this.tasks.find(
+          (t) => t.id === this.activeTask.id,
+        );
         if (updatedActive) {
           if (preserveDetail) {
-            Object.assign(this.activeTask, updatedActive);
-            this.taskDetailComponent.task = this.activeTask;
+            // Keep the form's original revision: refresh must not authorize a stale draft.
           } else {
             this.activeTask = updatedActive;
             this.taskDetailComponent.show(updatedActive);
@@ -336,11 +361,21 @@ export const todoPage = {
   },
 
   updateComponents() {
-    if (!this.sidebarComponent || !this.taskListComponent || !this.taskFormComponent) return;
+    if (
+      !this.sidebarComponent ||
+      !this.taskListComponent ||
+      !this.taskFormComponent
+    )
+      return;
+
+    if (this.filterControls) {
+      this.filterControls.statusSelect.value = this.statusFilter;
+      this.filterControls.filterBtn.classList.toggle('active', this.onlyImportant || this.statusFilter !== 'all');
+    }
 
     this.sidebarComponent.update({
       activeListId: this.activeListId,
-      tasks: this.tasks
+      tasks: this.tasks,
     });
 
     this.taskListComponent.setProps({
@@ -358,7 +393,7 @@ export const todoPage = {
     if (this.matchCountEl) this.matchCountEl.textContent = `${this.taskListComponent.filterTasks().length} mục khớp`;
 
     this.taskFormComponent.setListContext(
-      typeof this.activeListId === 'number' ? this.activeListId : null
+      typeof this.activeListId === "number" ? this.activeListId : null,
     );
   },
 
@@ -368,12 +403,12 @@ export const todoPage = {
     this.activeListName = name;
     this.activeListIcon = icon;
 
-    store.set('activeTodoList', id === 'board' ? 'board' : String(id));
+    store.set("activeTodoList", id === "board" ? "board" : String(id));
 
-    const iconEl = document.getElementById('todo-header-icon');
-    const titleEl = document.getElementById('todo-header-title');
-    const subEl = document.getElementById('todo-header-subtitle');
-    const headerEl = document.getElementById('todo-page-header');
+    const iconEl = document.getElementById("todo-header-icon");
+    const titleEl = document.getElementById("todo-header-title");
+    const subEl = document.getElementById("todo-header-subtitle");
+    const headerEl = document.getElementById("todo-page-header");
 
     if (headerEl) {
       headerEl.dataset.listTheme = String(id);
@@ -383,9 +418,10 @@ export const todoPage = {
     if (iconEl) iconEl.textContent = icon;
     if (titleEl) titleEl.textContent = name;
     if (subEl) {
-      subEl.textContent = String(id) === 'board'
-        ? `${formatVietnameseDate(businessNow())} • Sắp xếp tự động theo thời gian`
-        : 'Chế độ Danh sách • Sắp xếp mặc định theo thời gian';
+      subEl.textContent =
+        String(id) === "board"
+          ? `${formatVietnameseDate(businessNow())} • Sắp xếp tự động theo thời gian`
+          : "Chế độ Danh sách • Sắp xếp mặc định theo thời gian";
     }
 
     this.updateComponents();
@@ -398,9 +434,11 @@ export const todoPage = {
     }
 
     this.activeTask = task;
-    const detailContainer = this.container?.querySelector('.task-detail-container');
+    const detailContainer = this.container?.querySelector(
+      ".task-detail-container",
+    );
     if (detailContainer) {
-      detailContainer.style.display = 'block';
+      detailContainer.style.display = "block";
     }
     this.taskDetailComponent.show(task);
     this.updateComponents();
@@ -408,9 +446,11 @@ export const todoPage = {
 
   closeDetail() {
     this.activeTask = null;
-    const detailContainer = this.container?.querySelector('.task-detail-container');
+    const detailContainer = this.container?.querySelector(
+      ".task-detail-container",
+    );
     if (detailContainer) {
-      detailContainer.style.display = 'none';
+      detailContainer.style.display = "none";
     }
     this.taskDetailComponent.hide();
     if (this.taskListComponent) {
@@ -422,12 +462,22 @@ export const todoPage = {
     try {
       const updated = await api.patch(`/tasks/${task.id}/complete`, { is_completed: isCompleted }, revisionOptions(task));
       task.is_completed = isCompleted;
-      window.dispatchEvent(new CustomEvent('planify:data-changed', {
-        detail: { source: 'todo', action: 'complete', type: 'task', id: task.id, is_completed: isCompleted }
-      }));
-      document.dispatchEvent(new CustomEvent('task-changed', {
-        detail: { action: 'update', task: updated }
-      }));
+      window.dispatchEvent(
+        new CustomEvent("planify:data-changed", {
+          detail: {
+            source: "todo",
+            action: "complete",
+            type: "task",
+            id: task.id,
+            is_completed: isCompleted,
+          },
+        }),
+      );
+      document.dispatchEvent(
+        new CustomEvent("task-changed", {
+          detail: { action: "update", task: updated },
+        }),
+      );
       await this.fetchTasks();
     } catch (err) {
       if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể cập nhật trạng thái');
@@ -439,12 +489,22 @@ export const todoPage = {
     try {
       const updated = await api.patch(`/tasks/${task.id}/important`, { is_important: isImportant }, revisionOptions(task));
       task.is_important = isImportant;
-      window.dispatchEvent(new CustomEvent('planify:data-changed', {
-        detail: { source: 'todo', action: 'important', type: 'task', id: task.id, is_important: isImportant }
-      }));
-      document.dispatchEvent(new CustomEvent('task-changed', {
-        detail: { action: 'update', task: updated }
-      }));
+      window.dispatchEvent(
+        new CustomEvent("planify:data-changed", {
+          detail: {
+            source: "todo",
+            action: "important",
+            type: "task",
+            id: task.id,
+            is_important: isImportant,
+          },
+        }),
+      );
+      document.dispatchEvent(
+        new CustomEvent("task-changed", {
+          detail: { action: "update", task: updated },
+        }),
+      );
       this.updateComponents();
     } catch (err) {
       Toast.error(err.message || 'Không thể cập nhật quan trọng');
@@ -453,8 +513,8 @@ export const todoPage = {
   },
 
   async reorderTasks(sourceId, targetId) {
-    const srcIdx = this.tasks.findIndex(t => t.id === sourceId);
-    const trgIdx = this.tasks.findIndex(t => t.id === targetId);
+    const srcIdx = this.tasks.findIndex((t) => t.id === sourceId);
+    const trgIdx = this.tasks.findIndex((t) => t.id === targetId);
     if (srcIdx !== -1 && trgIdx !== -1) {
       const [moved] = this.tasks.splice(srcIdx, 1);
       this.tasks.splice(trgIdx, 0, moved);
@@ -466,7 +526,7 @@ export const todoPage = {
 
       try {
         const items = this.tasks.map((t, idx) => ({ id: t.id, position: idx }));
-        await api.put('/tasks/reorder', { items });
+        await api.put("/tasks/reorder", { items });
       } catch (_) {}
     }
   },
@@ -474,65 +534,125 @@ export const todoPage = {
   showSortDropdown(e, sortBtn) {
     const items = [
       {
-        label: '🕒 Theo thời gian (Mặc định)',
+        label: this.sortBy === "time" ? "✓ Theo thời gian (Mặc định)" : "Theo thời gian (Mặc định)",
+        icon: "🕒",
         onClick: () => {
-          this.sortBy = 'time';
-          if (sortBtn) sortBtn.textContent = '⇅ Theo thời gian';
+          this.sortBy = "time";
           this.updateComponents();
-        }
+        },
       },
       {
-        label: '⭐ Quan trọng lên đầu',
+        label: this.sortBy === "important" ? "✓ Quan trọng lên đầu" : "Quan trọng lên đầu",
+        icon: "⭐",
         onClick: () => {
-          this.sortBy = 'important';
-          if (sortBtn) sortBtn.textContent = '⇅ Quan trọng';
+          this.sortBy = "important";
           this.updateComponents();
-        }
+        },
       },
       {
-        label: '🔤 Theo tên (A-Z)',
+        label: this.sortBy === "title" ? "✓ Theo tên (A-Z)" : "Theo tên (A-Z)",
+        icon: "🔤",
         onClick: () => {
-          this.sortBy = 'title';
-          if (sortBtn) sortBtn.textContent = '⇅ Tên A-Z';
+          this.sortBy = "title";
           this.updateComponents();
-        }
-      }
+        },
+      },
     ];
 
     Dropdown.show({
       triggerEl: e.currentTarget,
       anchorEl: e.currentTarget,
-      items
+      items,
+    });
+  },
+
+  showFilterDropdown(e, filterBtn) {
+    const isFiltered = this.onlyImportant || (this.statusFilter && this.statusFilter !== "all");
+    const items = [
+      {
+        label: !isFiltered ? "✓ Tất cả công việc (Bỏ lọc)" : "Tất cả công việc (Bỏ lọc)",
+        onClick: () => {
+          this.onlyImportant = false;
+          this.statusFilter = "all";
+          if (filterBtn) filterBtn.classList.remove("active");
+          this.updateComponents();
+        },
+      },
+      {
+        label: this.onlyImportant ? "✓ Chỉ mục quan trọng" : "Chỉ mục quan trọng",
+        icon: "⭐",
+        onClick: () => {
+          this.onlyImportant = !this.onlyImportant;
+          if (filterBtn) {
+            filterBtn.classList.toggle("active", this.onlyImportant || (this.statusFilter && this.statusFilter !== "all"));
+          }
+          this.updateComponents();
+        },
+      },
+      {
+        label: this.statusFilter === "open" ? "✓ Chỉ việc chưa hoàn thành" : "Chỉ việc chưa hoàn thành",
+        icon: "⏳",
+        onClick: () => {
+          this.statusFilter = this.statusFilter === "open" ? "all" : "open";
+          if (filterBtn) {
+            filterBtn.classList.toggle("active", this.onlyImportant || (this.statusFilter && this.statusFilter !== "all"));
+          }
+          this.updateComponents();
+        },
+      },
+      {
+        label: this.statusFilter === "completed" ? "✓ Chỉ việc đã hoàn thành" : "Chỉ việc đã hoàn thành",
+        icon: "✅",
+        onClick: () => {
+          this.statusFilter = this.statusFilter === "completed" ? "all" : "completed";
+          if (filterBtn) {
+            filterBtn.classList.toggle("active", this.onlyImportant || (this.statusFilter && this.statusFilter !== "all"));
+          }
+          this.updateComponents();
+        },
+      },
+    ];
+
+    Dropdown.show({
+      triggerEl: e.currentTarget,
+      anchorEl: e.currentTarget,
+      items,
     });
   },
 
   setupShortcuts() {
     this.keyHandler = (e) => {
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || e.target.isContentEditable) {
+      if (
+        ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName) ||
+        e.target.isContentEditable
+      ) {
         return;
       }
 
-      if (e.key === 'Escape' && this.activeTask) {
+      if (e.key === "Escape" && this.activeTask) {
         this.closeDetail();
       }
     };
 
-    document.addEventListener('keydown', this.keyHandler);
+    document.addEventListener("keydown", this.keyHandler);
   },
 
   destroy() {
     this.requestGeneration = (this.requestGeneration || 0) + 1;
     if (this.keyHandler) {
-      document.removeEventListener('keydown', this.keyHandler);
+      document.removeEventListener("keydown", this.keyHandler);
     }
     if (this.dataChangedListener) {
-      window.removeEventListener('planify:data-changed', this.dataChangedListener);
-      document.removeEventListener('task-changed', this.dataChangedListener);
+      window.removeEventListener(
+        "planify:data-changed",
+        this.dataChangedListener,
+      );
+      document.removeEventListener("task-changed", this.dataChangedListener);
       this.dataChangedListener = null;
     }
     if (this.container) {
-      this.container.innerHTML = '';
+      this.container.innerHTML = "";
       this.container = null;
     }
-  }
+  },
 };

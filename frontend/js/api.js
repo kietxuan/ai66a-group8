@@ -47,7 +47,10 @@ class ApiClient {
       headers
     };
     const controller = new AbortController();
-    config.signal = options.signal || controller.signal;
+    const abortExternal = () => controller.abort();
+    if (options.signal?.aborted) controller.abort();
+    else options.signal?.addEventListener('abort', abortExternal, { once: true });
+    config.signal = controller.signal;
     const timer = setTimeout(() => controller.abort(), 60000);
 
     try {
@@ -73,6 +76,7 @@ class ApiClient {
       try { data = await response.json(); } catch (_) {
         throw new Error('Máy chủ trả về dữ liệu không hợp lệ. Hãy tải lại danh sách trước khi thử thao tác ghi lần nữa.');
       }
+      if (token !== this.getToken()) throw new Error('Phiên đăng nhập đã thay đổi.');
 
       if (!response.ok) {
         throw parseApiError(data, response.status);
@@ -90,6 +94,7 @@ class ApiClient {
       throw err;
     } finally {
       clearTimeout(timer);
+      options.signal?.removeEventListener('abort', abortExternal);
     }
   }
 
@@ -118,7 +123,11 @@ class ApiClient {
   }
 
   async write(method, endpoint, body, options = {}) {
-    const send = payload => this.request(endpoint, { ...options, method, body: JSON.stringify(calendarTimes(payload, true)) });
+    const token = this.getToken();
+    const send = payload => {
+      if (token !== this.getToken()) throw new Error('Phiên đăng nhập đã thay đổi.');
+      return this.request(endpoint, { ...options, method, body: JSON.stringify(calendarTimes(payload, true)) });
+    };
     try {
       return await send(body);
     } catch (err) {

@@ -14,7 +14,7 @@ export class AuthManager {
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
-    let res;
+    let res, data;
     try {
       res = await fetch('/api/v1/auth/login', {
       method: 'POST',
@@ -24,6 +24,10 @@ export class AuthManager {
       body: formData.toString(),
       signal: controller.signal
       });
+      data = await res.json().catch(err => {
+        if (err.name === 'AbortError') throw err;
+        return null;
+      });
     } catch (err) {
       if (err.name === 'AbortError') throw new Error('Đăng nhập quá thời gian. Vui lòng thử lại.');
       throw err;
@@ -31,7 +35,6 @@ export class AuthManager {
       clearTimeout(timeout);
     }
 
-    const data = await res.json().catch(() => null);
     if (!res.ok) {
       throw new Error(data?.error?.message || data?.detail || 'Email hoặc mật khẩu không chính xác.');
     }
