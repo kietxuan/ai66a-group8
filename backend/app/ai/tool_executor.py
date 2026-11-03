@@ -583,19 +583,18 @@ class ToolExecutor:
             for e in events if not e.is_cancelled
         ]
         if calendar_id is None:
-            from app.services.recurrence import aware, occurrences
+            from app.services.recurrence import aware
             lo, hi = aware(start_dt), aware(end_dt)
-            tasks = await task_service.get_tasks(self.db, user_id=self.user_id, due_before=hi.date())
+            # Match Calendar/availability: Task recurrences materialize after
+            # completion; do not invent future records during a lookup.
+            tasks = await task_service.get_tasks(self.db, user_id=self.user_id, due_after=lo.date(), due_before=hi.date())
             for task in tasks:
-                if not task.due_date:
-                    continue
                 start = datetime.combine(task.due_date, time.min if task.is_all_day else task.start_time or task.due_time or time.min, BUSINESS_TZ)
                 end = start + timedelta(days=1) if task.is_all_day else datetime.combine(task.due_date, task.end_time, BUSINESS_TZ) if task.end_time else start + timedelta(minutes=task.duration_minutes)
-                rule = None if task.is_completed else task.recurrence_rule
-                for occurrence_start, occurrence_end in occurrences(start, end, rule, lo, hi):
+                if start < hi and end > lo:
                     result.append({"id": task.id, "task_id": task.id, "item_type": "task", "title": task.title,
-                                   "description": task.note, "location": task.location, "start_at": occurrence_start.isoformat(),
-                                   "end_at": occurrence_end.isoformat(), "is_all_day": task.is_all_day,
+                                   "description": task.note, "location": task.location, "start_at": start.isoformat(),
+                                   "end_at": end.isoformat(), "is_all_day": task.is_all_day,
                                    "is_completed": task.is_completed, "recurrence_rule": task.recurrence_rule})
         return sorted(result, key=lambda item: parse_datetime(item["start_at"]).timestamp())
 

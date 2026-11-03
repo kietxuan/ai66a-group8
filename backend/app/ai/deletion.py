@@ -28,7 +28,9 @@ def item_label(item):
     kind = 'Công việc' if isinstance(item, Task) else 'Sự kiện'
     data = {key: getattr(item, key, None) for key in ('due_date', 'start_time', 'end_time', 'start_at', 'end_at', 'is_all_day')}
     status = ' (đã hoàn thành)' if getattr(item, 'is_completed', False) else ''
-    recurrence = ' — cả chuỗi lặp' if item.recurrence_rule else ''
+    # Tasks can already have separately materialized successor rows. Do not
+    # imply those unlisted rows will also be deleted by a single-item request.
+    recurrence = (' — công việc có lặp' if isinstance(item, Task) else ' — cả chuỗi lặp') if item.recurrence_rule else ''
     if recurrence:
         from app.services.recurrence import parse_rule, parse_until
         try:
