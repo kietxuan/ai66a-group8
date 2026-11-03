@@ -5,7 +5,7 @@ import { store } from '../store.js';
 import { Toast } from '../components/toast.js';
 import { Modal } from '../components/modal.js';
 import { formatVietnameseDate } from '../utils/date.js';
-import { SmartListsSidebar, HOUSE_SVG, INFINITY_SVG, LIST_3BARS_SVG, TabSync } from '../todo/smart-lists.js';
+import { SmartListsSidebar, HOUSE_SVG, INFINITY_SVG, LIST_3BARS_SVG, TabSync, isDefaultTasksList } from '../todo/smart-lists.js';
 import { TaskListView } from '../todo/task-list-view.js';
 import { TaskForm } from '../todo/task-form.js';
 import { TaskDetail } from '../todo/task-detail.js';
@@ -93,7 +93,8 @@ export const todoPage = {
   searchQuery: "",
 
   isProtectedList(id = this.activeListId) {
-    return String(id) === 'board' || (store.get('taskLists') || []).some(list => list.is_default && String(list.id) === String(id));
+    if (String(id) === 'board' || String(id) === 'tasks') return true;
+    return isDefaultTasksList(id, store.get('taskLists'));
   },
 
   restoreSavedListSelection() {
@@ -118,6 +119,15 @@ export const todoPage = {
       return;
     }
 
+    if (saved === "tasks" || String(saved) === "tasks") {
+      const lists = store.get("taskLists") || [];
+      const defaultList = lists.find((l) => l.is_default || l.name?.toLowerCase() === "tasks");
+      this.activeListId = defaultList ? defaultList.id : "tasks";
+      this.activeListName = "Tasks";
+      this.activeListIcon = INFINITY_SVG;
+      return;
+    }
+
     const cleanId = String(saved).startsWith("list:")
       ? String(saved).split(":")[1]
       : String(saved);
@@ -127,7 +137,7 @@ export const todoPage = {
       const lists = store.get("taskLists") || [];
       const matched = lists.find((l) => l.id === numId);
       if (matched) {
-        const isTasks = matched.is_default;
+        const isTasks = isDefaultTasksList(matched.id, lists);
         this.activeListName = matched.name;
         this.activeListIcon = isTasks ? INFINITY_SVG : (matched.icon && matched.icon !== '☰' ? matched.icon : LIST_3BARS_SVG);
       } else {
@@ -538,6 +548,13 @@ export const todoPage = {
         const titleEl = document.getElementById("todo-header-title");
         renderHeaderIcon(iconEl, this.activeListIcon);
         if (titleEl) titleEl.textContent = this.activeListName;
+      } else if (isDefaultTasksList(this.activeListId, store.get("taskLists"))) {
+        this.activeListName = "Tasks";
+        this.activeListIcon = INFINITY_SVG;
+        const iconEl = document.getElementById("todo-header-icon");
+        const titleEl = document.getElementById("todo-header-title");
+        renderHeaderIcon(iconEl, this.activeListIcon);
+        if (titleEl) titleEl.textContent = this.activeListName;
       } else {
         const lists = store.get("taskLists") || [];
         const matched = lists.find((l) => String(l.id) === String(this.activeListId));
@@ -596,18 +613,25 @@ export const todoPage = {
       tasks: this.tasks,
       activeListId: this.activeListId,
       activeTaskId: this.activeTask?.id || null,
+      taskLists: store.get("taskLists") || [],
     });
 
     this.updateMatchCount(this.taskListComponent.filterTasks());
 
-    this.taskFormComponent.setListContext(
-      typeof this.activeListId === "number" ? this.activeListId : null,
-    );
+    const isTasksContext = isDefaultTasksList(this.activeListId, store.get("taskLists"));
+    let formListId = typeof this.activeListId === "number" ? this.activeListId : null;
+    if (isTasksContext) {
+      const lists = store.get("taskLists") || [];
+      const defaultList = lists.find(l => l.is_default || l.name?.toLowerCase() === "tasks");
+      formListId = defaultList ? defaultList.id : formListId;
+    }
+    this.taskFormComponent.setListContext(formListId);
   },
 
   updateMatchCount(filtered) {
+    const isTasks = isDefaultTasksList(this.activeListId, store.get("taskLists"));
     const activeListTasks = this.tasks.filter(t => {
-      if (String(this.activeListId) === 'board') return true;
+      if (String(this.activeListId) === 'board' || isTasks) return true;
       return t.list_id === parseInt(this.activeListId, 10);
     });
     const pendingCount = filtered.filter(t => !t.is_completed).length;
@@ -632,6 +656,8 @@ export const todoPage = {
 
     if (String(id) === "board") {
       this.activeListIcon = HOUSE_SVG;
+    } else if (isDefaultTasksList(id, store.get("taskLists"))) {
+      this.activeListIcon = INFINITY_SVG;
     } else {
       const lists = store.get("taskLists") || [];
       const matched = lists.find((l) => String(l.id) === String(id));

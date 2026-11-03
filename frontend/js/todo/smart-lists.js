@@ -16,6 +16,21 @@ export const CHEVRON_UP_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" f
 export const PLUS_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
 export const FOLDER_PLUS_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/></svg>`;
 
+export function isDefaultTasksList(id, lists = store.get("taskLists") || []) {
+  if (id === "tasks" || String(id) === "tasks") return true;
+  if (!id || id === "board") return false;
+  const numId = parseInt(id, 10);
+  const matched = lists.find((l) => l.id === numId || String(l.id) === String(id));
+  if (matched) {
+    return Boolean(matched.is_default || (matched.name && matched.name.toLowerCase() === "tasks"));
+  }
+  const defaultList = lists.find((l) => l.is_default || (l.name && l.name.toLowerCase() === "tasks"));
+  if (defaultList && (defaultList.id === numId || String(defaultList.id) === String(id))) {
+    return true;
+  }
+  return false;
+}
+
 // Đồng bộ giữa các tab và trang khác nhau (BroadcastChannel + localStorage storage event)
 export class TabSync {
   static channel = null;
@@ -323,15 +338,13 @@ export class SmartListsSidebar {
     const tasksList = this.getDefaultTasksList();
     let tasksItem = null;
     if (tasksList) {
-      const isTasksActive = String(this.activeListId) === String(tasksList.id);
-      const tasksPendingCount = this.tasks.filter(
-        (t) => !t.is_completed && t.list_id === tasksList.id,
-      ).length;
+      const isTasksActive = isDefaultTasksList(this.activeListId, this.taskLists);
+      const tasksPendingCount = allPendingCount;
       tasksItem = createElement(
         "div",
         {
           className: `todo-list-item ${isTasksActive ? "active" : ""}`,
-          title: "Công việc mặc định (Tasks)",
+          title: "Toàn bộ công việc theo danh sách (Tasks)",
           onclick: () => {
             this.activeListId = tasksList.id;
             this.render();

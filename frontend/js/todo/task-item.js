@@ -237,10 +237,29 @@ export class TaskItem {
       },
     });
 
-    const colMain = createElement("div", { className: "task-col-main" }, [
-      checkbox,
-      titleEl,
-    ]);
+    const colMainChildren = [checkbox, titleEl];
+    if (listName) {
+      colMainChildren.push(
+        createElement("span", {
+          className: "task-list-pill",
+          style: {
+            fontSize: "11px",
+            color: "var(--color-text-secondary)",
+            background: "var(--color-bg-secondary, rgba(0, 0, 0, 0.04))",
+            padding: "1px 6px",
+            borderRadius: "4px",
+            border: "1px solid var(--color-border-light)",
+            marginLeft: "6px",
+            whiteSpace: "nowrap",
+            flexShrink: "0",
+          },
+          textContent: listName,
+          title: `Thuộc danh sách: ${listName}`,
+        }),
+      );
+    }
+
+    const colMain = createElement("div", { className: "task-col-main" }, colMainChildren);
 
     // 2. Cột Thời gian (Đầy đủ ngày tháng năm DD/MM/YYYY)
     let timeLabel = "Chưa đặt giờ";

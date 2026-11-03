@@ -14,6 +14,7 @@ import { EventForm } from "../calendar/event-form.js";
 import { Dropdown } from "../components/dropdown.js";
 import { Modal } from "../components/modal.js";
 import { revisionOptions } from "../utils/revision.js";
+import { INFINITY_SVG, LIST_3BARS_SVG, isDefaultTasksList } from "./smart-lists.js";
 
 export class TaskListView {
   constructor({
@@ -21,6 +22,7 @@ export class TaskListView {
     tasks = [],
     activeListId = "board",
     activeTaskId = null,
+    taskLists = [],
     sortBy = "time",
     onlyImportant = false,
     timeFilter = "all",
@@ -39,6 +41,7 @@ export class TaskListView {
     this.tasks = tasks;
     this.activeListId = activeListId;
     this.activeTaskId = activeTaskId;
+    this.taskLists = taskLists;
     this.sortBy = sortBy || "time";
     this.onlyImportant = onlyImportant;
     this.timeFilter = timeFilter;
@@ -53,7 +56,12 @@ export class TaskListView {
     this.onFilteredChange = onFilteredChange;
 
     this.isCompletedCollapsed = false;
+    this.collapsedListGroups = {};
     this.tasksBodyContainer = null;
+  }
+
+  isTasksMode() {
+    return isDefaultTasksList(this.activeListId, this.taskLists?.length ? this.taskLists : store.get("taskLists"));
   }
 
   setProps(props = {}) {
@@ -155,8 +163,8 @@ export class TaskListView {
   filterTasks() {
     let filtered = [...this.tasks];
 
-    // Lọc theo list_id nếu không phải board
-    if (String(this.activeListId) !== "board") {
+    // Lọc theo list_id nếu không phải board và không phải Tasks mode (Tasks mode hiển thị toàn bộ công việc chia theo danh sách)
+    if (String(this.activeListId) !== "board" && !this.isTasksMode()) {
       const targetListId = parseInt(this.activeListId, 10);
       if (!isNaN(targetListId)) {
         filtered = filtered.filter((t) => t.list_id === targetListId);
@@ -969,19 +977,18 @@ export class TaskListView {
     const todayStr = formatDate(now, "YYYY-MM-DD");
     const nowTimeStr = formatDate(now, "HH:mm");
 
-    const activeTasks = this.sortTasks(
-      allFiltered.filter((t) => !t.is_completed),
-      false,
-    );
-    const completedTasks = this.sortTasks(
-      allFiltered.filter((t) => t.is_completed),
-      true,
-    );
+    const taskLists = this.taskLists?.length ? this.taskLists : (store.get("taskLists") || []);
+    const listMap = taskLists.reduce((acc, l) => {
+      acc[l.id] = l.name;
+      return acc;
+    }, {});
+
+    const isTasks = this.isTasksMode();
 
     const createItemEl = (task) =>
       TaskItem.create({
         task,
-        listName: null,
+        listName: isTasks ? (listMap[task.list_id] || null) : null,
         isActiveDetail: this.activeTaskId === task.id,
         isOverdue: this.isTaskOverdue(task, todayStr, nowTimeStr),
         onToggleComplete: this.onToggleComplete,
@@ -990,6 +997,20 @@ export class TaskListView {
         onReorder: this.onReorderTasks,
         onUpdated: this.onRefresh,
       });
+
+    if (isTasks) {
+      this.renderGroupedTaskListBody(allFiltered, createItemEl, taskLists);
+      return;
+    }
+
+    const activeTasks = this.sortTasks(
+      allFiltered.filter((t) => !t.is_completed),
+      false,
+    );
+    const completedTasks = this.sortTasks(
+      allFiltered.filter((t) => t.is_completed),
+      true,
+    );
 
     if (activeTasks.length === 0 && completedTasks.length === 0) {
       this.tasksBodyContainer.appendChild(
@@ -1023,6 +1044,285 @@ export class TaskListView {
       });
       this.tasksBodyContainer.appendChild(activeContainer);
     }
+
+    // Mục xổ xuống "Đã hoàn thành (X)"
+    if (completedTasks.length > 0) {
+      const completedSection = createElement("div", {
+        className: "flex flex-col gap-xs",
+        style: {
+          marginTop: "14px",
+          paddingTop: "12px",
+          borderTop: "1px solid var(--color-border-light)",
+        },
+      });
+
+      const headerBtn = createElement(
+        "button",
+        {
+          type: "button",
+          className: "flex items-center gap-xs font-semibold",
+          style: {
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border-light)",
+            borderRadius: "8px",
+            color: "var(--color-text-secondary)",
+            cursor: "pointer",
+            padding: "6px 12px",
+            fontSize: "12.5px",
+            width: "fit-content",
+          },
+          onclick: () => {
+            this.isCompletedCollapsed = !this.isCompletedCollapsed;
+            this.renderTaskListBody();
+          },
+        },
+        [
+          createElement("span", {
+            textContent: this.isCompletedCollapsed ? "▶" : "▼",
+          }),
+          createElement("span", {
+            textContent: `Đã hoàn thành (${completedTasks.length})`,
+          }),
+        ],
+      );
+
+      completedSection.appendChild(headerBtn);
+
+      if (!this.isCompletedCollapsed) {
+        const completedList = createElement("div", {
+          className: "flex flex-col gap-xs",
+          style: { marginTop: "6px" },
+        });
+        completedTasks.forEach((task) => {
+          completedList.appendChild(createItemEl(task));
+        });
+        completedSection.appendChild(completedList);
+      }
+
+      this.tasksBodyContainer.appendChild(completedSection);
+    }
+  }
+
+  renderGroupedTaskListBody(allFiltered, createItemEl, taskLists) {
+    const activeTasks = this.sortTasks(
+      allFiltered.filter((t) => !t.is_completed),
+      false,
+    );
+    const completedTasks = this.sortTasks(
+      allFiltered.filter((t) => t.is_completed),
+      true,
+    );
+
+    if (activeTasks.length === 0 && completedTasks.length === 0) {
+      this.tasksBodyContainer.appendChild(
+        createElement("div", {
+          style: {
+            padding: "48px 16px",
+            textAlign: "center",
+            color: "var(--color-text-secondary)",
+            background: "var(--color-surface)",
+            borderRadius: "14px",
+            border: "1px dashed var(--color-border)",
+          },
+          textContent:
+            this.searchQuery ||
+            this.timeFilter !== "all" ||
+            this.tagFilter !== "all" ||
+            this.onlyImportant
+              ? "Không tìm thấy công việc nào phù hợp với bộ lọc!"
+              : "Chưa có công việc nào!",
+        }),
+      );
+      return;
+    }
+
+    // Nhóm active tasks theo từng Danh sách công việc
+    const groupMap = new Map();
+    taskLists.forEach((l) => {
+      groupMap.set(Number(l.id), {
+        id: Number(l.id),
+        name: l.name || "Danh sách công việc",
+        icon: l.icon,
+        isDefault: Boolean(l.is_default),
+        tasks: [],
+      });
+    });
+
+    const orphanTasks = [];
+    activeTasks.forEach((task) => {
+      const lid = Number(task.list_id);
+      if (groupMap.has(lid)) {
+        groupMap.get(lid).tasks.push(task);
+      } else {
+        orphanTasks.push(task);
+      }
+    });
+
+    if (orphanTasks.length > 0) {
+      const defaultList = taskLists.find((l) => l.is_default) || taskLists[0];
+      if (defaultList && groupMap.has(Number(defaultList.id))) {
+        groupMap.get(Number(defaultList.id)).tasks.push(...orphanTasks);
+      } else {
+        groupMap.set("other", {
+          id: "other",
+          name: "Công việc khác",
+          icon: "📋",
+          isDefault: false,
+          tasks: orphanTasks,
+        });
+      }
+    }
+
+    const hasFilter = Boolean(
+      (this.searchQuery && this.searchQuery.trim()) ||
+      (this.timeFilter && this.timeFilter !== "all") ||
+      (this.tagFilter && this.tagFilter !== "all") ||
+      this.onlyImportant,
+    );
+
+    // Chỉ hiển thị các nhóm có công việc, hoặc nếu không có bộ lọc thì nhóm mặc định luôn hiện
+    const activeGroups = Array.from(groupMap.values()).filter(
+      (g) => g.tasks.length > 0 || (!hasFilter && g.isDefault),
+    );
+
+    // Render từng nhóm danh sách công việc dạng Dropdown giống Đã hoàn thành
+    activeGroups.forEach((group) => {
+      const groupId = String(group.id);
+      const isCollapsed = Boolean(this.collapsedListGroups[groupId]);
+
+      const groupSection = createElement("div", {
+        className: "todo-list-group-section flex flex-col gap-xs",
+        style: {
+          marginBottom: "14px",
+        },
+      });
+
+      let iconEl;
+      if (group.isDefault) {
+        iconEl = createElement("span", {
+          style: { display: "inline-flex", alignItems: "center" },
+          innerHTML: INFINITY_SVG,
+        });
+      } else if (group.icon && group.icon !== "☰") {
+        iconEl = createElement("span", { textContent: group.icon });
+      } else {
+        iconEl = createElement("span", {
+          style: { display: "inline-flex", alignItems: "center" },
+          innerHTML: LIST_3BARS_SVG,
+        });
+      }
+
+      const headerBtn = createElement(
+        "button",
+        {
+          type: "button",
+          className: "todo-list-group-header-btn flex items-center gap-xs font-semibold",
+          style: {
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border-light)",
+            borderRadius: "8px",
+            color: "var(--color-text-primary)",
+            cursor: "pointer",
+            padding: "6px 12px",
+            fontSize: "12.5px",
+            width: "fit-content",
+            userSelect: "none",
+            transition: "all 0.15s ease",
+          },
+          title: isCollapsed
+            ? `Bấm để mở danh sách "${group.name}"`
+            : `Bấm để thu gọn danh sách "${group.name}"`,
+          onclick: () => {
+            this.collapsedListGroups[groupId] = !isCollapsed;
+            this.renderTaskListBody();
+          },
+          ondragover: (e) => {
+            if (group.id === "other") return;
+            e.preventDefault();
+            headerBtn.style.borderColor = "var(--color-primary)";
+            headerBtn.style.boxShadow = "0 0 0 2px rgba(66, 133, 244, 0.2)";
+          },
+          ondragleave: () => {
+            headerBtn.style.borderColor = "var(--color-border-light)";
+            headerBtn.style.boxShadow = "";
+          },
+          ondrop: async (e) => {
+            if (group.id === "other") return;
+            e.preventDefault();
+            headerBtn.style.borderColor = "var(--color-border-light)";
+            headerBtn.style.boxShadow = "";
+            const taskId = parseInt(e.dataTransfer.getData("text/plain"), 10);
+            if (!taskId) return;
+            try {
+              const targetTask = this.tasks.find((x) => x.id === taskId);
+              if (targetTask && Number(targetTask.list_id) !== group.id) {
+                await api.put(`/tasks/${taskId}`, { list_id: group.id }, revisionOptions(targetTask));
+                Toast.success(`Đã chuyển sang danh sách "${group.name}"`);
+                window.dispatchEvent(new CustomEvent("planify:data-changed"));
+                if (this.onRefresh) this.onRefresh();
+              }
+            } catch (err) {
+              Toast.error(err.message || "Không thể chuyển công việc");
+            }
+          },
+        },
+        [
+          createElement("span", {
+            style: {
+              fontSize: "11px",
+              color: "var(--color-text-secondary)",
+              marginRight: "2px",
+              display: "inline-block",
+              width: "12px",
+            },
+            textContent: isCollapsed ? "▶" : "▼",
+          }),
+          iconEl,
+          createElement("span", {
+            style: { fontWeight: "600" },
+            textContent: group.name,
+          }),
+          createElement("span", {
+            style: {
+              color: "var(--color-text-secondary)",
+              fontSize: "12px",
+              fontWeight: "500",
+              marginLeft: "2px",
+            },
+            textContent: `(${group.tasks.length})`,
+          }),
+        ],
+      );
+
+      groupSection.appendChild(headerBtn);
+
+      if (!isCollapsed) {
+        if (group.tasks.length === 0) {
+          groupSection.appendChild(
+            createElement("div", {
+              style: {
+                padding: "10px 14px",
+                fontSize: "12px",
+                color: "var(--color-text-tertiary)",
+                fontStyle: "italic",
+              },
+              textContent: "Chưa có công việc cần làm trong danh sách này.",
+            }),
+          );
+        } else {
+          const listContainer = createElement("div", {
+            className: "flex flex-col gap-xs",
+            style: { marginTop: "4px" },
+          });
+          group.tasks.forEach((task) => {
+            listContainer.appendChild(createItemEl(task));
+          });
+          groupSection.appendChild(listContainer);
+        }
+      }
+
+      this.tasksBodyContainer.appendChild(groupSection);
+    });
 
     // Mục xổ xuống "Đã hoàn thành (X)"
     if (completedTasks.length > 0) {
