@@ -133,7 +133,7 @@ class ApiClient {
     } catch (err) {
       if (err.code !== 'SCHEDULE_CONFLICT') throw err;
       const { chooseScheduleConflict } = await import('./components/schedule-conflict.js');
-      const choice = await chooseScheduleConflict(err.items || []);
+      const choice = await chooseScheduleConflict(err.items || [], err.requested);
       if (choice === 'continue') return send({ ...body, allow_overlap: true });
       const cancelled = new Error(choice === 'change' ? 'Hãy chọn giờ khác rồi lưu lại.' : 'Đã hủy thao tác.');
       cancelled.code = choice === 'change' ? 'SCHEDULE_CHANGE' : 'SCHEDULE_CANCEL';

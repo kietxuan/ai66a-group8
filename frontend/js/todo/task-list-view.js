@@ -8,6 +8,7 @@ import { isScheduleDismissal } from '../utils/api-error.js';
 import { Toast } from '../components/toast.js';
 import { EventForm } from '../calendar/event-form.js';
 import { Dropdown } from '../components/dropdown.js';
+import { Modal } from '../components/modal.js';
 import { revisionOptions } from '../utils/revision.js';
 
 export class TaskListView {
@@ -20,12 +21,14 @@ export class TaskListView {
     onlyImportant = false,
     timeFilter = 'all',
     tagFilter = 'all',
+    dateFrom = '', dateTo = '',
     searchQuery = "",
     onSelectTask = null,
     onToggleComplete = null,
     onToggleImportant = null,
     onReorderTasks = null,
     onRefresh = null,
+    onFilteredChange = null,
   }) {
     this.container = container;
     this.tasks = tasks;
@@ -35,12 +38,14 @@ export class TaskListView {
     this.onlyImportant = onlyImportant;
     this.timeFilter = timeFilter;
     this.tagFilter = tagFilter;
+    Object.assign(this, { dateFrom, dateTo });
     this.searchQuery = searchQuery;
     this.onSelectTask = onSelectTask;
     this.onToggleComplete = onToggleComplete;
     this.onToggleImportant = onToggleImportant;
     this.onReorderTasks = onReorderTasks;
     this.onRefresh = onRefresh;
+    this.onFilteredChange = onFilteredChange;
 
     this.isCompletedCollapsed = false;
     this.tasksBodyContainer = null;
@@ -51,6 +56,10 @@ export class TaskListView {
       if (v !== undefined) this[k] = v;
     });
     this.render();
+  }
+
+  getFilterState() {
+    return Object.fromEntries(['sortBy', 'onlyImportant', 'timeFilter', 'tagFilter', 'dateFrom', 'dateTo', 'searchQuery'].map(key => [key, this[key]]));
   }
 
   isTaskOverdue(t, todayStr, nowTimeStr) {
@@ -160,12 +169,20 @@ export class TaskListView {
         filtered = filtered.filter(t => t.due_date && String(t.due_date).slice(0, 10) === todayStr);
       } else if (this.timeFilter === 'week') {
         const next7 = new Date(now);
-        next7.setDate(now.getDate() + 7);
+        next7.setDate(now.getDate() + 6);
         const next7Str = formatDate(next7, 'YYYY-MM-DD');
         filtered = filtered.filter(t => {
           if (!t.due_date) return false;
           const dStr = String(t.due_date).slice(0, 10);
           return dStr >= todayStr && dStr <= next7Str;
+        });
+      } else if (this.timeFilter === 'tomorrow') {
+        const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
+        filtered = filtered.filter(t => String(t.due_date || '').slice(0, 10) === formatDate(tomorrow, 'YYYY-MM-DD'));
+      } else if (this.timeFilter === 'range') {
+        filtered = filtered.filter(t => {
+          const date = String(t.due_date || '').slice(0, 10);
+          return date && (!this.dateFrom || date >= this.dateFrom) && (!this.dateTo || date <= this.dateTo);
         });
       } else if (this.timeFilter === 'overdue') {
         filtered = filtered.filter(t => this.isTaskOverdue(t, todayStr, nowTimeStr));
@@ -228,7 +245,9 @@ export class TaskListView {
     const timeCol = createElement('div', { className: 'todo-th-time' });
     let timeBtnLabel = 'Thời gian ▾';
     if (this.timeFilter === 'today') timeBtnLabel = 'Hôm nay ▾';
-    else if (this.timeFilter === 'week') timeBtnLabel = 'Tuần này ▾';
+    else if (this.timeFilter === 'week') timeBtnLabel = '7 ngày tới ▾';
+    else if (this.timeFilter === 'tomorrow') timeBtnLabel = 'Ngày mai ▾';
+    else if (this.timeFilter === 'range') timeBtnLabel = 'Khoảng ngày ▾';
     else if (this.timeFilter === 'overdue') timeBtnLabel = 'Quá hạn ▾';
     else if (this.timeFilter === 'unscheduled') timeBtnLabel = 'Chưa đặt giờ ▾';
     else if (this.sortBy === 'time_asc') timeBtnLabel = 'Sớm nhất ▾';
@@ -265,7 +284,7 @@ export class TaskListView {
               }
             },
             {
-              label: 'Tuần này (7 ngày tới)',
+              label: '7 ngày tới (kể cả hôm nay)',
               icon: '📅',
               active: this.timeFilter === 'week',
               onClick: () => {
@@ -291,6 +310,20 @@ export class TaskListView {
                 this.render();
               }
             },
+            { label: 'Ngày mai', active: this.timeFilter === 'tomorrow', onClick: () => { this.timeFilter = 'tomorrow'; this.render(); } },
+            { label: 'Khoảng ngày…', active: this.timeFilter === 'range', onClick: () => {
+              const from = createElement('input', { type: 'date', className: 'input', 'aria-label': 'Từ ngày', value: this.dateFrom });
+              const to = createElement('input', { type: 'date', className: 'input', 'aria-label': 'Đến ngày', value: this.dateTo });
+              Modal.open({ title: 'Lọc theo khoảng ngày', confirmText: 'Áp dụng', guardUnsaved: true,
+                content: createElement('div', { className: 'flex flex-col gap-sm' }, [
+                  createElement('label', {}, ['Từ ngày', from]), createElement('label', {}, ['Đến ngày', to])
+                ]),
+                onConfirm: () => {
+                  if (from.value && to.value && from.value > to.value) { Toast.error('Đến ngày phải bằng hoặc sau Từ ngày.'); return false; }
+                  this.dateFrom = from.value; this.dateTo = to.value; this.timeFilter = 'range'; this.render(); return true;
+                }
+              });
+            } },
             { divider: true },
             {
               label: 'Sắp xếp: Sớm nhất trước',
@@ -432,12 +465,16 @@ export class TaskListView {
     bar.appendChild(timeCol);
     bar.appendChild(tagCol);
     bar.appendChild(starCol);
+    bar.appendChild(createElement('button', { type: 'button', className: 'btn btn-secondary btn-xs', textContent: 'Đặt lại', title: 'Đặt lại bộ lọc',
+      onclick: () => { Object.assign(this, { searchQuery: '', onlyImportant: false, timeFilter: 'all', tagFilter: 'all', dateFrom: '', dateTo: '', sortBy: 'time' }); this.render(); }
+    }));
 
     return bar;
   }
 
   render() {
     this.container.innerHTML = "";
+    this.tasksBodyContainer = null;
 
     // 1. Bảng quản lý chung -> Kanban 4 cột
     if (String(this.activeListId) === "board") {
@@ -449,10 +486,11 @@ export class TaskListView {
     this.renderCustomListView();
   }
 
-  renderGeneralKanbanBoard() {
-    this.container.appendChild(this.createTableHeaderBar());
+  renderGeneralKanbanBoard({ preserveHeader = false } = {}) {
+    if (!preserveHeader) this.container.appendChild(this.createTableHeaderBar());
 
     const allFiltered = this.filterTasks();
+    this.onFilteredChange?.(allFiltered);
     const now = businessNow();
     const todayStr = formatDate(now, 'YYYY-MM-DD');
     const nowTimeStr = `${formatDate(now, 'HH:mm')}:${String(now.getSeconds()).padStart(2, '0')}`;
@@ -543,16 +581,10 @@ export class TaskListView {
           onClick: async () => {
             const count = colOverdueItems.length;
             try {
-              await Promise.all(
-                colOverdueItems.map((task) =>
-                  api.put(`/tasks/${task.id}`, {
-                    due_date: todayStr,
-                    is_completed: false,
-                    is_in_my_day: true,
-                  }, revisionOptions(task)),
-                ),
-              );
-              Toast.success(`Đã dời ${count} công việc quá hạn sang Hôm nay`);
+              const result = await api.post('/tasks/batch', {
+                action: 'reschedule_overdue', task_ids: colOverdueItems.map(task => task.id), due_date: todayStr
+              });
+              Toast.success(`Đã dời ${result.affected} công việc quá hạn sang Hôm nay`);
               window.dispatchEvent(new CustomEvent("planify:data-changed"));
               if (this.onRefresh) this.onRefresh();
             } catch (err) {
@@ -581,14 +613,16 @@ export class TaskListView {
           label: "Dọn dẹp",
           onClick: async () => {
             const count = colCompletedItems.length;
-            if (confirm(`Bạn có chắc muốn xóa tất cả ${count} công việc đã hoàn thành?`)) {
+            const details = colCompletedItems.map(task => `- ${task.title}${task.due_date ? ` (${String(task.due_date).slice(0, 10)}${task.start_time ? ` ${String(task.start_time).slice(0, 5)}` : ''})` : ''}`).join('\n');
+            if (confirm(`Xóa ${count} công việc đã hoàn thành đang hiển thị?\n${details}\nPhạm vi: chỉ các mục liệt kê, không xóa các lần lặp khác.`)) {
               try {
-                await Promise.all(colCompletedItems.map((task) => api.delete(`/tasks/${task.id}`)));
-                Toast.success(`Đã xóa ${count} công việc đã hoàn thành`);
+                const result = await api.post('/tasks/batch', { action: 'clear_completed', task_ids: colCompletedItems.map(task => task.id) });
+                Toast.success(`Đã xóa ${result.affected} công việc đã hoàn thành`);
                 window.dispatchEvent(new CustomEvent("planify:data-changed"));
                 if (this.onRefresh) this.onRefresh();
               } catch (err) {
                 Toast.error(err.message || 'Lỗi khi xóa công việc');
+                if (this.onRefresh) this.onRefresh();
               }
             }
           },
@@ -763,10 +797,16 @@ export class TaskListView {
   }
 
   renderTaskListBody() {
+    if (String(this.activeListId) === 'board') {
+      this.container.querySelector('.todo-kanban-board')?.remove();
+      this.renderGeneralKanbanBoard({ preserveHeader: true });
+      return;
+    }
     if (!this.tasksBodyContainer) return;
     this.tasksBodyContainer.innerHTML = '';
 
     const allFiltered = this.filterTasks();
+    this.onFilteredChange?.(allFiltered);
     const now = businessNow();
     const todayStr = formatDate(now, "YYYY-MM-DD");
     const nowTimeStr = formatDate(now, "HH:mm");

@@ -99,6 +99,7 @@ class CRUDTask(CRUDBase[Task]):
             duration_minutes=obj_in.duration_minutes if obj_in.duration_minutes is not None else 60,
             is_all_day=obj_in.is_all_day if obj_in.is_all_day is not None else True,
             color=obj_in.color,
+            category=obj_in.category,
             reminder_at=obj_in.reminder_at,
             reminder_minutes=getattr(obj_in, "reminder_minutes", 15),
             reminder_sent=False,

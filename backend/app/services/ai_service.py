@@ -48,7 +48,7 @@ class AIService:
         # 2. Build history for Agent
         history_msgs = []
         for m in conv.messages:
-            history_msgs.append({"role": m.role, "content": m.content or ""})
+            history_msgs.append({"role": m.role, "content": m.content or "", "_tool_calls": m.tool_calls})
         # Add current user message
         history_msgs.append({"role": "user", "content": content})
 

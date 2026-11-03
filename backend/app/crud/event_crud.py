@@ -62,6 +62,7 @@ class CRUDEvent(CRUDBase[Event]):
             end_at=obj_in.end_at,
             is_all_day=obj_in.is_all_day,
             color=obj_in.color,
+            category=obj_in.category,
             recurrence_rule=obj_in.recurrence_rule,
             recurrence_end=obj_in.recurrence_end
         )

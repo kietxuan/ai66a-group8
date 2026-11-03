@@ -5,6 +5,7 @@ import { Modal } from '../components/modal.js';
 import { Dropdown } from '../components/dropdown.js';
 import { store } from '../store.js';
 import { revisionOptions } from '../utils/revision.js';
+import { newRequestId } from '../utils/request-id.js';
 
 export const HOUSE_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-item-icon"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
 export const INFINITY_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-item-icon"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z"/></svg>`;
@@ -20,6 +21,14 @@ export class TabSync {
   static channel = null;
   static listeners = new Set();
   static isInitialized = false;
+  static seen = new Set();
+
+  static receive(data) {
+    if (!data?.type || data.userId !== store.get('user')?.id || !data.id || this.seen.has(data.id)) return;
+    this.seen.add(data.id);
+    if (this.seen.size > 256) this.seen.delete(this.seen.values().next().value);
+    this.listeners.forEach(fn => { try { Promise.resolve(fn(data)).catch(() => {}); } catch (_) {} });
+  }
 
   static init() {
     if (TabSync.isInitialized || typeof window === 'undefined') return;
@@ -29,11 +38,7 @@ export class TabSync {
       try {
         TabSync.channel = new BroadcastChannel('planify_tab_sync');
         TabSync.channel.onmessage = (event) => {
-          if (event.data?.type) {
-            TabSync.listeners.forEach(fn => {
-              try { fn(event.data); } catch (_) {}
-            });
-          }
+          TabSync.receive(event.data);
         };
       } catch (_) {}
     }
@@ -42,11 +47,7 @@ export class TabSync {
       if (e.key === 'planify_sync_event' && e.newValue) {
         try {
           const data = JSON.parse(e.newValue);
-          if (data?.type) {
-            TabSync.listeners.forEach(fn => {
-              try { fn(data); } catch (_) {}
-            });
-          }
+          TabSync.receive(data);
         } catch (_) {}
       }
     });
@@ -60,7 +61,7 @@ export class TabSync {
 
   static broadcast(type, payload = {}) {
     TabSync.init();
-    const msg = { type, payload, timestamp: Date.now() };
+    const msg = { type, payload, userId: store.get('user')?.id, id: newRequestId(), timestamp: Date.now() };
     if (TabSync.channel) {
       try { TabSync.channel.postMessage(msg); } catch (_) {}
     }
@@ -87,11 +88,7 @@ export class SmartListsSidebar {
     // Lắng nghe đồng bộ từ các tab/trang khác
     this.unsubscribeSync = TabSync.subscribe(async (msg) => {
       if (msg.type === 'folders_updated') {
-        if (Array.isArray(msg.payload?.folders)) {
-          this.folders = msg.payload.folders;
-        } else {
-          this.folders = this.loadFolders();
-        }
+        this.folders = this.loadFolders();
         this.render();
       } else if (msg.type === 'lists_updated') {
         this.folders = this.loadFolders();
@@ -104,57 +101,39 @@ export class SmartListsSidebar {
   }
 
   destroy() {
+    this.destroyed = true;
+    this.renderGeneration = (this.renderGeneration || 0) + 1;
     if (this.unsubscribeSync) this.unsubscribeSync();
   }
 
   loadFolders() {
     const userId = store.get('user')?.id || 'default';
-    const userKey = `planify_todo_folders_${userId}`;
-    const sharedKey = 'planify_todo_folders_shared';
-
+    const key = `planify_todo_folders_${userId}`;
     try {
-      const raw = localStorage.getItem(sharedKey);
-      if (raw) return JSON.parse(raw);
-    } catch (_) {}
-
-    try {
-      const raw = localStorage.getItem(userKey);
+      const raw = localStorage.getItem(key);
       if (raw) {
         const parsed = JSON.parse(raw);
-        try { localStorage.setItem(sharedKey, raw); } catch (_) {}
-        return parsed;
+        if (!Array.isArray(parsed)) return [];
+        const assigned = new Set();
+        return parsed.filter(folder => folder && typeof folder.id === 'string' && typeof folder.name === 'string').map(folder => ({
+          id: folder.id, name: folder.name, collapsed: Boolean(folder.collapsed),
+          listIds: (Array.isArray(folder.listIds) ? folder.listIds : []).map(Number).filter(id => {
+            if (!Number.isSafeInteger(id) || id <= 0 || assigned.has(id)) return false;
+            assigned.add(id); return true;
+          })
+        }));
       }
     } catch (_) {}
-
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith('planify_todo_folders') && k !== 'planify_todo_folders_sync') {
-          const val = localStorage.getItem(k);
-          if (val) {
-            const parsed = JSON.parse(val);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              try { localStorage.setItem(sharedKey, val); } catch (_) {}
-              return parsed;
-            }
-          }
-        }
-      }
-    } catch (_) {}
-
     return [];
   }
 
   saveFolders() {
     const userId = store.get('user')?.id || 'default';
-    const userKey = `planify_todo_folders_${userId}`;
-    const sharedKey = 'planify_todo_folders_shared';
+    const key = `planify_todo_folders_${userId}`;
     try {
-      const str = JSON.stringify(this.folders);
-      localStorage.setItem(sharedKey, str);
-      localStorage.setItem(userKey, str);
+      localStorage.setItem(key, JSON.stringify(this.folders));
     } catch (_) {}
-    TabSync.broadcast('folders_updated', { folders: this.folders });
+    TabSync.broadcast('folders_updated');
   }
 
   update({ activeListId, tasks }) {
@@ -164,7 +143,10 @@ export class SmartListsSidebar {
   }
 
   async fetchLists() {
+    const userId = store.get('user')?.id;
+    const generation = this.listGeneration = (this.listGeneration || 0) + 1;
     const lists = await api.get('/task-lists');
+    if (this.destroyed || userId !== store.get('user')?.id || generation !== this.listGeneration) return;
     if (!Array.isArray(lists)) throw new Error('Dữ liệu danh sách không hợp lệ.');
     this.taskLists = lists;
     this.listsLoaded = true;
@@ -173,7 +155,7 @@ export class SmartListsSidebar {
 
   resolveListIcon(l) {
     if (!l) return LIST_3BARS_SVG;
-    const isTasks = l.is_default || (l.name && l.name.toLowerCase() === 'tasks');
+    const isTasks = l.is_default;
     if (isTasks) return INFINITY_SVG;
     if (l.icon && l.icon !== '☰') {
       return l.icon;
@@ -194,7 +176,7 @@ export class SmartListsSidebar {
         fontSize: '14px'
       }
     });
-    if (typeof icon === 'string' && icon.trim().startsWith('<svg')) {
+    if ([HOUSE_SVG, INFINITY_SVG, FOLDER_SVG, LIST_3BARS_SVG, CHEVRON_DOWN_SVG, CHEVRON_UP_SVG, PLUS_SVG, FOLDER_PLUS_SVG].includes(icon)) {
       span.innerHTML = icon;
     } else {
       span.textContent = icon || '☰';
@@ -203,7 +185,7 @@ export class SmartListsSidebar {
   }
 
   getDefaultTasksList() {
-    let tasksList = this.taskLists.find(l => l.is_default || (l.name && l.name.toLowerCase() === 'tasks'));
+    let tasksList = this.taskLists.find(l => l.is_default) || this.taskLists.find(l => l.name?.toLowerCase() === 'tasks');
     if (!tasksList && this.taskLists.length > 0) {
       tasksList = this.taskLists[0];
     }
@@ -211,6 +193,7 @@ export class SmartListsSidebar {
   }
 
   async render() {
+    if (this.destroyed) return;
     const generation = this.renderGeneration = (this.renderGeneration || 0) + 1;
     if (!this.listsLoaded) {
       this.container.replaceChildren(createElement('div', { role: 'status', textContent: 'Đang tải danh sách…' }));
@@ -224,7 +207,7 @@ export class SmartListsSidebar {
         ]));
         return;
       }
-      if (generation !== this.renderGeneration) return;
+      if (this.destroyed || generation !== this.renderGeneration) return;
     }
 
     this.container.innerHTML = '';
@@ -523,11 +506,16 @@ export class SmartListsSidebar {
         const taskId = parseInt(e.dataTransfer.getData('text/plain'), 10);
         if (!taskId) return;
         try {
-          await api.put(`/tasks/${taskId}`, { list_id: l.id });
+          const task = this.tasks.find(item => item.id === taskId);
+          if (!task) return;
+          await api.put(`/tasks/${taskId}`, { list_id: l.id }, revisionOptions(task));
           Toast.success(`Đã chuyển vào danh sách "${l.name}"!`);
           window.dispatchEvent(new CustomEvent('planify:data-changed'));
           if (this.onListsChanged) this.onListsChanged();
-        } catch (_) {}
+        } catch (error) {
+          Toast.error(error.message || 'Không thể chuyển công việc.');
+          if (this.onListsChanged) this.onListsChanged();
+        }
       }
     }, [
       this.createIconSpan(this.resolveListIcon(l)),
@@ -550,6 +538,8 @@ export class SmartListsSidebar {
 
   async reorderListRelative(draggedId, targetId, insertBefore, targetFolderId) {
     if (!draggedId || !targetId || draggedId === targetId) return;
+    const previousFolders = JSON.parse(JSON.stringify(this.folders));
+    const previousLists = this.taskLists.map(list => ({ ...list }));
 
     // 1. Cập nhật vị trí trong thư mục
     this.folders.forEach(f => {
@@ -571,7 +561,6 @@ export class SmartListsSidebar {
         folder.collapsed = false;
       }
     }
-    this.saveFolders();
 
     // 2. Cập nhật thứ tự toàn cục trong this.taskLists
     const draggedList = this.taskLists.find(l => l.id === draggedId);
@@ -595,10 +584,16 @@ export class SmartListsSidebar {
         await api.put('/task-lists/reorder', { items });
         TabSync.broadcast('lists_updated');
       } catch (err) {
-        console.error('Failed to sync list order with server', err);
+        this.folders = previousFolders;
+        this.taskLists = previousLists;
+        store.set('taskLists', previousLists);
+        this.render();
+        Toast.error(err.message || 'Không thể sắp xếp danh sách.');
+        return;
       }
     }
 
+    this.saveFolders();
     this.render();
     if (this.onListsChanged) this.onListsChanged();
     Toast.success('Đã sắp xếp vị trí danh sách!');
@@ -738,6 +733,7 @@ export class SmartListsSidebar {
       type: 'text',
       className: 'input',
       placeholder: 'Ví dụ: Class, Project, Công việc...',
+      maxlength: 100,
       id: 'new-folder-name-input'
     });
 
@@ -791,6 +787,7 @@ export class SmartListsSidebar {
       type: 'text',
       className: 'input',
       value: folder.name,
+      maxlength: 100,
       id: 'rename-folder-name-input'
     });
 
@@ -840,6 +837,7 @@ export class SmartListsSidebar {
       type: 'text',
       className: 'input',
       placeholder: 'Ví dụ: Trực quan hóa dữ liệu, Kỹ nghệ phần mềm...',
+      maxlength: 100,
       id: 'new-list-name-input'
     });
 
@@ -926,6 +924,7 @@ export class SmartListsSidebar {
       type: 'text',
       className: 'input',
       value: list.name,
+      maxlength: 100,
       id: 'edit-list-name-input'
     });
 
