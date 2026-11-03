@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Planify Pro — Quản lý Công việc, Lịch biểu & Trợ lý AI</title>
+  <title>Planify Pro - Quản lý Công việc, Lịch biểu & Trợ lý AI</title>
 
   <!-- 0ms Anti-FOUC Theme Initializer -->
   <script>
-    (function() {
+    (function () {
       try {
         let theme = localStorage.getItem('planify_theme') || localStorage.getItem('theme') || 'light';
         if (theme !== 'dark' && theme !== 'light') theme = 'light';
@@ -24,7 +25,8 @@
   </script>
 
   <!-- Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
 
   <!-- Core Stylesheets -->
   <link rel="stylesheet" href="css/variables.css?v=6.0.0">
@@ -60,6 +62,7 @@
   <link rel="stylesheet" href="css/pages/settings.css?v=6.0.0">
   <link rel="stylesheet" href="css/responsive.css?v=6.0.2">
 </head>
+
 <body>
   <!-- ===== LANDING PAGE CONTAINER ===== -->
   <div id="landing-container" class="hidden">
@@ -115,7 +118,8 @@
       </nav>
 
       <div class="sidebar-footer">
-        <a class="nav-item sidebar-settings-link" data-page="settings" href="#settings" title="Cài đặt tài khoản, thông báo & giao diện">
+        <a class="nav-item sidebar-settings-link" data-page="settings" href="#settings"
+          title="Cài đặt tài khoản, thông báo & giao diện">
           <span class="nav-icon">⚙️</span>
           <span class="nav-text">Cài đặt</span>
         </a>
@@ -143,7 +147,8 @@
         </div>
 
         <div class="header-right">
-          <button type="button" class="header-theme-toggle" id="theme-toggle" aria-label="Chế độ tối" aria-pressed="false" title="Chuyển sang giao diện tối">
+          <button type="button" class="header-theme-toggle" id="theme-toggle" aria-label="Chế độ tối"
+            aria-pressed="false" title="Chuyển sang giao diện tối">
             <span class="theme-icon-light" aria-hidden="true">☀</span>
             <span class="theme-icon-dark" aria-hidden="true">☾</span>
             <span class="header-theme-label hide-on-mobile">Sáng</span>
@@ -197,7 +202,8 @@
         <div class="ai-message assistant">
           <div class="ai-avatar">🤖</div>
           <div class="ai-bubble">
-            Xin chào! 👋 Tôi là <strong>Planify AI</strong>. Tôi có thể tự động lập kế hoạch hôm nay, tìm khung giờ trống, thêm việc cần làm và phân tích năng suất cho bạn.
+            Xin chào! 👋 Tôi là <strong>Planify AI</strong>. Tôi có thể tự động lập kế hoạch hôm nay, tìm khung giờ
+            trống, thêm việc cần làm và phân tích năng suất cho bạn.
           </div>
         </div>
       </div>
@@ -210,7 +216,8 @@
           <button class="ai-chip" data-prompt="Dời các việc quá hạn sang hôm nay">⚠️ Dời việc quá hạn</button>
         </div>
         <div class="ai-input-box">
-          <input type="text" class="ai-input" id="ai-message-input" placeholder="Yêu cầu AI tạo việc, lên lịch, tìm giờ trống...">
+          <input type="text" class="ai-input" id="ai-message-input"
+            placeholder="Yêu cầu AI tạo việc, lên lịch, tìm giờ trống...">
           <button class="btn btn-primary btn-sm" id="btn-send-ai">Gửi</button>
         </div>
       </div>
@@ -224,4 +231,5 @@
   <!-- JS BOOTSTRAPPER (ES MODULE) -->
   <script type="module" src="js/app.js?v=6.0.2"></script>
 </body>
+
 </html>

@@ -1,7 +1,7 @@
-# WEEK 03 — TASK API, CATEGORIES & CONFLICT CORE
+# WEEK 03 - TASK API, CATEGORIES & CONFLICT CORE
 
 
-## Checkpoint implementation — 2026-10-05
+## Checkpoint implementation - 2026-10-05
 
 [x] dưới đây chỉ xác nhận item local/mock đã có evidence, không tự xác nhận DoD toàn tuần hoặc gate cloud. Task/category/conflict/migration tests và HTTP smoke hai user trên PostgreSQL local pass. Không dùng SQLite hoặc reset development DB; chi tiết ACCEPTANCE. Xem [ACCEPTANCE](../ACCEPTANCE.md), [PROGRESS](../PROGRESS.md) và [DEMO](../DEMO.md).
 

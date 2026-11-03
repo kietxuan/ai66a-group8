@@ -327,7 +327,7 @@ Nhiều kết quả: choices gồm id/title/task_date/start_time/end_time; khôn
 
 get_tasks trả result với tasks array (có thể rỗng), mutated=false. Unsupported trả result, action=unsupported, message giải thích, mutated=false. Khi flow kết thúc, client xóa context_id.
 
-### Gợi ý giờ trống — POST /api/chat, không endpoint mới
+### Gợi ý giờ trống - POST /api/chat, không endpoint mới
 
 Ví dụ: “Gợi ý 90 phút trống ngày mai từ 08:00 đến 18:00”. Backend cần đủ `task_date`, `duration_minutes`, `start_time`, `end_time` trong Action.availability; thiếu/mơ hồ trả clarification với các tên trên và context_id. Không đoán default. Ngày quá khứ/giờ đảo/thời lượng dài hơn khung trả clarification, không ghi task. Không đa ngày/qua đêm; giờ tối đa 23:59, không 24:00.
 

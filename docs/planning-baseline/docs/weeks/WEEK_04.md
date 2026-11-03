@@ -1,4 +1,4 @@
-# WEEK 04 — TODO LIST
+# WEEK 04 - TODO LIST
 
 ## Objective
 

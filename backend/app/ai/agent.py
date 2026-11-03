@@ -85,7 +85,7 @@ class PlanifyAgent:
             pending_actions.take((user_id, conversation_id))
             return {
                 "content": (
-                    "Xin lỗi bạn! 🙏 Tôi là **Planify AI** — chuyên gia hỗ trợ quản lý lịch trình, công việc cần làm (To Do) "
+                    "Xin lỗi bạn! 🙏 Tôi là **Planify AI** - chuyên gia hỗ trợ quản lý lịch trình, công việc cần làm (To Do) "
                     "và tối ưu hóa năng suất cá nhân. Câu hỏi này nằm ngoài phạm vi hỗ trợ của tôi.\n\n"
                     "Bạn có muốn tôi giúp tạo sự kiện, lên danh sách công việc hay sắp xếp kế hoạch hôm nay không?"
                 ),
@@ -484,7 +484,7 @@ class PlanifyAgent:
             d = res.get("data") or {}
             content = (
                 f"📊 **Báo cáo Năng suất Hiện tại của Bạn:**\n"
-                f"- Tổng số công việc: **{d.get('total_tasks', 0)}** (Đã hoàn thành: **{d.get('completed_tasks', 0)}** — đạt **{d.get('completion_rate_percent', 0)}%**)\n"
+                f"- Tổng số công việc: **{d.get('total_tasks', 0)}** (Đã hoàn thành: **{d.get('completed_tasks', 0)}** - đạt **{d.get('completion_rate_percent', 0)}%**)\n"
                 f"- Công việc trong Ngày của tôi (My Day): **{d.get('my_day_pending_tasks', 0)}** việc đang chờ\n"
                 f"- Công việc Quan trọng (⭐): **{d.get('important_pending_tasks', 0)}** việc\n"
                 f"- Công việc Quá hạn (⚠️): **{d.get('overdue_tasks', 0)}** việc\n\n"
@@ -686,7 +686,7 @@ class PlanifyAgent:
                 lines = [f"📋 Danh sách công việc hiện tại (**{len(items)} việc**):"]
                 for t in items[:10]:
                     star = " ⭐" if t.get("is_important") else ""
-                    due = f" — 📅 `{t['due_date']}`" if t.get("due_date") else ""
+                    due = f" - 📅 `{t['due_date']}`" if t.get("due_date") else ""
                     lines.append(f"- **{t['title']}**{star}{due}")
                 content = "\n".join(lines)
             return {"content": content, "tool_calls": executed_tools, "tool_results": tool_results}

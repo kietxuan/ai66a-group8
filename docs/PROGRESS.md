@@ -1,6 +1,6 @@
 # PROJECT PROGRESS
 
-## Tinh gọn nhánh fix/audit-regressions — 2026-11-03
+## Tinh gọn nhánh fix/audit-regressions - 2026-11-03
 
 - Theo yêu cầu user, gỡ 35 file test/probe, report QA, workflow regression, Compose test và package.json chỉ phục vụ test; không bỏ các bản sửa lỗi của ứng dụng.
 - Giữ migration, requirements.lock, cấu hình chạy và các module runtime. Bỏ lệnh npm install thừa trong devcontainer vì frontend là HTML/CSS/JS tĩnh, không còn package npm.
@@ -9,34 +9,34 @@
 - Không sửa .env, không restart app/DB thật trong đợt dọn file.
 - Kiểm tra sau cleanup: 175 file nguồn/cấu hình chạy và .env giữ nguyên hash; 35 backend + 38 frontend tests đọc trực tiếp từ lịch sử Git chạy trên source đã dọn đều PASS, không thêm lại test vào checkout. Build Docker backend/frontend, pip check, Python/JS syntax, JSON devcontainer, diff check và HTTP frontend/health backend của QA riêng đều PASS. Không coi đây là CI mới sau khi đã gỡ workflow.
 
-## Sửa lỗi ứng dụng — 2026-11-03
+## Sửa lỗi ứng dụng - 2026-11-03
 
 - Sửa isolation/foreign parent, OTP/admin/JWT, AI confirmation/ambiguity/fallback, recurrence/anchors, validation/all-day/timezone, free slots/auto-plan, Dashboard/export, cache/stale response, Settings/Agenda và toolbar mobile; không tự thêm tính năng.
 - Commit 9b040d4 đã qua 35 backend + 38 frontend tests và UI QA riêng; [CI của commit đó](https://github.com/kietxuan/ai66a-group8/actions/runs/41510221336) PASS. Đây là evidence trước khi gỡ file test, không phải CI mới sau cleanup.
 - Đã giữ các thay đổi auth/Landing của nhóm đến main 33ef7ef. JWT secret local được user duyệt thay ở lượt trước, không commit; SMTP/Groq/thiết bị thật chưa được xác minh lại, không cam kết 0 lỗi tuyệt đối.
-## Mở rộng phần giới thiệu tính năng trên landing — 2026-11-03
+## Mở rộng phần giới thiệu tính năng trên landing - 2026-11-03
 
 - Thay ba thẻ mô tả ngắn bằng ba mục Công việc, Lịch biểu, Trợ lý AI có mô tả và ví dụ thao tác cụ thể, dựa trên chức năng của frontend hiện tại. Giữ nội dung chỉ để giới thiệu, không gắn thao tác giả.
 - Tạo đúng một ảnh cho mỗi mục trong `frontend/assets/landing/feature-{todo,calendar,ai}.png`: chụp giao diện frontend hiện tại trên localhost:3000 với API trả dữ liệu mẫu trong phiên Chrome tạm. Không dùng ảnh cũ trong `docs/screenshots` vì chúng thuộc giao diện trước source import; không dùng dữ liệu tài khoản thật. Ảnh Lịch chụp ở chế độ Tuần, có trục giờ. Mỗi ảnh có chú thích dữ liệu mẫu và liên kết mở kích thước gốc.
 - `frontend/js/pages/landing.js` và `frontend/css/pages/landing.css`: bố cục mục giới thiệu theo hàng, ảnh chỉ một bản, giữ đúng tỉ lệ 940:550 bằng `width: 100%; height: auto`, responsive và có màu nền phù hợp sáng/tối.
 - Chrome headless trên localhost:3000: ba mục có đúng một ảnh, tất cả ảnh tải được và giữ tỉ lệ gốc ở 1440/390/320px, không tràn ngang; nút theme vẫn hoạt động, không có JS exception. Chưa deploy, không kiểm tra chức năng AI với provider thật.
 
-## Giải quyết merge conflict trang đăng nhập — 2026-11-03
+## Giải quyết merge conflict trang đăng nhập - 2026-11-03
 
 - Conflict duy nhất ở `frontend/js/pages/login.js` khi ghép thiết kế auth mới với thay đổi landing đã commit. Giữ `createLoginForm()` của nhánh auth để tương thích `auth-page.js`, đồng thời giữ điều hướng `planify_redirect_after_login` của nhánh landing; sau đăng nhập ưu tiên trang được yêu cầu trước đó, rồi mới dùng `planify_last_route`.
 - Thêm kiểm tra hồi quy cho điều hướng sau đăng nhập vào `tests/frontend/auth-ui.test.mjs`. Chạy `node --experimental-vm-modules --test --test-isolation=none tests/frontend/auth-ui.test.mjs`: 10/10 pass; cú pháp `login.js` pass. Không gọi OTP thật hoặc thay database.
 
-## Giao diện đăng nhập / đăng ký theo mẫu trượt — 2026-11-03
+## Giao diện đăng nhập / đăng ký theo mẫu trượt - 2026-11-03
 
 - User yêu cầu áp dụng mẫu hai form và phần giới thiệu trượt ngang, phối với theme hiện tại và giữ chức năng. Đây là thay đổi UI được yêu cầu trực tiếp trên source Vanilla JS sau import.
 - `frontend/js/pages/auth-page.js` dùng chung cho `#login` và `#register`; `frontend/js/app.js` đăng ký hai route về controller này. Hai form giữ DOM trong lúc chuyển mode để animation và bước OTP không bị reset; form ẩn có `inert`/`aria-hidden`, focus chuyển về heading đang mở. Rời auth xóa DOM chứa thông tin nhập và hủy listener theme.
 - `frontend/css/pages/auth.css`: khung form + panel gradient tím/xanh theo Planify, input gạch chân và nút bo tròn theo mẫu; dùng token Sáng/Tối hiện có, responsive xếp dọc ở <=680px, tự cuộn khi OTP/khôi phục dài, hỗ trợ reduced motion và focus bàn phím. Nền dùng CSS gradient thay ảnh `ext.jpg` không được cung cấp trong mẫu.
 - `login.js` / `register.js` xuất factory form dùng API `AuthManager` hiện có. Giữ đăng nhập/khôi phục mật khẩu/đăng ký OTP + tự đăng nhập. Thêm label liên kết input, autocomplete, kiểm tra đủ 6 số OTP; đăng ký gom luồng gửi/gửi lại mã, chặn submit lặp khi đang chờ, đổi email phải nhận OTP mới. Nút đổi theme có trên header auth và giữ nguyên nội dung đang nhập.
-- Checks PASS: syntax cho bốn module JS thay đổi/thêm; `git diff --check`; `node --experimental-vm-modules --test --test-isolation=none tests/frontend/auth-ui.test.mjs` — **9/9**. Tests dùng module router/form/AuthManager/API/theme/store thật với DOM double, fetch và toast giả lập; kiểm tra route, payload/thứ tự API, OTP, lỗi/thử lại, submit lặp, recovery, theme và cleanup. Không gửi OTP thật, tạo tài khoản hoặc sửa database. Chạy test mặc định bị sandbox chặn spawn (EPERM); `--test-isolation=none` chạy thành công, còn ExperimentalWarning của Node VM.
+- Checks PASS: syntax cho bốn module JS thay đổi/thêm; `git diff --check`; `node --experimental-vm-modules --test --test-isolation=none tests/frontend/auth-ui.test.mjs` - **9/9**. Tests dùng module router/form/AuthManager/API/theme/store thật với DOM double, fetch và toast giả lập; kiểm tra route, payload/thứ tự API, OTP, lỗi/thử lại, submit lặp, recovery, theme và cleanup. Không gửi OTP thật, tạo tài khoản hoặc sửa database. Chạy test mặc định bị sandbox chặn spawn (EPERM); `--test-isolation=none` chạy thành công, còn ExperimentalWarning của Node VM.
 - HTTP local `http://localhost:3000`: bốn file auth-page/login/register/auth.css trả 200 và nội dung khớp workspace, bản sửa đã được server phục vụ.
 - Giới hạn: browser access host không khả dụng trong lượt này; chưa kiểm chứng ảnh render/animation, viewport thực hoặc luồng email/backend thật. Tests DOM không chứng minh CSS đúng trong trình duyệt. Không thay schema/stack/provider, không public/deploy hoặc tuyên bố toàn bộ acceptance pass.
 
-## Sửa nút đổi giao diện ở sidebar — 2026-11-03
+## Sửa nút đổi giao diện ở sidebar - 2026-11-03
 
 - User báo nút mặt trời cạnh Cài đặt không đổi Sáng/Tối. `App.init()` gọi cả `ThemeManager.init()` và `Sidebar.init()`; cả hai gắn click handler cho `#theme-toggle`, khiến một click đổi theme hai lần rồi trở lại trạng thái cũ, đồng thời gửi hai request cập nhật preference nếu đã đăng nhập.
 - Sửa `frontend/js/components/sidebar.js`: bỏ handler và import `ThemeManager` bị trùng; `ThemeManager.init()` là nơi duy nhất gắn nút, giữ nguyên luồng áp dụng theme, store, localStorage và API hiện có.
@@ -44,7 +44,7 @@
 - Kiểm tra UI trực tiếp chưa thực hiện được: browser access host không khả dụng; Computer Use dừng khi không xác minh được URL hiện tại của Edge. Chưa xác nhận render/CSS trực tiếp trong trình duyệt.
 - Phạm vi: bugfix trên source Vanilla JS sau import; không đổi stack, schema hoặc nghiệp vụ, không xác nhận lại toàn bộ acceptance của source import.
 
-## Source import hiện tại — 2026-11-02
+## Source import hiện tại - 2026-11-02
 
 - User xác nhận thay source trên origin/main bằng project trong todo-list-pro/todo-list, giữ tài liệu cũ và lịch sử Git.
 - Đã fetch/fast-forward tới 96ed0b8 trước khi thay source; không force-push, không bỏ các commit trước đó.
@@ -71,7 +71,7 @@
 - 45cf886 là baseline planning trước implementation. Đợt bàn giao Git theo yêu cầu user 29/10 được ghi bên dưới; commit thực tế xem Git log/remote. Chưa có release online HTTPS/URL; push source không đồng nghĩa đã deploy.
 - Current improvement tracking: [107 mục + AI bắt buộc](IMPROVEMENT_STATUS_2026-10-21.md), giữ audit gốc như bằng chứng trước sửa. Sau giờ trống: **247 backend / 57 frontend tests pass**, production build pass, Groq parser 7/7 + browser nhiều lượt thật pass; xem amendment bên dưới. 200/53 và HTTP smoke 25/25 là checkpoint UI trước tính năng mới, không coi smoke cũ là bằng chứng giờ trống. Next: nhóm review/commit/push/remote CI và người có quyền deploy/HTTPS smoke, thử thiết bị thật.
 
-## Bàn giao Git / clone setup — 2026-10-29
+## Bàn giao Git / clone setup - 2026-10-29
 
 - Commit implementation **e359278e4b8838ae3235dee8b4c57cf5196d4605** đã push thành công lên origin/main; `git ls-remote origin refs/heads/main` xác nhận đúng SHA. Không force push, working tree sạch ngay sau push. Ghi chú này là bổ sung bàn giao, không đổi source nghiệp vụ.
 - GitHub Actions đã tạo [run 40819516766](https://github.com/kietxuan/ai66a-group8/actions/runs/40819516766), trạng thái quan sát đầu tiên in_progress; không đánh dấu CI pass trước conclusion thực tế. Render/Neon/HTTPS và thiết bị vật lý vẫn OPEN.
@@ -87,7 +87,7 @@
 - Sau vá, snapshot chạy lại npm ci từ lockfile cuối: 0 npm vulnerabilities, **57 tests pass, 5,72s**, **production build pass 2m53s** với Vitest 4.1.12. Snapshot build trước vá dev-tool pass 3m02s; CSS/main/lazy Calendar giữ cùng hash với working-tree build. Không có thay đổi runtime dependency; không suy rộng npm audit sang toàn bộ backend. Thư mục validation giữ local trong .local ignored, không chứa .env/key/database; PostgreSQL đã khởi động phục vụ test được giữ running, không mở app/LAN/cloud.
 - Các check này không đóng Render/Neon/HTTPS/physical-phone gate; không cấp URL deploy giả. Chưa triển khai cloud hoặc chia sẻ secrets. Chỉ các commit/source đã push được xác nhận qua remote Git; đây không phải online product release.
 
-## Gợi ý giờ trống — user amendment 2026-10-22
+## Gợi ý giờ trống - user amendment 2026-10-22
 
 ### Phạm vi / source
 
@@ -117,7 +117,7 @@
 - Một ngày, khung giờ/thời lượng rõ ràng; không tự định nghĩa buổi sáng/giờ làm việc, không qua đêm/đa ngày/tự đặt/dời/“đặt khung đầu tiên”. Gợi ý là snapshot, không reservation. Không cam kết hiểu mọi cách nói; provider vẫn có thể 429/502/503, không tự retry mutation.
 - Các gate Render/Neon/remote CI/HTTPS/thiết bị Android/iOS vật lý vẫn OPEN. Không deploy/commit/push, không sửa dữ liệu thật hoặc xóa tài khoản test tồn tại.
 
-## UI redesign theo ZIP + Sáng/Tối — 2026-10-22
+## UI redesign theo ZIP + Sáng/Tối - 2026-10-22
 
 ### Phạm vi được user yêu cầu
 
@@ -153,13 +153,13 @@ User đã chốt danh sách sẽ làm/không làm và yêu cầu triển khai: t
 - Không gọi lại Groq thật trong đợt UI, không sửa khả năng hiểu/ngữ cảnh. Các kết quả NLU/execution 21/10 là evidence lịch sử, không bị thay bằng mock UI.
 - Remote CI/Render/Neon/HTTPS/release SHA vẫn OPEN; không commit/push/publish hoặc mở LAN/firewall. Tài khoản synthetic được giữ vì MVP không có account-delete; task QA được dọn qua API scoped trước handoff, không reset dữ liệu user.
 
-## Launcher compatibility fix — 2026-10-22
+## Launcher compatibility fix - 2026-10-22
 
 - User gặp 6 ParserError khi chạy `scripts/dev.ps1` trong Windows PowerShell 5.1. Đã tái hiện đúng 6 lỗi bằng parser 5.1: UTF-8 không BOM bị đọc theo ANSI, ký tự tiếng Việt thành dấu nháy/cú pháp sai. PowerShell 7 trước đó parse được nên kiểm thử ban đầu chưa bao phủ shell của user.
 - Sửa riêng thông báo/comment launcher sang ASCII, giữ nguyên logic DB/migration/build/single-worker và các safety guards. `scripts/check_project.py` thêm kiểm tra ASCII để ngăn tái phát; `docs/01_SETUP.md` ghi nguyên nhân. Không đổi execution policy, dependency, key hoặc dữ liệu.
 - Xác minh: parser Windows PowerShell 5.1.26100.9711 và PowerShell 7.6.5 đều 0 errors; chạy launcher thật qua 5.1 với port không hợp lệ đi đến đúng validation rồi dừng trước DB/app; document/config checker 26 files/0 errors; diff whitespace check pass. Không chạy lại full app/LLM trong hotfix này; người dùng chạy lại launcher để tiếp tục test thủ công.
 
-## Đợt cải thiện toàn web + hội thoại — chốt local 2026-10-22
+## Đợt cải thiện toàn web + hội thoại - chốt local 2026-10-22
 
 ### Phạm vi / deviation được user yêu cầu
 
@@ -203,7 +203,7 @@ User yêu cầu triển khai các cải thiện sau audit, trong đó ngữ cả
 - Không có Render/Neon account/URL hoặc release SHA/remote CI. Không commit/push/deploy/mở firewall/LAN trong phiên này.
 - Key đã lộ vẫn theo ủy quyền dùng tạm; cần chủ key rotate trước public. Không đưa vào source/frontend/log/report.
 
-## Auth amendment — Passlib + bcrypt, 2026-10-22
+## Auth amendment - Passlib + bcrypt, 2026-10-22
 
 ### Thay đổi và tương thích
 
@@ -253,7 +253,7 @@ User yêu cầu triển khai các cải thiện sau audit, trong đó ngữ cả
 | WEEK_09 | Regression | Auth + UI amendments 22/10: 200 backend +53 frontend/build PASS; HTTP25/25; remote CI/HTTPS OPEN |
 | WEEK_10 | Release/docs/demo | LOCAL HANDOFF READY; official online release/rubric OPEN |
 
-## Session hiện tại — 2026-10-21
+## Session hiện tại - 2026-10-21
 
 ### Thay đổi
 
@@ -291,9 +291,9 @@ User yêu cầu triển khai các cải thiện sau audit, trong đó ngữ cả
 
 ---
 
-## 4. Latest handoff — plan review 2026-10-02
+## 4. Latest handoff - plan review 2026-10-02
 
-### Completed — documentation only
+### Completed - documentation only
 
 - Đọc toàn bộ project plan và đối chiếu source/config/dependencies hiện có.
 - Giữ Authentication trước Task CRUD; giữ core MVP/stack và roadmap 10 tuần.
@@ -356,7 +356,7 @@ Mỗi lần cập nhật ghi:
 - Deviation so với plan và lý do.
 - Next action; không invent release commit/URL hoặc tuyên bố completed khi DoD chưa đạt.
 
-## 6. Implementation session — 2026-10-05
+## 6. Implementation session - 2026-10-05
 
 User yêu cầu triển khai toàn bộ roadmap trong session, tự quyết routine implementation. Đây là authorization đi qua các phase liên tiếp; gate online/provider thiếu vẫn phải ghi thiếu, không tự đổi stack/model.
 
@@ -477,7 +477,7 @@ Screenshots: docs/screenshots/todo-desktop.jpg, todo-mobile.jpg, calendar-deskto
 3. Người có quyền triển khai Render/Neon theo 01_SETUP/DEMO; HTTPS smoke hai users và restart/persistence/context.
 4. Ghi URL/SHA/CI/provider evidence vào ACCEPTANCE/PROGRESS; chỉ khi đó đóng official Week5/8/9/10 gates.
 
-## 2026-11-03 — Sửa form ngày của To Do trong source mới
+## 2026-11-03 - Sửa form ngày của To Do trong source mới
 
 - Phát hiện: ô `Ngày thực hiện` trong panel chi tiết gọi `render()` ngay sau khi lưu, thay cả input đang được chỉnh. Một thay đổi còn phát hai event và callback dẫn đến ba lượt `GET /tasks`, mỗi lượt có thể dựng lại panel. Đây là cập nhật DOM, không phải browser reload.
 - Sửa `frontend/js/todo/task-detail.js` và `frontend/js/pages/todo.js`: giữ input ngày khi cập nhật, hiện nút bỏ ngày mà không dựng lại panel, dùng một lượt refresh task qua callback; event toàn cục vẫn cập nhật badge/module khác.
@@ -488,14 +488,14 @@ Screenshots: docs/screenshots/todo-desktop.jpg, todo-mobile.jpg, calendar-deskto
 - Follow-up tiếp theo: user vẫn thấy tải liên tục khi nhập ngày/giờ. Truy vết cho thấy `TaskDetail.notifyChanged()` sau từng `change` vẫn dẫn đến `GET /tasks`, `SmartListsSidebar.render()` và `TaskListView.render()` xóa/vẽ lại toàn bộ phần nền. Chuyển ba ô native date/time sang lưu khi `blur`, xếp tuần tự các PUT, gom một lần refresh khi rời nhóm ngày/giờ; checkbox `Cả ngày` dùng cùng cơ chế. Ô nhập và panel không bị thay trong quá trình chỉnh.
 - Kiểm tra follow-up tiếp theo: Node DOM giả lập xác nhận ba ô chỉ lưu trên blur và chỉ một refresh sau khi rời nhóm; kiểm tra syntax, diff và HTTP asset. Chưa có browser test trên phiên đăng nhập thật.
 
-## 2026-11-03 — Rà soát trang giới thiệu trước đăng nhập
+## 2026-11-03 - Rà soát trang giới thiệu trước đăng nhập
 
 - Phát hiện: các liên kết `#features`/`#calendar-feature`/`#todo-feature`/`#ai-feature` bị SPA router hiểu là route, khách chưa đăng nhập có thể bị chuyển sang trang đăng nhập. `body` khóa cuộn nhưng landing chưa có vùng cuộn riêng; dưới 992px toàn bộ menu tính năng bị ẩn. Header ở màn hình hẹp dễ chật và footer của người đã đăng nhập vẫn dẫn đến login/register.
 - Nội dung chưa khớp source: câu chữ gợi ý có đồng bộ Google/Outlook/Microsoft To Do dù đây là các ứng dụng tham khảo; landing nói 5 kiểu xem lịch nhưng UI hiện có 4, quảng bá Pomodoro dù không xuất hiện trong luồng app; preview số liệu mẫu chưa được ghi rõ là minh họa; tuyên bố bảo vệ bảo mật "tuyệt đối" không có bằng chứng acceptance/security.
 - Sửa `frontend/js/pages/landing.js`, `frontend/css/pages/landing.css`, `frontend/css/responsive.css`: điều hướng cuộn trong landing không đổi hash; menu mobile có nút, trạng thái mở, Escape và đóng khi chọn mục; vùng cuộn riêng và bố cục header/hero/footer cho màn hình hẹp; nhãn theme cho trình đọc màn hình; nội dung mô tả khớp bốn kiểu xem lịch và 32 tool definitions hiện có. Footer phụ thuộc trạng thái đăng nhập. Giữ thiết kế tổng thể và CTA chính.
 - Kiểm tra live Chrome headless tại localhost:3000: desktop 1440px, mobile 390px và 320px; trang cuộn, section navigation giữ `#landing`, menu/ Escape, theme, login/register routes hoạt động; `scrollWidth == innerWidth` tại 390/320; không có JS exception. Kiểm tra syntax JS và `git diff --check`. Không tạo tài khoản, gửi OTP, hoặc kiểm tra đăng ký/đăng nhập end-to-end với email thực.
 
-## 2026-11-03 — Thiết kế lại trang chủ trước đăng nhập theo yêu cầu
+## 2026-11-03 - Thiết kế lại trang chủ trước đăng nhập theo yêu cầu
 
 - Files: `frontend/js/pages/landing.js`, `frontend/css/pages/landing.css`, `frontend/css/responsive.css`, `frontend/js/pages/login.js`, `docs/PROGRESS.md`; ảnh kiểm tra tại `docs/screenshots/landing-redesign-desktop-2026-11-03.png` và `landing-redesign-mobile-2026-11-03.png`.
 - Header giữ logo, Trang chủ/Giới thiệu, Đăng nhập/Đăng ký; hero sáng với tên ứng dụng, mô tả ngắn và CTA. Bỏ preview giả lập cũ; phần Giới thiệu có đúng ba thẻ thông tin công việc/lịch/AI, không gắn hành động giả. Footer nền tối bốn cột, copyright đúng câu user yêu cầu.
@@ -503,7 +503,7 @@ Screenshots: docs/screenshots/todo-desktop.jpg, todo-mobile.jpg, calendar-deskto
 - Link Hướng dẫn trỏ tới route được bảo vệ; sửa `login.js` để sau đăng nhập dùng `planify_redirect_after_login` do router lưu, giúp đi đến Hướng dẫn thay vì route cũ. Chưa thử đăng nhập thật/OTP.
 - Kiểm tra Chrome headless trên app localhost:3000: header chỉ hai mục; ba thẻ đúng nội dung; footer email/GitHub; Trang chủ/Giới thiệu ở header và footer cuộn đúng, giữ `#landing`; login/register đi `#login`/`#register`; Hướng dẫn chuyển login và lưu redirect `guide`; nền landing vẫn trắng khi workspace chọn dark; viewport 1440/390/320 không tràn ngang, không JS exception. JS syntax và `git diff --check` pass. Không deploy hay thay `.env`.
 
-## 2026-11-03 — Khôi phục nút đổi giao diện ở trang chủ
+## 2026-11-03 - Khôi phục nút đổi giao diện ở trang chủ
 
 - Theo phản hồi của user, thêm lại nút sáng/tối trong header trang chủ; dùng `ThemeManager` hiện có nên lựa chọn được lưu và dùng chung với ứng dụng sau đăng nhập.
 - `frontend/js/pages/landing.js` thêm nút có nhãn hỗ trợ truy cập và trạng thái `aria-pressed`; `frontend/css/pages/landing.css` bổ sung màu tối cho header, hero, chữ, thẻ giới thiệu và điều chỉnh kích thước nút trên mobile. Footer giữ nền tối như thiết kế.

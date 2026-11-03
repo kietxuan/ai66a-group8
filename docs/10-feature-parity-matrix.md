@@ -3,7 +3,7 @@
 > Lịch sử / chưa được xác minh lại: các điểm parity và nhãn production dưới đây được nhập cùng source, không phải kết quả QA của nhánh sửa lỗi. Các probe cũ đã được gỡ trong đợt tinh gọn source; xem [PROGRESS](PROGRESS.md). Không suy ra sync Google/Outlook, Pomodoro đang bật hoặc an toàn 100%.
 
 > **Document Identifier:** `docs/10-feature-parity-matrix.md`  
-> **Version:** 3.1.0 — Production Parity Benchmark  
+> **Version:** 3.1.0 - Production Parity Benchmark  
 > **Target Systems:** Planify (Production Stack) vs. Google Calendar (Web), Microsoft Outlook Calendar (Web/M365), Microsoft To Do (Web)  
 > **Standard Specifications:** RFC 5545 (iCalendar / RRULE), ISO 8601 Datetime, W3C Web Accessibility Guidelines (WCAG 2.1 AA)
 
@@ -20,7 +20,7 @@ Planify is a modern, unified time and task management platform engineered to res
 | **Google Calendar** | 38 / 50 (76%) | 10 / 50 (20%) | 2 / 50 (4%) | 0 / 50 (Enterprise booking/hangouts) |
 | **Microsoft Outlook Calendar** | 35 / 50 (70%) | 13 / 50 (26%) | 2 / 50 (4%) | 0 / 50 (Exchange Room/Teams infra) |
 | **Microsoft To Do** | 28 / 50 (56%)* | 18 / 50 (36%) | 4 / 50 (8%) | 0 / 50 (Shared family lists) |
-| **Planify Unified Composite** | **50 / 50 (100%)** | **22 / 50 (44% vs standalone)** | **0 / 50 (0%)** | — |
+| **Planify Unified Composite** | **50 / 50 (100%)** | **22 / 50 (44% vs standalone)** | **0 / 50 (0%)** | - |
 
 *\*Note: Microsoft To Do does not feature calendar grid views (Day/Week/Month/Agenda), which accounts for lower raw parity percentage; Planify unifies both domains.*
 

@@ -1,7 +1,7 @@
-# WEEK 08 — MVP INTEGRATION & HARDENING
+# WEEK 08 - MVP INTEGRATION & HARDENING
 
 
-## Checkpoint implementation — 2026-10-21
+## Checkpoint implementation - 2026-10-21
 
 Real Chat tạo Học React và Todo/Calendar cùng hiện đúng ngày/giờ; backend120/frontend24/build/audit pass. Online E2E/HTTPS còn OPEN; optional không làm trước gate. Theo user cho phép tiếp tục các phase local dù gate account/online chưa đóng. [RELEASE_HANDOFF](../RELEASE_HANDOFF.md), [ACCEPTANCE](../ACCEPTANCE.md), [PROGRESS](../PROGRESS.md) ghi bằng chứng/known issues; checklist local không tự xác nhận toàn bộ weekly DoD online.
 

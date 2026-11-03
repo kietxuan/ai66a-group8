@@ -1,4 +1,4 @@
-# WEEK 01 — PLANNING
+# WEEK 01 - PLANNING
 
 ## Objective
 
@@ -9,7 +9,7 @@ Chốt MVP, nguồn dữ liệu, auth/API/time/conflict/chat/deploy contract đ�
 - Đọc toàn bộ blueprint và AGENTS.
 - Đối chiếu đề bài/rubric nếu giảng viên cung cấp; không tự tuyên bố đã đáp ứng rubric chưa nhận.
 
-## Tasks — planning baseline đã hoàn thành
+## Tasks - planning baseline đã hoàn thành
 
 - [x] Chốt MVP Todo + Calendar + Chatbot, không Dashboard/Statistics bắt buộc.
 - [x] Chốt Authentication Week 2 trước Task CRUD Week 3.

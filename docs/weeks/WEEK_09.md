@@ -1,7 +1,7 @@
-# WEEK 09 — REGRESSION TESTING & FIXES
+# WEEK 09 - REGRESSION TESTING & FIXES
 
 
-## Checkpoint implementation — 2026-10-21
+## Checkpoint implementation - 2026-10-21
 
 Full regression120 backend +24 frontend tests, production build Vite6.4.4 và audits sau vá certifi pass; hai deprecation warnings còn. Real-AI reports tách khỏi mock CI. Remote Linux CI/HTTPS vẫn OPEN. Theo user cho phép tiếp tục các phase local dù gate account/online chưa đóng. [RELEASE_HANDOFF](../RELEASE_HANDOFF.md), [ACCEPTANCE](../ACCEPTANCE.md), [PROGRESS](../PROGRESS.md) ghi bằng chứng/known issues; checklist local không tự xác nhận toàn bộ weekly DoD online.
 

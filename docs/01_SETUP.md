@@ -1,6 +1,6 @@
 # LOCAL SETUP & DEPLOY HANDOFF
 
-## Clone mới / thành viên nhóm — bổ sung 2026-10-29
+## Clone mới / thành viên nhóm - bổ sung 2026-10-29
 
 Theo [README: clone và chạy lần đầu](../README.md#clone-và-chạy-lần-đầu-trên-máy-thành-viên--windows). Máy mới phải tự cài Python 3.11/Node/PostgreSQL, tạo database development, tạo `.env` từ mẫu và thay DB URL/JWT secret/Groq key, tạo venv/cài requirements, chạy npm ci. Sau đó dùng `scripts/dev.ps1 -Build` từ root, **không -StartLocalDatabase**. Launcher tự migrate bảng, không tự tạo database/cài dependencies. `.env.example` nay có đủ exact Origins cho local8000 và Vite5173; JWT secret mẫu vẫn cố ý bị từ chối để người clone phải tạo random riêng. Database test chỉ cần khi chạy tests, phải tách biệt và tên kết thúc `_test`.
 
@@ -134,7 +134,7 @@ Dev Vite port 5173 strictPort, proxy /api và /health -> 127.0.0.1:8000. Browser
 
 Đăng ký rồi đăng nhập. Todo/Calendar dùng cùng nguồn dữ liệu; chat chỉ gửi current-user context. Khi logout/401, frontend unmount task/chat state. Không lưu lịch sử chat vào database/localStorage.
 
-## 6. Tests — database test duy nhất được reset
+## 6. Tests - database test duy nhất được reset
 
 Từ backend:
 
@@ -205,7 +205,7 @@ Script --live-ai thử create/query/update/complete/delete thật, mặc định
 
 Chỉ nhận DB loopback, cần role được CREATE DATABASE và PostgreSQL tools. Dump lưu .local/backups ignored; phục hồi vào database **mới ngẫu nhiên**, so số bản ghi users/categories/tasks rồi xóa đúng database thử vừa tạo. Không restore/drop database chính. Chạy lúc ít thay đổi dữ liệu để so count ổn định. Dump chứa dữ liệu nhạy cảm: giữ local, không commit/upload. Đây là rehearsal local, không thay backup production được quản lý.
 
-## 8. Render + Neon — cấu hình sẵn, chưa deploy
+## 8. Render + Neon - cấu hình sẵn, chưa deploy
 
 render.yaml: một Python Web Service tại root repository; build bash scripts/build.sh; start bash scripts/start.sh; health /health; một instance.
 

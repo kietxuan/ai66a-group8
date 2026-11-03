@@ -208,7 +208,7 @@ def _get_reminder_html_content(
                 </p>
             </div>
             <div style="background:#f8fafc;padding:16px;text-align:center;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;">
-                &copy; 2026 Planify Pro — Hệ thống quản lý Công việc & Lịch trình thông minh.
+                &copy; 2026 Planify Pro - Hệ thống quản lý Công việc & Lịch trình thông minh.
             </div>
         </div>
     </div>

@@ -1,12 +1,12 @@
-import { businessNow } from '../utils/date.js';
+import { businessNow } from "../utils/date.js";
 /**
  * Background Reminder & Notification Service
  * Polls upcoming tasks/events every 30 seconds, triggers Email reminders via Backend SMTP,
  * and shows Browser/Toast notifications according to user settings (notify_enabled & notify_minutes_before).
  */
-import { api } from '../api.js';
-import { store } from '../store.js';
-import { Toast } from './toast.js';
+import { api } from "../api.js";
+import { store } from "../store.js";
+import { Toast } from "./toast.js";
 
 export class ReminderNotifier {
   static intervalId = null;
@@ -14,21 +14,27 @@ export class ReminderNotifier {
   static isRunning = false;
 
   static isEnabled() {
-    const user = store.get('user');
+    const user = store.get("user");
     if (user && user.notify_enabled !== undefined) {
       return Boolean(user.notify_enabled);
     }
-    const saved = localStorage.getItem('planify_notify_enabled');
-    return saved === null ? true : saved === 'true';
+    const saved = localStorage.getItem("planify_notify_enabled");
+    return saved === null ? true : saved === "true";
   }
 
   static getMinutesBefore() {
-    const user = store.get('user');
-    if (user && user.notify_minutes_before !== undefined && user.notify_minutes_before !== null) {
+    const user = store.get("user");
+    if (
+      user &&
+      user.notify_minutes_before !== undefined &&
+      user.notify_minutes_before !== null
+    ) {
       return Number(user.notify_minutes_before);
     }
-    const saved = localStorage.getItem('planify_notify_minutes_before');
-    return saved !== null && Number.isFinite(Number(saved)) ? Number(saved) : 15;
+    const saved = localStorage.getItem("planify_notify_minutes_before");
+    return saved !== null && Number.isFinite(Number(saved))
+      ? Number(saved)
+      : 15;
   }
 
   static start() {
@@ -36,13 +42,13 @@ export class ReminderNotifier {
     this.isRunning = true;
 
     try {
-      const cached = sessionStorage.getItem('planify_notified_reminders');
+      const cached = sessionStorage.getItem("planify_notified_reminders");
       if (cached) {
-        JSON.parse(cached).forEach(id => this.notifiedSet.add(id));
+        JSON.parse(cached).forEach((id) => this.notifiedSet.add(id));
       }
     } catch (_) {}
 
-    if ('Notification' in window && Notification.permission === 'default') {
+    if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission().catch(() => {});
     }
 
@@ -67,7 +73,7 @@ export class ReminderNotifier {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      osc.type = 'sine';
+      osc.type = "sine";
       osc.frequency.setValueAtTime(587.33, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.18);
 
@@ -87,11 +93,11 @@ export class ReminderNotifier {
     this.playChime();
     Toast.warning(`${title}: ${body}`, 8500);
 
-    if ('Notification' in window && Notification.permission === 'granted') {
+    if ("Notification" in window && Notification.permission === "granted") {
       try {
         new Notification(title, {
           body,
-          icon: '/favicon.ico'
+          icon: "/favicon.ico",
         });
       } catch (_) {}
     }
@@ -100,12 +106,15 @@ export class ReminderNotifier {
   static markNotified(key) {
     this.notifiedSet.add(key);
     try {
-      sessionStorage.setItem('planify_notified_reminders', JSON.stringify(Array.from(this.notifiedSet)));
+      sessionStorage.setItem(
+        "planify_notified_reminders",
+        JSON.stringify(Array.from(this.notifiedSet)),
+      );
     } catch (_) {}
   }
 
   static async check() {
-    const user = store.get('user');
+    const user = store.get("user");
     if (!user) return;
     if (!this.isEnabled()) return;
 
@@ -115,58 +124,74 @@ export class ReminderNotifier {
 
     try {
       // 1. Trigger backend check-reminders (sends Email notification via SMTP if due & auto-completes expired events)
-      const serverCheck = await api.post('/users/me/check-reminders', {}).catch(() => null);
+      const serverCheck = await api
+        .post("/users/me/check-reminders", {})
+        .catch(() => null);
       if (serverCheck && Array.isArray(serverCheck.triggered)) {
         for (const item of serverCheck.triggered) {
           const key = `srv-rem-${item.id}-${now.toISOString().slice(0, 10)}`;
           if (!this.notifiedSet.has(key)) {
             this.markNotified(key);
-            const emailTag = item.email_sent ? ' (Đã gửi Email nhắc lịch)' : '';
-            this.notify('⏰ Nhắc lịch hẹn / công việc', `"${item.title}" — ${item.time_display}${emailTag}`);
+            const emailTag = item.email_sent ? " (Đã gửi Email nhắc lịch)" : "";
+            this.notify(
+              "⏰ Nhắc lịch hẹn / công việc",
+              `"${item.title}" - ${item.time_display}${emailTag}`,
+            );
           }
         }
       }
 
       // 2. Local browser check for tasks/events happening today within notify_minutes_before
-      const tasks = await api.get('/tasks');
+      const tasks = await api.get("/tasks");
       if (Array.isArray(tasks)) {
         let autoCompletedAny = false;
         for (const t of tasks) {
           if (t.is_completed) continue;
 
           if (t.due_date && (t.start_time || t.due_time) && !t.is_all_day) {
-            const dateStr = typeof t.due_date === 'string' ? t.due_date.split('T')[0] : '';
+            const dateStr =
+              typeof t.due_date === "string" ? t.due_date.split("T")[0] : "";
             const rawTime = String(t.start_time || t.due_time).substring(0, 5);
             const startAt = new Date(`${dateStr}T${rawTime}:00`).getTime();
-            const itemMins = t.reminder_minutes !== undefined && t.reminder_minutes !== null
-              ? Number(t.reminder_minutes)
-              : defaultRemindMins;
+            const itemMins =
+              t.reminder_minutes !== undefined && t.reminder_minutes !== null
+                ? Number(t.reminder_minutes)
+                : defaultRemindMins;
             const alertWindowStart = startAt - itemMins * 60 * 1000;
             const key = `task-start-${t.id}-${dateStr}-${rawTime}`;
 
-            if (!this.notifiedSet.has(key) && nowMs >= alertWindowStart && nowMs <= startAt + 5 * 60 * 1000) {
+            if (
+              !this.notifiedSet.has(key) &&
+              nowMs >= alertWindowStart &&
+              nowMs <= startAt + 5 * 60 * 1000
+            ) {
               this.markNotified(key);
               this.notify(
-                '⏰ Sắp đến giờ công việc',
-                `"${t.title}" lúc ${rawTime} (nhắc trước ${itemMins} phút)`
+                "⏰ Sắp đến giờ công việc",
+                `"${t.title}" lúc ${rawTime} (nhắc trước ${itemMins} phút)`,
               );
             }
           }
 
           // Frontend auto-complete check for events (auto_complete=true)
           if (t.auto_complete && t.due_date) {
-            const dateStr = typeof t.due_date === 'string' ? t.due_date.split('T')[0] : '';
-            const rawEnd = String(t.end_time || t.due_time || t.start_time || '23:59').substring(0, 5);
+            const dateStr =
+              typeof t.due_date === "string" ? t.due_date.split("T")[0] : "";
+            const rawEnd = String(
+              t.end_time || t.due_time || t.start_time || "23:59",
+            ).substring(0, 5);
             const endAt = new Date(`${dateStr}T${rawEnd}:00`).getTime();
             if (!isNaN(endAt) && nowMs >= endAt) {
-              await api.patch(`/tasks/${t.id}/complete`, { is_completed: true }).catch(() => {});
+              await api
+                .patch(`/tasks/${t.id}/complete`, { is_completed: true })
+                .catch(() => {});
               autoCompletedAny = true;
             }
           }
         }
 
         if (autoCompletedAny) {
-          window.dispatchEvent(new CustomEvent('planify:data-changed'));
+          window.dispatchEvent(new CustomEvent("planify:data-changed"));
         }
       }
     } catch (_) {}

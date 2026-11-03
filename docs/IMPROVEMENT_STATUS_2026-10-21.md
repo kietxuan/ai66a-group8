@@ -1,4 +1,4 @@
-# Theo dõi triển khai cải thiện — 21/10/2026
+# Theo dõi triển khai cải thiện - 21/10/2026
 
 Đây là bản theo dõi thực hiện theo yêu cầu mới của user, bổ sung cho [audit 107 mục](AUDIT_IMPROVEMENTS_2026-10-21.md). Audit gốc được giữ nguyên như bằng chứng hiện trạng trước sửa. Không đánh dấu online/device thật hoàn thành bằng kiểm thử local.
 
@@ -31,7 +31,7 @@ Kết quả đo: regression thật 39/40 (97,5%) và bộ 12 cách diễn đạt
 
 ## Đối chiếu đủ 107 ID
 
-### A — độ ổn định trước demo/public
+### A - độ ổn định trước demo/public
 
 | ID | Trạng thái | Xử lý / phần còn lại |
 |---|---|---|
@@ -45,7 +45,7 @@ Kết quả đo: regression thật 39/40 (97,5%) và bộ 12 cách diễn đạt
 | A08 | Local | Cap body 32KiB trước JSON, bounded streaming, deadline đọc body 10s; không chỉ dựa Content-Length. |
 | A09 | Bên ngoài | Key đã lộ: cần chủ tài khoản revoke/rotate trước public. Không tự tạo/thay key hoặc đưa ra frontend. |
 
-### B — điện thoại
+### B - điện thoại
 
 | ID | Trạng thái | Xử lý / phần còn lại |
 |---|---|---|
@@ -64,7 +64,7 @@ Kết quả đo: regression thật 39/40 (97,5%) và bộ 12 cách diễn đạt
 | B13 | Hoãn | PWA/manifest/offline/push không bắt buộc; chưa qua online MVP gate. |
 | B14 | Local | Hiện/ẩn password mặc định che, aria state; không lưu password. |
 
-### C — khả năng đọc / accessibility
+### C - khả năng đọc / accessibility
 
 | ID | Trạng thái | Xử lý / phần còn lại |
 |---|---|---|
@@ -79,7 +79,7 @@ Kết quả đo: regression thật 39/40 (97,5%) và bộ 12 cách diễn đạt
 | C09 | Local | Skip link và focus ring đậm hơn; kiểm tra thứ tự Tab cốt lõi. |
 | C10 | Một phần | Event có accessible label ngày/giờ/status, completed không chỉ màu; cần screen reader thật. |
 
-### D — Todo / form
+### D - Todo / form
 
 | ID | Trạng thái | Xử lý / phần còn lại |
 |---|---|---|
@@ -100,7 +100,7 @@ Kết quả đo: regression thật 39/40 (97,5%) và bộ 12 cách diễn đạt
 | D15 | Local | Nút thêm dùng ngày preset/ngày đơn rõ ràng; không lấy đầu range nhiều ngày. |
 | D16 | Local | Clear search riêng, giữ filter khác. |
 
-### E — Calendar
+### E - Calendar
 
 | ID | Trạng thái | Xử lý / phần còn lại |
 |---|---|---|
@@ -112,7 +112,7 @@ Kết quả đo: regression thật 39/40 (97,5%) và bộ 12 cách diễn đạt
 | E06 | Một phần | Test named timezone/year boundary/00:00; cần xác minh thêm picker thiết bị thật và mọi mốc lịch. |
 | E07 | Local | Lọc status/category dùng TaskFilters/API chung; không thêm business logic. |
 
-### F — Chat UI
+### F - Chat UI
 
 | ID | Trạng thái | Xử lý / phần còn lại |
 |---|---|---|
@@ -127,7 +127,7 @@ Kết quả đo: regression thật 39/40 (97,5%) và bộ 12 cách diễn đạt
 | F09 | Local | Browser hai tab cùng user: tab mới recover đúng pending, cancel ở tab B, confirm cũ ở tab A trả CONTEXT_EXPIRED, không ghi. Vẫn một flow/user/một worker. |
 | F10 | Local | Enter xuống dòng, Ctrl/⌘+Enter gửi, không gửi khi IME composing. |
 
-### G — state / hiệu năng / phục hồi
+### G - state / hiệu năng / phục hồi
 
 | ID | Trạng thái | Xử lý / phần còn lại |
 |---|---|---|
@@ -142,7 +142,7 @@ Kết quả đo: regression thật 39/40 (97,5%) và bộ 12 cách diễn đạt
 | G09 | Một phần | Asset hash cache immutable, HTML no-cache; giữ Google Fonts + fallback, chưa self-host font. |
 | G10 | Local | Kiểm thử 200 task/title dài + cap prompt; chưa có lý do thêm pagination/virtualization/index. Không phải production load test. |
 
-### H — API / bảo mật
+### H - API / bảo mật
 
 | ID | Trạng thái | Xử lý / phần còn lại |
 |---|---|---|
@@ -157,7 +157,7 @@ Kết quả đo: regression thật 39/40 (97,5%) và bộ 12 cách diễn đạt
 | H09 | Một phần | Request ID, status/duration log không body/query/secrets; chưa trace DB/provider riêng trên cloud. |
 | H10 | Local | /ready kiểm tra DB có timeout, /health chỉ liveness; không gọi Groq. |
 
-### I — vận hành
+### I - vận hành
 
 | ID | Trạng thái | Xử lý / phần còn lại |
 |---|---|---|
@@ -171,7 +171,7 @@ Kết quả đo: regression thật 39/40 (97,5%) và bộ 12 cách diễn đạt
 | I08 | Local | Favicon SVG theo thương hiệu, tài khoản QA synthetic không dùng dữ liệu thật. |
 | I09 | Local | Bảng trạng thái này + liên kết README/PROGRESS, giữ lịch sử cũ. |
 
-### J — kiểm thử / evidence
+### J - kiểm thử / evidence
 
 | ID | Trạng thái | Xử lý / phần còn lại |
 |---|---|---|

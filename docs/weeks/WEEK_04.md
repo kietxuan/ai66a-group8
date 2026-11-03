@@ -1,7 +1,7 @@
-# WEEK 04 — TODO LIST
+# WEEK 04 - TODO LIST
 
 
-## Checkpoint implementation — 2026-10-05
+## Checkpoint implementation - 2026-10-05
 
 [x] dưới đây chỉ xác nhận item local/mock đã có evidence, không tự xác nhận DoD toàn tuần hoặc gate cloud. Todo local/RTL/browser pass, including shared form, conflict/delete cancel, status/refetch/401/stale responses. Desktop/mobile/Escape được kiểm tra; không coi local như online. Xem [ACCEPTANCE](../ACCEPTANCE.md), [PROGRESS](../PROGRESS.md) và [DEMO](../DEMO.md).
 

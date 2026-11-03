@@ -1,7 +1,7 @@
-# WEEK 07 — CHATBOT TASK MANAGEMENT
+# WEEK 07 - CHATBOT TASK MANAGEMENT
 
 
-## Checkpoint implementation — 2026-10-21
+## Checkpoint implementation - 2026-10-21
 
 Groq thật đủ 5 actions: smoke35 checks; extended20 checks/12 calls pass gồm ambiguity/confirmation/conflict/isolation. Sửa đổi target không reuse ID/fields; full regression120 backend/24 frontend pass. Online deployment còn OPEN. Theo user cho phép tiếp tục các phase local dù gate account/online chưa đóng. [RELEASE_HANDOFF](../RELEASE_HANDOFF.md), [ACCEPTANCE](../ACCEPTANCE.md), [PROGRESS](../PROGRESS.md) ghi bằng chứng/known issues; checklist local không tự xác nhận toàn bộ weekly DoD online.
 

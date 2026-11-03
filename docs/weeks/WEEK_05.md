@@ -1,7 +1,7 @@
-# WEEK 05 — CALENDAR & DEPLOY REHEARSAL
+# WEEK 05 - CALENDAR & DEPLOY REHEARSAL
 
 
-## Checkpoint implementation — 2026-10-21
+## Checkpoint implementation - 2026-10-21
 
 Calendar local đã verify thêm task do Groq thật tạo (22/10, 08–10). Config same-origin có sẵn; Render/Neon rehearsal HTTPS còn OPEN, không gọi local pass là deploy. Theo user cho phép tiếp tục các phase local dù gate account/online chưa đóng. [RELEASE_HANDOFF](../RELEASE_HANDOFF.md), [ACCEPTANCE](../ACCEPTANCE.md), [PROGRESS](../PROGRESS.md) ghi bằng chứng/known issues; checklist local không tự xác nhận toàn bộ weekly DoD online.
 

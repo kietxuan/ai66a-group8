@@ -1,7 +1,7 @@
 # 🔄 UX Interaction Flow Enhancements & Vanilla JS Architecture Specification
 
 > **Document Identifier:** `docs/11-ux-interaction-flow-enhancements.md`  
-> **Version:** 3.1.0 — Production UX & Interaction Specification  
+> **Version:** 3.1.0 - Production UX & Interaction Specification  
 > **Scope:** Full interaction architecture across Calendar Views, To-Do synchronization, Drag-and-Drop, Collision Packing, Modal Stacking, and Reactive Pub/Sub  
 > **Design Constraint:** 100% Vanilla HTML5, CSS3 Variables, and JavaScript ES Modules (Strictly 0 external UI libraries, 0 bundlers)
 
@@ -45,7 +45,7 @@ Users on mobile devices or laptops requiring a fast chronological overview of th
 ### 2.2. Visual Layout & Wireframe
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│  Lịch biểu (Agenda View) — 30 ngày tiếp theo                     [<]  [Hôm nay]  [>]    │
+│  Lịch biểu (Agenda View) - 30 ngày tiếp theo                     [<]  [Hôm nay]  [>]    │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │  📅 Thứ Hai, 02/11/2026                                            [Hôm nay]            │
 │  ┌──────────────────────────────────────────────────────────────────────────────────┐  │

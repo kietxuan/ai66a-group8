@@ -63,7 +63,7 @@ Bảng tổng hợp toàn bộ **20 lỗi** (bao gồm 7 vấn đề người d�
 2. **Thiết kế chi tiết Trang Landing Page (`js/pages/landing.js` & `css/pages/landing.css`):**
    - **Header / Navbar:** Logo **Planify** với gradient màu thương hiệu, menu điều hướng (*Tính năng*, *Lịch & To Do*, *Trợ lý AI*, *Hướng dẫn*), nút chuyển đổi Sáng/Tối (☀️/🌙), nút **Đăng nhập** (`#login`) và nút CTA nổi bật **Bắt đầu miễn phí** (`#register`).
    - **Hero Section:**
-     - Tiêu đề lớn với hiệu ứng chữ Gradient: *"Planify — Quản lý Lịch biểu & Việc cần làm thông minh cùng AI"*.
+     - Tiêu đề lớn với hiệu ứng chữ Gradient: *"Planify - Quản lý Lịch biểu & Việc cần làm thông minh cùng AI"*.
      - Mô tả: Kết hợp liền mạch giữa Lịch (Calendar), Danh sách công việc (To Do) có gắn khung giờ (Time-Blocking) và Trợ lý AI tiếng Việt tự động lên lịch.
      - Hình minh họa trực quan (Interactive UI Preview mô phỏng Lịch biểu đa sắc màu + To Do + AI Chat).
    - **Feature Cards (3 trụ cột chính với các dải màu sắc sinh động):**
@@ -240,7 +240,7 @@ Thay thế bảng màu trắng đơn điệu bằng thiết kế **Layered Surfa
    - 📋 **All Tasks (Tất cả công việc):** Tông **Royal Indigo / Violet Gradient** (`linear-gradient(135deg, #4F46E5, #7C3AED)`), nền trang phớt tím xanh `#EEF2FF`.
    - 🎨 **Custom Lists (Danh sách tự tạo):** Tự động lấy chính mã màu (`color`) mà người dùng đã chọn khi tạo danh sách để phủ màu cho Banner Header, nút `+ Thêm công việc` và thanh tiến độ của danh sách đó!
 
-3. **Bảng màu Dark Mode mới (Deep Midnight Slate — Dịu mắt, chuẩn độ tương phản WCAG):**
+3. **Bảng màu Dark Mode mới (Deep Midnight Slate - Dịu mắt, chuẩn độ tương phản WCAG):**
    - `--color-bg-sidebar`: `#090D16` (Midnight Obsidian)
    - `--color-bg-primary` (App Canvas): `#0F172A` (Deep Slate 900)
    - `--color-bg-secondary` (Cards / Panels): `#1E293B` (Slate 800)

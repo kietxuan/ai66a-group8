@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Planify Pro — Dashboard Analytics & Productivity Center Stylesheet
+   Planify Pro - Dashboard Analytics & Productivity Center Stylesheet
    ========================================================================== */
 
 .dashboard-page {
@@ -14,7 +14,7 @@
   background-color: var(--color-bg-primary);
 }
 
-.dashboard-page > * {
+.dashboard-page>* {
   flex-shrink: 0;
 }
 
@@ -412,6 +412,7 @@
 }
 
 @media (max-width: 1080px) {
+
   .dash-charts-grid,
   .dash-secondary-grid {
     grid-template-columns: 1fr;
@@ -422,15 +423,18 @@
   .dashboard-page {
     padding: 14px 14px 84px;
   }
+
   .dash-hero-banner {
     flex-direction: column;
     align-items: flex-start;
     padding: 18px;
   }
+
   .dash-score-card {
     width: 100%;
     justify-content: flex-start;
   }
+
   .eisenhower-grid {
     grid-template-columns: 1fr;
   }

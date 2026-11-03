@@ -23,7 +23,7 @@ Ngày 2026-10-21 đã cấu hình Groq và smoke thật đủ 5 action ở local
 9. **Failure/restart:** model unavailable không làm Todo/Calendar hỏng; context quá 10 phút/restart -> gửi lại, không replay ghi. Restart API giữ task PostgreSQL.
 10. **Handoff:** chỉ ra tests/matrix/gates thật, không claim online khi đang localhost.
 
-### Câu AI — thay NGÀY bằng ngày YYYY-MM-DD thực tế
+### Câu AI - thay NGÀY bằng ngày YYYY-MM-DD thực tế
 
 - Tạo công việc cả ngày tên “Demo đọc tài liệu” vào NGÀY.
 - Tìm công việc có tiêu đề “Demo đọc tài liệu”.
@@ -42,7 +42,7 @@ Demo manual Todo/Calendar/Auth trên local PostgreSQL; mở docs/ACCEPTANCE.md v
 
 Ảnh desktop/mobile nằm trong screenshots/. Chỉ synthetic tasks. Mobile screenshot chứng minh layout, không phải kiểm thử thiết bị vật lý hay mọi browser.
 
-## 4. Checklist release — chỉ tick sau khi chạy thật
+## 4. Checklist release - chỉ tick sau khi chạy thật
 
 ### Trước khi publish
 

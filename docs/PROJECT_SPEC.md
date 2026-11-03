@@ -52,7 +52,7 @@ Các action ghi/tìm task: create_task, get_tasks, update_task, delete_task, com
 - Xóa luôn cần xác nhận. Tiếp tục khi trùng lịch cần xác nhận riêng, do backend quản lý.
 - AI lỗi không làm hỏng quản lý task thủ công. Không gửi password/token hoặc dữ liệu user khác cho AI.
 
-#### Gợi ý giờ trống — amendment 22/10
+#### Gợi ý giờ trống - amendment 22/10
 
 - Nhận một ngày hôm nay/tương lai, thời lượng 1–1439 phút và hai mốc khung tìm kiếm trong cùng ngày. Thiếu/mơ hồ hỏi tiếp trong context RAM 10 phút, không mặc định giờ làm việc/thời lượng/ngày.
 - Backend lấy task của chính user theo policy conflict có sẵn, hợp nhất khoảng bận, trả tối đa ba khung sớm nhất, đủ thời lượng và không chồng nhau. Cả ngày/completed không chặn; khoảng chạm nhau hợp lệ. Hôm nay bỏ thời gian đã qua, làm tròn lên phút nếu đang giữa phút.

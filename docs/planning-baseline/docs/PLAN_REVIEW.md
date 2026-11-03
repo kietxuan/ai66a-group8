@@ -33,7 +33,7 @@ Không giảm các yêu cầu MVP bắt buộc: auth/isolation, Todo/Calendar, 5
 
 ## 3. Rủi ro bên ngoài còn cần kiểm tra
 
-### Gemini model access — ưu tiên cao
+### Gemini model access - ưu tiên cao
 
 Tài liệu Google tại thời điểm review ghi Gemini 2.5 Flash chưa có ngày shutdown được công bố, nhưng quyền dùng dòng 2.5 bị giới hạn cho người dùng đã sử dụng trước đó. Đây là rủi ro cho project/tài khoản mới, không phải bằng chứng tài khoản của nhóm chắc chắn bị chặn. [Google model deprecations](https://ai.google.dev/gemini-api/docs/deprecations).
 

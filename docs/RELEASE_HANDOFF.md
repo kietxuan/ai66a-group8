@@ -1,4 +1,4 @@
-# BÀN GIAO MVP & GROQ — cập nhật 2026-10-22
+# BÀN GIAO MVP & GROQ - cập nhật 2026-10-22
 
 ## 1. Kết quả và phạm vi
 

@@ -1,18 +1,18 @@
 # PLAN REVIEW
 
-## Gợi ý giờ trống — user amendment 2026-10-22
+## Gợi ý giờ trống - user amendment 2026-10-22
 
 User yêu cầu thêm chức năng AI “Gợi ý giờ trống”. Cho phép mở rộng hẹp trong Week 9/10 dù trước đó đã chốt không thêm recommendation trong redesign: chỉ đọc lịch của chính user, một ngày/thời lượng/khung giờ rõ ràng, backend tính tối đa ba slot. Không đổi model/stack, không tự đặt/dời, không notification/recommendation engine, không migration/dependency mới. Gates Render/Neon/CI/HTTPS/device vẫn OPEN, không dùng feature mới để tuyên bố online MVP pass. Scope/limits/manual ở [AVAILABILITY](AVAILABILITY.md), checks thực tế ở [PROGRESS](PROGRESS.md).
 
-## UI amendment được user phê duyệt — 2026-10-22
+## UI amendment được user phê duyệt - 2026-10-22
 
 Sau review ZIP và danh sách sẽ làm/không làm, user yêu cầu triển khai giao diện mới và Sáng/Tối. Đây là ngoại lệ có yêu cầu trực tiếp đối với nguyên tắc không tự redesign lớn: chỉ sửa presentation, thêm tùy chọn theme browser-local, không thêm nghiệp vụ hay thay stack/provider/API/DB/auth. Giữ native dialog, shared task service/refresh, confirmation và TTL. Scope/acceptance ở [UI_DIRECTION](UI_DIRECTION.md), kết quả thực tế ở [PROGRESS](PROGRESS.md); online/thiết bị vật lý vẫn là gate riêng.
 
-## Amendment được user phê duyệt — 2026-10-22
+## Amendment được user phê duyệt - 2026-10-22
 
 User yêu cầu thêm Passlib + bcrypt. Giữ bcrypt 4.3.0 và pin Passlib 1.7.4, dùng CryptContext cho password thông thường; chỉ NUL giữ pyca/bcrypt để tương thích input/hash cũ. Không đổi JWT/cookie/CSRF, database, API, UI hoặc model. Có known warning metadata `__about__` không chặn hash/verify; không hạ bcrypt chỉ để im log. Rủi ro Passlib cũ/runtime cần theo dõi và kiểm thử trước upgrade; xem [ARCHITECTURE](ARCHITECTURE.md), [PROGRESS](PROGRESS.md). Đây là thay đổi auth theo yêu cầu mới, không phải mở feature tuần sau.
 
-## Amendment được user phê duyệt — 2026-10-21
+## Amendment được user phê duyệt - 2026-10-21
 
 User yêu cầu dùng key Groq hiện có và chọn `openai/gpt-oss-20b`. Quyết định này thay thế baseline Gemini dưới đây, không phải agent tự đổi công nghệ khi service lỗi. Groq strict JSON Schema qua HTTPX thay Google SDK; backend execution/validation/confirmation, PostgreSQL và same-origin deployment giữ nguyên. Key chỉ ở .env ignored/backend secrets. Đã verify model/account và năm actions bằng request thật; xem [RELEASE_HANDOFF](RELEASE_HANDOFF.md), [PROGRESS](PROGRESS.md). Key đã lộ trong chat được user cho dùng tạm; rotate trước public. Không cam kết free quota/uptime; xem limits account thật.
 
@@ -51,7 +51,7 @@ Không giảm các yêu cầu MVP bắt buộc: auth/isolation, Todo/Calendar, 5
 
 ## 3. Rủi ro bên ngoài còn cần kiểm tra
 
-### Gemini model access — ưu tiên cao
+### Gemini model access - ưu tiên cao
 
 Tài liệu Google tại thời điểm review ghi Gemini 2.5 Flash chưa có ngày shutdown được công bố, nhưng quyền dùng dòng 2.5 bị giới hạn cho người dùng đã sử dụng trước đó. Đây là rủi ro cho project/tài khoản mới, không phải bằng chứng tài khoản của nhóm chắc chắn bị chặn. [Google model deprecations](https://ai.google.dev/gemini-api/docs/deprecations).
 

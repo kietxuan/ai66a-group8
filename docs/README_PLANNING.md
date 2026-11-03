@@ -1,8 +1,8 @@
-# Nhịp — Todo List Calendar tích hợp AI Chatbot
+# Nhịp - Todo List Calendar tích hợp AI Chatbot
 
 Project môn Web Design and Programming: quản lý công việc cá nhân bằng Todo List, Calendar và ngôn ngữ tự nhiên.
 
-## Trạng thái bàn giao — 2026-10-22
+## Trạng thái bàn giao - 2026-10-22
 
 Đợt cải thiện toàn web và trợ lý: xem [trạng thái đủ 107 mục + nhóm AI bắt buộc](docs/IMPROVEMENT_STATUS_2026-10-21.md). [PROGRESS](docs/PROGRESS.md) ghi kết quả mới theo từng lần chạy; không dùng số test baseline bên dưới thay kết quả của bản mới. Ngữ cảnh có chọn lọc, phục hồi pending, deadline, chống stale edit, mobile, accessibility và kiểm thử đã được bổ sung; online/thiết bị thật vẫn là gate riêng.
 
@@ -30,7 +30,7 @@ Bản local của phiên này: [Ứng dụng](http://127.0.0.1:8000), [FastAPI A
 
 Các bản vá advisory được kiểm tra tương thích, không đổi framework; model đổi theo yêu cầu user ngày 2026-10-21. Backend khóa direct dependencies + constraints trong requirements.lock.txt; frontend dùng package-lock.json. Linux-only uvloop/Render runtime vẫn cần CI/deploy xác nhận.
 
-## Clone và chạy lần đầu trên máy thành viên — Windows
+## Clone và chạy lần đầu trên máy thành viên - Windows
 
 Bàn giao Git 29/10/2026: source-only snapshot đã chạy 247 backend tests và npm ci/57 frontend tests; venv Python dùng packages đã kiểm tra, không coi đây là cài mới Python/Linux. Khi chuẩn bị push phát hiện advisory Vitest, chỉ nâng bản vá 4.1.11 → 4.1.12, cập nhật lockfile và chạy lại 57 tests; npm audit sau vá báo 0 tại thời điểm kiểm tra. Các evidence 22/10 phía trên vẫn là lịch sử, không xác nhận remote CI/deploy mới. Xem [PROGRESS](docs/PROGRESS.md).
 
@@ -65,7 +65,7 @@ Launcher kiểm tra DB, chạy Alembic migrations tạo/cập nhật bảng, bui
 
 Lần sau chỉ cần PostgreSQL đang chạy và `.\scripts\dev.ps1`. Sau pull, dùng `-Build` nếu giao diện đổi; cài lại requirements hoặc `npm ci` nếu dependencies/lockfile tương ứng đổi. Không reset database để cập nhật code. Xem [01_SETUP](docs/01_SETUP.md) cho môi trường Vite hai terminal, tests và deployment.
 
-## Chạy nhanh trên máy implementation đã cài — PowerShell, từ root repository
+## Chạy nhanh trên máy implementation đã cài - PowerShell, từ root repository
 
 Với môi trường đã cài của máy hiện tại, chạy một lệnh (không reset DB):
 
@@ -102,14 +102,14 @@ Mở http://localhost:5173, đăng ký rồi đăng nhập; register không auto
 ## Kiểm thử và build
 
 ~~~powershell
-# Từ backend — fixture chỉ reset database test đã kiểm tra
+# Từ backend - fixture chỉ reset database test đã kiểm tra
 .\.venv\Scripts\python.exe -m pytest
 .\.venv\Scripts\python.exe -m alembic check
 # Từ frontend
 npm test -- --run
 npm run build
 npm audit
-# Từ root — API đang chạy, chỉ dữ liệu synthetic, không reset DB
+# Từ root - API đang chạy, chỉ dữ liệu synthetic, không reset DB
 .\backend\.venv\Scripts\python.exe scripts/smoke.py
 ~~~
 

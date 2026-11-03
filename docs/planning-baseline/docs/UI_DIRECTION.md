@@ -6,7 +6,7 @@ Bốn khu vực MVP: Login/Register, Todo List, Calendar, Chatbot. Dashboard kh�
 
 Thiết kế responsive tối thiểu desktop/mobile, nhãn tiếng Việt nhất quán; có loading/empty/error/success states. Không thêm UI kit lớn nếu HTML/CSS hiện tại đủ.
 
-## 2. Authentication — Week 2
+## 2. Authentication - Week 2
 
 - Register: name/email/password, validation, pending submit; thành công về Login.
 - Login: email/password; thành công về Task Area.
@@ -16,7 +16,7 @@ Thiết kế responsive tối thiểu desktop/mobile, nhãn tiếng Việt nhấ
 - Không làm forgot-password/OAuth/refresh token.
 - Kiểm tra bàn phím, label input, lỗi không chỉ phân biệt bằng màu.
 
-## 3. Todo List — Week 4
+## 3. Todo List - Week 4
 
 - Header user, Logout, navigation Todo/Calendar/Chat.
 - Toolbar search, ngày/khoảng ngày, status, priority, category, nút reset filter.
@@ -37,7 +37,7 @@ Conflict modal cho create/edit/reopen:
 - Không tick/ghi nhớ “luôn bỏ qua conflict”.
 - Reopen cũng dùng modal này, không chỉ form create/edit.
 
-## 4. Calendar — Week 5
+## 4. Calendar - Week 5
 
 - FullCalendar Month/Week/Day, locale vi, tuần bắt đầu thứ Hai.
 - Chọn ngày/cell all-day mở shared form với ngày đã chọn, times=null.
@@ -52,7 +52,7 @@ FullCalendar dùng named timezone Asia/Ho_Chi_Minh. Task có giờ chuyển thà
 
 Pin các package FullCalendar cùng phiên bản, kiểm tra named-timezone API theo tài liệu của bản đó trước tích hợp. Ưu tiên khả năng timezone có sẵn, chỉ thêm adapter nhỏ tương thích nếu bản đã chọn cần. Không giả giờ Việt Nam thành UTC để hiển thị. “Hôm nay”, highlight ngày và now indicator đều dựa trên timezone nghiệp vụ. [FullCalendar timeZone](https://fullcalendar.io/docs/timeZone).
 
-## 5. Chatbot — Week 6–7
+## 5. Chatbot - Week 6–7
 
 - Message list lưu memory phiên hiện tại; input/send, pending/error state.
 - Một request/flow tại một thời điểm; disable send/confirm trong khi gửi.

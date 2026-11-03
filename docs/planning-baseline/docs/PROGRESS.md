@@ -6,7 +6,7 @@
 
 - Current week: WEEK_02.
 - Overall status: PLANNING_READY; implementation chưa bắt đầu.
-- Baseline Git checkpoint: 45cf886 — finalize week 1 planning baseline.
+- Baseline Git checkpoint: 45cf886 - finalize week 1 planning baseline.
 - Latest session: review/đồng bộ kế hoạch ngày 2026-10-02, chưa commit/push trong session này.
 - Next action: Week 2 foundation/auth/test harness, không Task CRUD trước auth.
 
@@ -41,9 +41,9 @@
 
 Checklist [x] trong Week 1 chỉ ghi planning đã hoàn thành. Checklist implementation Week 2–10 vẫn [ ].
 
-## 4. Latest handoff — plan review 2026-10-02
+## 4. Latest handoff - plan review 2026-10-02
 
-### Completed — documentation only
+### Completed - documentation only
 
 - Đọc toàn bộ project plan và đối chiếu source/config/dependencies hiện có.
 - Giữ Authentication trước Task CRUD; giữ core MVP/stack và roadmap 10 tuần.

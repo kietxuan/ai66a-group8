@@ -1,4 +1,4 @@
-# ACCEPTANCE MATRIX — baseline 2026-10-05, bàn giao 2026-10-22
+# ACCEPTANCE MATRIX - baseline 2026-10-05, bàn giao 2026-10-22
 
 ## Đợt cải thiện sau audit
 
@@ -70,7 +70,7 @@ Live scripts/smoke.py: 26 assertions hai synthetic users, CRUD/conflict/category
 
 Browser: register -> login; all-day + timed 19:00–20:30; Calendar detail complete -> Todo completed -> reopen; cancel delete giữ record; Month/Week/Day đúng slot; ngày 6/10 prefill form; Escape đóng; thiếu Gemini key error; responsive không document overflow. Logout A -> register/login B list/chat rỗng -> login A giữ tasks, không cache lẫn. Reload sau API restart giữ cookie/data. Production build ở port8000 tải task và lazy Calendar, console không error/warning. Screenshots chỉ synthetic demo data.
 
-## Gate chưa đạt — không được đánh dấu release hoàn thành
+## Gate chưa đạt - không được đánh dấu release hoàn thành
 
 | Gate | Vì sao OPEN | Cần chạy để đóng |
 |---|---|---|

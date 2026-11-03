@@ -1,7 +1,7 @@
 # 🚀 Production Operations, Architecture & Maintenance Guide
 
 > **Document Identifier:** `docs/13-production-operations-guide.md`  
-> **Version:** 3.1.0 — Production Infrastructure & Operations Manual  
+> **Version:** 3.1.0 - Production Infrastructure & Operations Manual  
 > **Target Environment:** Multi-Container Docker Stack (Production / Staging)  
 > **Component Stack:** Nginx (Alpine) + FastAPI (Python 3.11) + PostgreSQL 15 + Redis 7 + Groq LPU Cloud
 

@@ -1,7 +1,7 @@
-# WEEK 06 — AI CHATBOT FOUNDATION
+# WEEK 06 - AI CHATBOT FOUNDATION
 
 
-## Checkpoint implementation — 2026-10-21
+## Checkpoint implementation - 2026-10-21
 
 Groq strict JSON Schema qua HTTPX đã chạy thật: all-day, relative-date-duration, missing date/follow-up, missing end; xem từng run và cả failure/rerun trong RELEASE_HANDOFF. Key backend local đã cấu hình; dry-run không ghi task. Rehearsal/online còn OPEN. Theo user cho phép tiếp tục các phase local dù gate account/online chưa đóng. [RELEASE_HANDOFF](../RELEASE_HANDOFF.md), [ACCEPTANCE](../ACCEPTANCE.md), [PROGRESS](../PROGRESS.md) ghi bằng chứng/known issues; checklist local không tự xác nhận toàn bộ weekly DoD online.
 

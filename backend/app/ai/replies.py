@@ -37,7 +37,7 @@ def _items(items):
     for item in items[:10]:
         title = item.get("title") or item.get("name") or "Mục chưa có tên"
         status = " (đã hoàn thành)" if item.get("is_completed") else ""
-        at = f" — {item['time']}" if item.get("time") else _when(item)
+        at = f" - {item['time']}" if item.get("time") else _when(item)
         lines.append(f"- {title}{status}{at}")
     if len(items) > 10:
         lines.append(f"- Và {len(items) - 10} mục khác.")

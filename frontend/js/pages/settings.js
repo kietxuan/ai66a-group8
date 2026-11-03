@@ -23,11 +23,13 @@ export const settingsPage = {
 
     let user = store.get("user");
     const userId = user?.id;
-    const isCurrent = () => generation === this.generation && this.container === container && store.get('user')?.id === userId;
+    const isCurrent = () =>
+      generation === this.generation &&
+      this.container === container &&
+      store.get("user")?.id === userId;
     try {
       const response = await api.get("/users/me");
-      if (!isCurrent())
-        return;
+      if (!isCurrent()) return;
       user = response?.data || response;
       store.set("user", user);
     } catch (_) {
@@ -39,8 +41,7 @@ export const settingsPage = {
     let categories = [];
     try {
       const catRes = await api.get("/categories");
-      if (!isCurrent())
-        return;
+      if (!isCurrent()) return;
       categories = Array.isArray(catRes)
         ? catRes
         : Array.isArray(catRes?.data)
@@ -107,12 +108,25 @@ export const settingsPage = {
     const formTagIconPreview = makeTagSvg(newTagColorInput.value, 20);
 
     const presetColors = [
-      "#EF4444", "#F97316", "#F59E0B", "#10B981", "#06B6D4",
-      "#3B82F6", "#6366F1", "#8B5CF6", "#EC4899", "#64748B",
+      "#EF4444",
+      "#F97316",
+      "#F59E0B",
+      "#10B981",
+      "#06B6D4",
+      "#3B82F6",
+      "#6366F1",
+      "#8B5CF6",
+      "#EC4899",
+      "#64748B",
     ];
 
     const swatchesContainer = createElement("div", {
-      style: { display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" },
+      style: {
+        display: "flex",
+        gap: "6px",
+        alignItems: "center",
+        flexWrap: "wrap",
+      },
     });
 
     const updateColorState = (hex) => {
@@ -120,9 +134,10 @@ export const settingsPage = {
       formTagIconPreview.style.color = hex;
       swatchesContainer.querySelectorAll("button").forEach((btn) => {
         const btnTitle = btn.getAttribute("title") || btn.title || "";
-        btn.style.border = btnTitle.toLowerCase() === (hex || "").toLowerCase()
-          ? "2px solid var(--color-text-primary)"
-          : "2px solid transparent";
+        btn.style.border =
+          btnTitle.toLowerCase() === (hex || "").toLowerCase()
+            ? "2px solid var(--color-text-primary)"
+            : "2px solid transparent";
       });
     };
 
@@ -134,7 +149,10 @@ export const settingsPage = {
           height: "24px",
           borderRadius: "50%",
           backgroundColor: hex,
-          border: newTagColorInput.value.toLowerCase() === hex.toLowerCase() ? "2px solid var(--color-text-primary)" : "2px solid transparent",
+          border:
+            newTagColorInput.value.toLowerCase() === hex.toLowerCase()
+              ? "2px solid var(--color-text-primary)"
+              : "2px solid transparent",
           cursor: "pointer",
           padding: "0",
           outline: "none",
@@ -217,15 +235,25 @@ export const settingsPage = {
           return;
         }
         saveTagBtn.disabled = true;
-        saveTagBtn.textContent = editingCategoryId ? "Đang cập nhật..." : "Đang lưu...";
+        saveTagBtn.textContent = editingCategoryId
+          ? "Đang cập nhật..."
+          : "Đang lưu...";
         try {
           if (editingCategoryId) {
-            const res = await api.put(`/categories/${editingCategoryId}`, { name, color });
+            const res = await api.put(`/categories/${editingCategoryId}`, {
+              name,
+              color,
+            });
             if (!isCurrent()) return;
             const updatedCat = res?.data || res;
             const idx = categories.findIndex((c) => c.id === editingCategoryId);
             if (idx !== -1) {
-              categories[idx] = { ...categories[idx], ...updatedCat, name, color };
+              categories[idx] = {
+                ...categories[idx],
+                ...updatedCat,
+                name,
+                color,
+              };
             }
             store.set("categories", [...categories]);
             Toast.success(`Đã cập nhật thẻ "${name}" thành công!`);
@@ -246,7 +274,9 @@ export const settingsPage = {
           Toast.error(err.message || "Không thể lưu thẻ phân loại.");
         } finally {
           saveTagBtn.disabled = false;
-          saveTagBtn.textContent = editingCategoryId ? "Cập nhật thẻ" : "Lưu thẻ";
+          saveTagBtn.textContent = editingCategoryId
+            ? "Cập nhật thẻ"
+            : "Lưu thẻ";
         }
       },
     });
@@ -271,109 +301,143 @@ export const settingsPage = {
               color: "var(--color-text-secondary)",
               fontStyle: "italic",
             },
-            textContent: "Chưa có thẻ phân loại nào. Bấm \"+ Thêm tag\" để bắt đầu.",
+            textContent:
+              'Chưa có thẻ phân loại nào. Bấm "+ Thêm tag" để bắt đầu.',
           }),
         );
       } else {
         categories.forEach((cat) => {
-          const pill = createElement("div", {
-            style: {
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "4px 10px",
-              borderRadius: "16px",
-              backgroundColor: "var(--color-bg-secondary)",
-              border: "1px solid var(--color-border-light)",
-              fontSize: "13px",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "transform 0.1s ease, border-color 0.15s ease",
-            },
-            title: "Bấm để đổi tên hoặc sửa màu thẻ này",
-            onclick: () => startEditTag(cat),
-          }, [
-            makeTagSvg(cat.color || "#4F46E5", 15),
-            createElement("span", { textContent: cat.name }),
-            createElement("button", {
-              type: "button",
+          const pill = createElement(
+            "div",
+            {
               style: {
-                border: "none",
-                background: "transparent",
-                color: "var(--color-text-muted)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "4px 10px",
+                borderRadius: "16px",
+                backgroundColor: "var(--color-bg-secondary)",
+                border: "1px solid var(--color-border-light)",
+                fontSize: "13px",
+                fontWeight: "600",
                 cursor: "pointer",
-                padding: "0 2px",
-                marginLeft: "2px",
-                fontSize: "14px",
-                lineHeight: "1",
+                transition: "transform 0.1s ease, border-color 0.15s ease",
               },
-              title: "Xóa thẻ này",
-              textContent: "×",
-              onclick: async (e) => {
-                e.stopPropagation();
-                if (!confirm(`Bạn có chắc chắn muốn xóa thẻ \"${cat.name}\" không?`)) return;
-                try {
-                  await api.delete(`/categories/${cat.id}`);
-                  if (!isCurrent()) return;
-                  categories = categories.filter((c) => c.id !== cat.id);
-                  store.set("categories", [...categories]);
-                  if (editingCategoryId === cat.id) {
-                    addTagForm.style.display = "none";
-                    editingCategoryId = null;
+              title: "Bấm để đổi tên hoặc sửa màu thẻ này",
+              onclick: () => startEditTag(cat),
+            },
+            [
+              makeTagSvg(cat.color || "#4F46E5", 15),
+              createElement("span", { textContent: cat.name }),
+              createElement("button", {
+                type: "button",
+                style: {
+                  border: "none",
+                  background: "transparent",
+                  color: "var(--color-text-muted)",
+                  cursor: "pointer",
+                  padding: "0 2px",
+                  marginLeft: "2px",
+                  fontSize: "14px",
+                  lineHeight: "1",
+                },
+                title: "Xóa thẻ này",
+                textContent: "×",
+                onclick: async (e) => {
+                  e.stopPropagation();
+                  if (
+                    !confirm(
+                      `Bạn có chắc chắn muốn xóa thẻ \"${cat.name}\" không?`,
+                    )
+                  )
+                    return;
+                  try {
+                    await api.delete(`/categories/${cat.id}`);
+                    if (!isCurrent()) return;
+                    categories = categories.filter((c) => c.id !== cat.id);
+                    store.set("categories", [...categories]);
+                    if (editingCategoryId === cat.id) {
+                      addTagForm.style.display = "none";
+                      editingCategoryId = null;
+                    }
+                    renderTagsList();
+                    window.dispatchEvent(
+                      new CustomEvent("planify:data-changed"),
+                    );
+                    Toast.success(`Đã xóa thẻ \"${cat.name}\".`);
+                  } catch (err) {
+                    Toast.error(err.message || "Không thể xóa thẻ.");
                   }
-                  renderTagsList();
-                  window.dispatchEvent(new CustomEvent("planify:data-changed"));
-                  Toast.success(`Đã xóa thẻ \"${cat.name}\".`);
-                } catch (err) {
-                  Toast.error(err.message || "Không thể xóa thẻ.");
-                }
-              },
-            }),
-          ]);
+                },
+              }),
+            ],
+          );
           categoryTagsContainer.appendChild(pill);
         });
       }
     };
 
     addTagForm.appendChild(
-      createElement("div", { style: { display: "flex", flexDirection: "column", gap: "10px" } }, [
-        formHeading,
-        createElement("div", { style: { display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" } }, [
-          formTagIconPreview,
-          newTagNameInput,
-          newTagColorInput,
-          swatchesContainer,
-        ]),
-        createElement("div", { style: { display: "flex", gap: "8px" } }, [
-          saveTagBtn,
-          cancelTagBtn,
-        ]),
-      ]),
+      createElement(
+        "div",
+        { style: { display: "flex", flexDirection: "column", gap: "10px" } },
+        [
+          formHeading,
+          createElement(
+            "div",
+            {
+              style: {
+                display: "flex",
+                gap: "10px",
+                alignItems: "center",
+                flexWrap: "wrap",
+              },
+            },
+            [
+              formTagIconPreview,
+              newTagNameInput,
+              newTagColorInput,
+              swatchesContainer,
+            ],
+          ),
+          createElement("div", { style: { display: "flex", gap: "8px" } }, [
+            saveTagBtn,
+            cancelTagBtn,
+          ]),
+        ],
+      ),
     );
 
     renderTagsList();
 
-    const categorySection = createElement("div", { className: "settings-section" }, [
-      createElement("h2", {
-        className: "settings-section-title",
-        textContent: "Màu thẻ & phân loại công việc",
-      }),
-      createElement("p", {
-        style: {
-          fontSize: "13px",
-          color: "var(--color-text-secondary)",
-          margin: "-6px 0 12px 0",
-        },
-        textContent: "Tạo các nhãn thẻ màu sắc để phân loại và nhận diện công việc trên lịch biểu dễ dàng hơn.",
-      }),
-      categoryTagsContainer,
-      createElement("div", { style: { display: "flex", alignItems: "center", gap: "8px" } }, [
-        showAddTagBtn,
-      ]),
-      addTagForm,
-    ]);
+    const categorySection = createElement(
+      "div",
+      { className: "settings-section" },
+      [
+        createElement("h2", {
+          className: "settings-section-title",
+          textContent: "Màu thẻ & phân loại công việc",
+        }),
+        createElement("p", {
+          style: {
+            fontSize: "13px",
+            color: "var(--color-text-secondary)",
+            margin: "-6px 0 12px 0",
+          },
+          textContent:
+            "Tạo các nhãn thẻ màu sắc để phân loại và nhận diện công việc trên lịch biểu dễ dàng hơn.",
+        }),
+        categoryTagsContainer,
+        createElement(
+          "div",
+          { style: { display: "flex", alignItems: "center", gap: "8px" } },
+          [showAddTagBtn],
+        ),
+        addTagForm,
+      ],
+    );
 
-    // 1. Appearance Section (2 opciones: Light & Dark — đã bỏ Tự động theo hệ thống)
+    // 1. Appearance Section (2 opciones: Light & Dark - đã bỏ Tự động theo hệ thống)
     const themeSection = createElement(
       "div",
       { className: "settings-section" },
@@ -746,7 +810,8 @@ export const settingsPage = {
           Toast.success(`Mã OTP đã được gửi đến ${targetEmail}!`);
           let cd = 60;
           sendOtpBtn.textContent = `Gửi lại (${cd}s)`;
-          if (this.otpCountdownInterval) clearInterval(this.otpCountdownInterval);
+          if (this.otpCountdownInterval)
+            clearInterval(this.otpCountdownInterval);
           this.otpCountdownInterval = setInterval(() => {
             cd--;
             if (cd <= 0) {
@@ -768,20 +833,26 @@ export const settingsPage = {
     });
 
     otpSection.appendChild(
-      createElement("div", { style: { display: "flex", flexDirection: "column", gap: "8px" } }, [
-        createElement("span", {
-          style: {
-            fontSize: "12px",
-            color: "var(--color-text-secondary)",
-            lineHeight: "1.4",
-          },
-          textContent: "ℹ️ Bạn đang thay đổi email. Vui lòng bấm \"Gửi mã OTP\" và nhập mã xác thực 6 chữ số gửi về hộp thư mới để xác nhận.",
-        }),
-        createElement("div", { style: { display: "flex", alignItems: "center", gap: "10px" } }, [
-          otpInput,
-          sendOtpBtn,
-        ]),
-      ]),
+      createElement(
+        "div",
+        { style: { display: "flex", flexDirection: "column", gap: "8px" } },
+        [
+          createElement("span", {
+            style: {
+              fontSize: "12px",
+              color: "var(--color-text-secondary)",
+              lineHeight: "1.4",
+            },
+            textContent:
+              'ℹ️ Bạn đang thay đổi email. Vui lòng bấm "Gửi mã OTP" và nhập mã xác thực 6 chữ số gửi về hộp thư mới để xác nhận.',
+          }),
+          createElement(
+            "div",
+            { style: { display: "flex", alignItems: "center", gap: "10px" } },
+            [otpInput, sendOtpBtn],
+          ),
+        ],
+      ),
     );
 
     const currentTimezone = user.timezone || "Asia/Ho_Chi_Minh";
@@ -826,7 +897,9 @@ export const settingsPage = {
           }
           const otpVal = otpInput.value.trim();
           if (!otpVal || !/^\d{6}$/.test(otpVal)) {
-            Toast.error("Vui lòng nhập mã OTP gồm 6 chữ số để xác thực thay đổi email.");
+            Toast.error(
+              "Vui lòng nhập mã OTP gồm 6 chữ số để xác thực thay đổi email.",
+            );
             otpInput.focus();
             return;
           }
@@ -1010,8 +1083,13 @@ export const settingsPage = {
           Toast.error("Vui lòng điền đủ mật khẩu cũ và mới.");
           return;
         }
-        if ([...newPassInput.value].length < 8 || new TextEncoder().encode(newPassInput.value).length > 72) {
-          Toast.error('Mật khẩu mới phải có ít nhất 8 ký tự và không quá 72 bytes UTF-8.');
+        if (
+          [...newPassInput.value].length < 8 ||
+          new TextEncoder().encode(newPassInput.value).length > 72
+        ) {
+          Toast.error(
+            "Mật khẩu mới phải có ít nhất 8 ký tự và không quá 72 bytes UTF-8.",
+          );
           return;
         }
         try {

@@ -1,7 +1,7 @@
-# WEEK 10 — RELEASE, DOCUMENTATION & DEMO
+# WEEK 10 - RELEASE, DOCUMENTATION & DEMO
 
 
-## Checkpoint implementation — 2026-10-21
+## Checkpoint implementation - 2026-10-21
 
 Groq model thật đã verify, tài liệu/key/config/evidence bàn giao local đã cập nhật; chưa commit/push/release SHA/URL, chưa Render/Neon HTTPS hoặc rubric. Phần còn lại có hướng dẫn tại RELEASE_HANDOFF, không claim official release. Theo user cho phép tiếp tục các phase local dù gate account/online chưa đóng. [RELEASE_HANDOFF](../RELEASE_HANDOFF.md), [ACCEPTANCE](../ACCEPTANCE.md), [PROGRESS](../PROGRESS.md) ghi bằng chứng/known issues; checklist local không tự xác nhận toàn bộ weekly DoD online.
 

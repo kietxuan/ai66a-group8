@@ -17,7 +17,7 @@ Ghi phiên bản đã kiểm tra vào README khi setup; pin backend dependencies
 
 Docker không bắt buộc. Các Dockerfile/docker-compose hiện rỗng không phải hướng dẫn chạy được.
 
-## 3. Backend environment — thực hiện Week 2
+## 3. Backend environment - thực hiện Week 2
 
 PowerShell, từ project root:
 
@@ -49,7 +49,7 @@ Các setting chưa có trong .env.example chỉ là kế hoạch, phải bổ su
 
 requirements.txt hiện chưa pin version. Week 2 xác nhận phiên bản tương thích Python 3.11, bổ sung validator nếu thực sự dùng, rồi pin; google-genai chỉ bổ sung Week 6. Nếu ZoneInfo trên Windows thiếu timezone database, thêm tzdata trong dependency phù hợp.
 
-## 4. PostgreSQL và Alembic — Week 2–3
+## 4. PostgreSQL và Alembic - Week 2–3
 
 - Tạo database development và test riêng; xác nhận quyền kết nối.
 - Week 2 cấu hình Alembic đọc DATABASE_URL, migration Users.
@@ -67,7 +67,7 @@ python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 
 Kiểm tra GET /health, /docs và auth theo API_SPEC. Health chỉ liveness; cần auth/migration smoke để xác nhận database.
 
-## 5. Frontend — Week 2
+## 5. Frontend - Week 2
 
 Kiểm tra frontend placeholder trước scaffold, tránh overwrite file không liên quan. Khởi tạo React/Vite bằng template JavaScript, không tự đổi TypeScript hoặc thêm framework.
 
@@ -84,7 +84,7 @@ API client dùng relative /api, credentials: include; request ghi có X-Requeste
 
 Production frontend build được FastAPI phục vụ, không cần VITE_API_URL khác origin và không deploy Static Site riêng.
 
-## 6. Checks — sau khi test harness được tạo
+## 6. Checks - sau khi test harness được tạo
 
 Backend, từ backend/venv:
 
@@ -103,7 +103,7 @@ Week 2 phải tạo test thực tế trước khi kết luận các lệnh này 
 
 CI nhỏ từ Week 2: backend với PostgreSQL service test, frontend tests/build. Gemini mocked, không dùng production secrets. Sau mỗi tuần ghi commands/results vào PROGRESS.
 
-## 7. Deploy rehearsal — Week 5
+## 7. Deploy rehearsal - Week 5
 
 Một Render Web Service, root repository; Python runtime (có Node/npm). Pin runtime versions phù hợp; build frontend/dist + backend dependencies. Start từ backend với Uvicorn bind 0.0.0.0 và PORT do Render cung cấp, một worker.
 

@@ -1,7 +1,7 @@
-# WEEK 02 — AUTHENTICATION & BACKEND FOUNDATION
+# WEEK 02 - AUTHENTICATION & BACKEND FOUNDATION
 
 
-## Checkpoint implementation — 2026-10-21
+## Checkpoint implementation - 2026-10-21
 
 Auth/local đã verify; Groq account/model thật và real smoke đã PASS sau đổi provider được user phê duyệt. Feasibility Render/Neon và remote CI còn OPEN. Theo user cho phép tiếp tục các phase local dù gate account/online chưa đóng. [RELEASE_HANDOFF](../RELEASE_HANDOFF.md), [ACCEPTANCE](../ACCEPTANCE.md), [PROGRESS](../PROGRESS.md) ghi bằng chứng/known issues; checklist local không tự xác nhận toàn bộ weekly DoD online.
 

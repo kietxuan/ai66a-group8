@@ -1,7 +1,7 @@
 # 🛠️ Complete Defect Inventory & Root Cause Analysis (RCA) Catalog
 
 > **Document Identifier:** `docs/12-defect-inventory-and-rca.md`  
-> **Version:** 3.1.0 — Production Quality & RCA Reference  
+> **Version:** 3.1.0 - Production Quality & RCA Reference  
 > **Scope:** Full catalog of all defects (BUG-01 through BUG-20, Milestone M1–M5 defects, and Tier 5 Adversarial Hardening)  
 > **Standard:** IEEE 1044 (Standard Classification for Software Anomalies) & ISO/IEC/IEEE 29119 (Software Testing)
 
