@@ -18,6 +18,8 @@ from app.ai.confirmation import pending_actions
 from app.core.time import local_now, business_today, BUSINESS_TZ
 from app.ai.tools import TOOLS
 from app.ai.scheduling import constrain_creation, fold
+from app.ai.intent import validate_tool_intent, refers_to_recent, typed_reference
+from app.ai.deletion import selected_items, deletion_snapshot, delete_selected, item_label
 import re
 
 
@@ -97,6 +99,7 @@ class ToolExecutor:
         self.confirmed_overlap_action = None
         self.pending_snapshot = None
         self.request_text = request_text
+        self.recent_items = []
 
     @staticmethod
     def _validate_arguments(name, arguments):
@@ -155,6 +158,7 @@ class ToolExecutor:
             "update_task": self._update_task,
             "complete_task": self._complete_task,
             "delete_task": self._delete_task,
+            "delete_items": self._delete_items,
             "list_tasks": self._list_tasks,
             "search_tasks": self._search_tasks,
             "batch_update_tasks": self._batch_update_tasks,
@@ -181,6 +185,7 @@ class ToolExecutor:
         try:
             if not isinstance(arguments, dict):
                 raise ValueError('Thông tin công cụ phải là một object hợp lệ. Chưa thực hiện thao tác.')
+            validate_tool_intent(self.request_text, tool_name, arguments)
             request = fold(re.sub(r'''["“”'‘’][^"“”'‘’]*["“”'‘’]''', '', self.request_text or ''))
             read_request = re.match(r'^(?:hay\s+)?(?:xem|liet ke|tim|cho toi biet|hom nay toi co|toi co|co nhung|thong ke|bao cao)\b', request)
             asks_write = re.search(r'\b(?:tao|them|xoa|sua|doi|danh dau|sap xep|lap ke hoach|dat lich|len lich)\b', request)
@@ -205,7 +210,7 @@ class ToolExecutor:
                 frozen, label = await self._prepare_delete(tool_name, dict(arguments or {}))
                 frozen["_snapshot"] = await self._delete_snapshot(tool_name, frozen)
                 pending_actions.put(self.context_key, tool_name, frozen)
-                result = {"success": False, "requires_confirmation": True, "error": f"Xác nhận xóa {label}? Trả lời 'xác nhận xóa' hoặc 'hủy'. Danh sách/lịch bị xóa sẽ xóa cả dữ liệu bên trong."}
+                result = {"success": False, "requires_confirmation": True, "error": f"Xác nhận xóa {label}?\nTrả lời 'xác nhận xóa' hoặc 'hủy'. Chưa có mục nào bị xóa."}
                 self.executions.append((tool_name, arguments, result))
                 return result
             if destructive:
@@ -266,6 +271,22 @@ class ToolExecutor:
 
     async def _normalize_event_action(self, name, args):
         """Resolve unified event Tasks without confusing their IDs with legacy Event IDs."""
+        explicit = typed_reference(self.request_text)
+        if (explicit or refers_to_recent(self.request_text)) and name in {'update_event', 'reschedule_event', 'delete_event', 'update_task', 'complete_task', 'delete_task'}:
+            references = [explicit] if explicit else self.recent_items
+            if len(references) != 1:
+                raise ValueError('Có nhiều mục vừa tạo hoặc chưa có kết quả tạo thành công. Hãy chọn đúng tên/ID trước khi chỉnh sửa.')
+            reference = references[0]
+            if reference['item_type'] == 'task':
+                args.pop('event_id', None)
+                args.pop('title_query', None)
+                args['task_id'] = reference['id']
+            elif name in {'update_task', 'complete_task', 'delete_task'}:
+                raise ValueError('Mục vừa tạo là sự kiện thuộc nhóm lịch, không phải công việc To Do. Chưa thay đổi dữ liệu.')
+            else:
+                args.pop('task_id', None)
+                args.pop('title_query', None)
+                args['event_id'] = reference['id']
         if name in {"update_event", "reschedule_event", "delete_event"} and args.get("event_id") and args.get("task_id"):
             raise ValueError("Chỉ chọn một loại ID: task_id cho To Do hoặc event_id cho sự kiện thuộc nhóm lịch.")
         if name not in {"update_event", "reschedule_event", "delete_event"} or args.get("event_id"):
@@ -322,6 +343,8 @@ class ToolExecutor:
         return "update_task", {"task_id": target.id, **updates}
 
     async def _delete_snapshot(self, name, args):
+        if name == 'delete_items':
+            return await deletion_snapshot(self.db, self.user_id, args['items'])
         from sqlalchemy import select
         from app.models.task_model import Task, TaskStep, TaskList
         from app.models.event_model import Event
@@ -347,20 +370,26 @@ class ToolExecutor:
         return result
 
     async def _prepare_delete(self, name, args):
+        if name == 'delete_items':
+            selected, _, _ = await selected_items(self.db, self.user_id, args.get('items'))
+            label = f"{len(selected)} mục/chuỗi lịch sau:\n" + '\n'.join('- ' + item_label(i) for i in selected[:15])
+            if len(selected) > 15:
+                label += f'\n- Và {len(selected) - 15} mục khác trong cùng phạm vi.'
+            return {'items': args['items']}, label
         if name == "delete_task":
             target = await self._resolve_task(args.get("task_id"), args.get("title_query"))
-            return {"task_id": target.id}, target.title
+            return {"task_id": target.id}, item_label(target)
         if name == "delete_event":
             target = await self._resolve_event(args.get("event_id"), args.get("title_query"))
             return {"event_id": target.id, "scope": args.get("scope", "this"), "occurrence_date": args.get("occurrence_date")}, target.title
         if name == "delete_task_list":
             target_id = await self._resolve_list_id(args.get("list_id"), args.get("name_query"))
             target = await task_list_service.get_task_list_by_id(self.db, target_id, self.user_id)
-            return {"list_id": target.id}, target.name
+            return {"list_id": target.id}, target.name + ' (bao gồm toàn bộ công việc bên trong)'
         if name == "delete_calendar":
             target_id = await self._resolve_calendar_id(args.get("calendar_id"), args.get("name_query"))
             target = await calendar_service.get_calendar_by_id(self.db, target_id, self.user_id)
-            return {"calendar_id": target.id}, target.name
+            return {"calendar_id": target.id}, target.name + ' (bao gồm toàn bộ sự kiện bên trong)'
         if name == "delete_task_step":
             target = await self._resolve_task(args.get("task_id"), args.get("task_title_query"))
             matches = [s for s in target.steps if s.id == args.get("step_id") or (args.get("step_title_query") and args["step_title_query"].lower() in s.title.lower())]
@@ -391,7 +420,7 @@ class ToolExecutor:
             if len(matches) == 1:
                 return matches[0]
             if matches:
-                raise ValueError(f"Có nhiều công việc phù hợp. Vui lòng chọn ID: {[(t.id, t.title) for t in matches]}.")
+                raise ValueError('Có nhiều công việc phù hợp. Vui lòng chọn ID:\n' + '\n'.join('- ' + item_label(t) for t in matches[:10]))
         raise ValueError("Không tìm thấy công việc phù hợp. Vui lòng cung cấp tên hoặc ID công việc chính xác.")
 
     async def _resolve_event(self, event_id: Optional[int] = None, title_query: Optional[str] = None):
@@ -410,7 +439,7 @@ class ToolExecutor:
             if len(matches) == 1:
                 return matches[0]
             if matches:
-                raise ValueError(f"Có nhiều sự kiện phù hợp, hãy chọn ID: {[(e.id, e.title) for e in matches]}.")
+                raise ValueError('Có nhiều sự kiện phù hợp. Vui lòng chọn ID:\n' + '\n'.join('- ' + item_label(e) for e in matches[:10]))
         raise ValueError("Không tìm thấy sự kiện phù hợp trên lịch.")
 
     async def _resolve_list_id(self, list_id: Optional[int] = None, list_name: Optional[str] = None) -> Optional[int]:
@@ -556,6 +585,8 @@ class ToolExecutor:
         if calendar_id is None:
             from app.services.recurrence import aware
             lo, hi = aware(start_dt), aware(end_dt)
+            # Match Calendar/availability: Task recurrences materialize after
+            # completion; do not invent future records during a lookup.
             tasks = await task_service.get_tasks(self.db, user_id=self.user_id, due_after=lo.date(), due_before=hi.date())
             for task in tasks:
                 start = datetime.combine(task.due_date, time.min if task.is_all_day else task.start_time or task.due_time or time.min, BUSINESS_TZ)
@@ -727,6 +758,9 @@ class ToolExecutor:
         await task_service.delete_task(self.db, task_id=target.id, user_id=self.user_id)
         return {"deleted_task_id": target.id, "title": target.title}
 
+    async def _delete_items(self, items, **kwargs):
+        return await delete_selected(self, items)
+
     async def _list_tasks(
         self,
         view: str = None,
@@ -763,7 +797,11 @@ class ToolExecutor:
         return await self._list_tasks(view="all", search_query=query)
 
     async def _batch_update_tasks(self, action: str, task_ids: List[int] = None, **kwargs):
-        all_tasks = await task_service.get_tasks(self.db, user_id=self.user_id, view="all")
+        from app.services.write_lock import lock_owner, AtomicBatchSession
+        from app.services.recurrence import is_task_overdue
+        await lock_owner(self.db, self.user_id)
+        atomic = AtomicBatchSession(self.db)
+        all_tasks = await task_service.get_tasks(atomic, user_id=self.user_id, view="all")
         today = business_today()
         tomorrow = today + timedelta(days=1)
         affected = 0
@@ -772,45 +810,46 @@ class ToolExecutor:
         if action == "complete_all_my_day":
             for t in all_tasks:
                 if t.is_in_my_day and not t.is_completed:
-                    await task_service.toggle_complete(self.db, task_id=t.id, user_id=self.user_id, is_completed=True)
+                    await task_service.toggle_complete(atomic, task_id=t.id, user_id=self.user_id, is_completed=True)
                     affected += 1
         elif action == "reschedule_overdue_to_today":
             for t in all_tasks:
-                if not t.is_completed and t.due_date and t.due_date < today:
+                if is_task_overdue(t):
                     await task_service.update_task(
-                        self.db, task_id=t.id, user_id=self.user_id,
-                        task_in=TaskUpdate(due_date=today, is_in_my_day=True)
+                        atomic, task_id=t.id, user_id=self.user_id,
+                        task_in=TaskUpdate(due_date=today, is_in_my_day=True, allow_overlap=kwargs.get('allow_overlap', False))
                     )
                     affected += 1
         elif action == "reschedule_overdue_to_tomorrow":
             for t in all_tasks:
-                if not t.is_completed and t.due_date and t.due_date < today:
+                if is_task_overdue(t):
                     await task_service.update_task(
-                        self.db, task_id=t.id, user_id=self.user_id,
-                        task_in=TaskUpdate(due_date=tomorrow)
+                        atomic, task_id=t.id, user_id=self.user_id,
+                        task_in=TaskUpdate(due_date=tomorrow, allow_overlap=kwargs.get('allow_overlap', False))
                     )
                     affected += 1
         elif action == "add_important_to_my_day":
             for t in all_tasks:
                 if not t.is_completed and t.is_important and not t.is_in_my_day:
-                    await task_service.toggle_my_day(self.db, task_id=t.id, user_id=self.user_id, is_in_my_day=True)
+                    await task_service.toggle_my_day(atomic, task_id=t.id, user_id=self.user_id, is_in_my_day=True)
                     affected += 1
         elif action == "clear_completed":
             for t in all_tasks:
                 if t.is_completed:
-                    await task_service.delete_task(self.db, task_id=t.id, user_id=self.user_id)
+                    await task_service.delete_task(atomic, task_id=t.id, user_id=self.user_id)
                     affected += 1
         elif action == "complete_by_ids":
             for t in all_tasks:
                 if t.id in id_set:
-                    await task_service.toggle_complete(self.db, task_id=t.id, user_id=self.user_id, is_completed=True)
+                    await task_service.toggle_complete(atomic, task_id=t.id, user_id=self.user_id, is_completed=True)
                     affected += 1
         elif action == "delete_by_ids":
             for t in all_tasks:
                 if t.id in id_set:
-                    await task_service.delete_task(self.db, task_id=t.id, user_id=self.user_id)
+                    await task_service.delete_task(atomic, task_id=t.id, user_id=self.user_id)
                     affected += 1
 
+        await self.db.commit()
         return {"action": action, "affected_count": affected}
 
     async def _schedule_task_on_calendar(

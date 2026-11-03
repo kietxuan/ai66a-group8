@@ -102,6 +102,8 @@ def summarize_tool(name, arguments, result):
         return text + _recurrence(data.get('recurrence_rule'))
     if name == "complete_task":
         return f"Đã {'hoàn thành' if data.get('is_completed') else 'mở lại'} công việc **{title}**."
+    if name == 'delete_items':
+        return f"Đã xóa {data.get('affected_count', 0)} mục/chuỗi lịch đã xác nhận.\n" + _items(data.get('items', []))
     if name.startswith("delete_"):
         return f"Đã xóa **{title}**."
     if name in {"create_calendar", "update_calendar", "create_task_list", "update_task_list", "create_category"}:
