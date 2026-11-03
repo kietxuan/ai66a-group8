@@ -42,6 +42,7 @@ export class RRuleParser {
 
   static parseUntilDate(str) {
     if (!str) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return new Date(`${str}T23:59:59`);
     if (str.includes('-')) return new Date(businessWallTime(str));
     const y = parseInt(str.substring(0, 4), 10);
     const m = parseInt(str.substring(4, 6), 10) - 1;
@@ -149,15 +150,17 @@ export class RRuleParser {
         if (!match || this.DAY_INDEX_MAP[match[2]] !== cur.getDay()) return false;
         if (!match[1]) return true;
         const ordinal = Number(match[1]);
-        const lastDay = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
-        return ordinal > 0 ? Math.ceil(cur.getDate() / 7) === ordinal : -Math.ceil((lastDay - cur.getDate() + 1) / 7) === ordinal;
+        const position = rule.freq === 'YEARLY' ? dayNumber(cur) - dayNumber(new Date(cur.getFullYear(), 0, 1)) : cur.getDate() - 1;
+        const remaining = rule.freq === 'YEARLY' ? dayNumber(new Date(cur.getFullYear(), 11, 31)) - dayNumber(cur) : new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate() - cur.getDate();
+        return ordinal > 0 ? Math.floor(position / 7) + 1 === ordinal : -(Math.floor(remaining / 7) + 1) === ordinal;
       });
       const monthDay = rule.bymonthday ? rule.bymonthday.includes(cur.getDate()) : (rule.byday ? true : cur.getDate() === origStart.getDate());
       let matches = false;
       if (rule.freq === 'DAILY') matches = days % interval === 0 && byDay;
       if (rule.freq === 'WEEKLY') matches = Math.floor((dayNumber(cur) - monday) / 7) % interval === 0 && (rule.byday ? byDay : cur.getDay() === origStart.getDay());
       if (rule.freq === 'MONTHLY') matches = months % interval === 0 && monthDay && byDay;
-      if (rule.freq === 'YEARLY') matches = (cur.getFullYear() - origStart.getFullYear()) % interval === 0 && cur.getMonth() === origStart.getMonth() && monthDay && byDay;
+      if (rule.freq === 'YEARLY') matches = (cur.getFullYear() - origStart.getFullYear()) % interval === 0 && (rule.byday || rule.bymonthday || cur.getMonth() === origStart.getMonth()) && monthDay && byDay;
+      if (rule.bymonthday) matches = matches && monthDay;
       if (matches && cur >= origStart) {
         count++;
         if (rule.count && count > rule.count) break;

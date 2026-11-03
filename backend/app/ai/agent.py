@@ -11,6 +11,8 @@ from app.core.logger import logger
 from app.ai.tools import TOOLS
 from app.ai.tool_executor import ToolExecutor
 from app.ai.prompts import SYSTEM_PROMPT
+from app.ai.replies import execution_content
+from app.ai.scheduling import recurrence_request
 from app.ai.confirmation import pending_actions
 from app.core.time import local_now, business_today
 
@@ -88,7 +90,7 @@ class PlanifyAgent:
                 "tool_results": None
             }
 
-        executor = ToolExecutor(user_id=user_id, db=db, conversation_id=conversation_id)
+        executor = ToolExecutor(user_id=user_id, db=db, conversation_id=conversation_id, request_text=last_user_msg)
         normalized = last_user_msg.strip().lower().rstrip('.!')
         pending = pending_actions.take(executor.context_key)
         if normalized in {"xác nhận xóa", "confirm delete"}:
@@ -108,22 +110,39 @@ class PlanifyAgent:
             try:
                 return await self._run_llm_agent_loop(executor, messages, user_timezone, last_user_msg)
             except Exception as e:
-                logger.warning("LLM request failed (%s).", type(e).__name__)
+                status = e.response.status_code if isinstance(e, httpx.HTTPStatusError) else None
+                logger.warning("LLM request failed (%s, HTTP status=%s).", type(e).__name__, status)
                 if executor.executions:
-                    return self._execution_reply(executor, "Provider bị gián đoạn sau khi xử lý công cụ. Kết quả thực tế được ghi bên dưới; không chạy lại yêu cầu.")
+                    return self._execution_reply(executor)
 
         # 4. Built-in Smart Hybrid NLP Agent Engine (works 100% offline/without external API key)
-        result = await self._run_local_smart_agent(executor, last_user_msg)
-        failures = [r for _, _, r in executor.executions if not r.get("success")]
-        if failures:
-            result["content"] = failures[0].get("error", "Không thực hiện được yêu cầu.")
+        try:
+            result = await self._run_local_smart_agent(executor, last_user_msg)
+        except (ValueError, OverflowError) as error:
+            return self._execution_reply(executor, str(error))
+        if any(not r.get("success") or not name.startswith(("list_", "get_", "search_", "find_", "check_"))
+               for name, _, r in executor.executions):
+            return self._execution_reply(executor)
         return result
 
     @staticmethod
-    def _execution_reply(executor, content):
+    def _execution_reply(executor, content=None):
         summaries = [{"tool": n, "name": n, "arguments": a, "result": r} for n, a, r in executor.executions]
-        details = "\n".join(json.dumps(r, ensure_ascii=False, default=str) for _, _, r in executor.executions)
-        return {"content": f"{content}\n{details}", "tool_calls": summaries or None, "tool_results": None}
+        details = execution_content(executor.executions)
+        if details and content and content not in details:
+            details += '\n\n' + content
+        return {"content": details or content or "Chưa có thao tác nào được thực hiện.", "tool_calls": summaries or None, "tool_results": None}
+
+    def _llm_reply(self, executor, response_msg, tool_results=None):
+        content = (response_msg.get("content") or "").strip()
+        reply = self._execution_reply(executor)
+        writes = any(not name.startswith(("list_", "get_", "search_", "find_", "check_")) for name, _, _ in executor.executions)
+        raw_json = content.startswith(("{", "[", "```json")) or bool(re.search(r'"(?:success|free_slots|tool_calls)"\s*:', content))
+        # Writes are summarized from committed results, not from provider claims.
+        if not executor.executions or (not writes and content and not raw_json):
+            reply["content"] = content if content and not raw_json else "Bạn muốn mình hỗ trợ công việc hay lịch trình nào?"
+        reply["tool_results"] = tool_results or None
+        return reply
 
     async def _run_llm_agent_loop(
         self,
@@ -142,7 +161,6 @@ class PlanifyAgent:
         truncated_history = messages[-20:] if len(messages) > 20 else messages
         llm_messages = [system_msg] + truncated_history
 
-        executed_tools_summary = []
         all_tool_results = []
 
         # Up to 3 reasoning/tool iterations
@@ -151,35 +169,26 @@ class PlanifyAgent:
             tool_calls = response_msg.get("tool_calls")
 
             if not tool_calls:
-                return {
-                    "content": response_msg.get("content", "") or "Tôi đã hoàn tất xử lý yêu cầu của bạn! ✅",
-                    "tool_calls": executed_tools_summary if executed_tools_summary else None,
-                    "tool_results": all_tool_results if all_tool_results else None
-                }
+                return self._llm_reply(executor, response_msg, all_tool_results)
 
-            llm_messages.append(response_msg)
+            # Response-only fields (e.g. reasoning/annotations) are not request message fields.
+            llm_messages.append({"role": "assistant", "content": response_msg.get("content"), "tool_calls": tool_calls})
 
             for tc in tool_calls:
                 tool_name = tc["function"]["name"]
                 try:
-                    raw_args = tc["function"].get("arguments") or "{}"
+                    raw_args = tc["function"].get("arguments")
                     tool_args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
                     if not isinstance(tool_args, dict):
-                        tool_args = {}
-                except Exception:
-                    tool_args = {}
+                        raise ValueError('Tool arguments must be an object')
+                except (ValueError, TypeError):
+                    return self._execution_reply(executor, 'AI trả về thông tin thao tác không hợp lệ. Chưa thực hiện thao tác đó; vui lòng nêu lại yêu cầu rõ hơn.')
 
                 if any(n == tool_name and a == tool_args for n, a, _ in executor.executions) and not tool_name.startswith(("list_", "get_", "search_", "find_", "check_")):
                     return self._execution_reply(executor, "Đã xử lý thao tác này trong lượt chat; không thực hiện lặp.")
                 result = await executor.execute(tool_name, tool_args)
                 if result.get("requires_confirmation") or not result.get("success"):
                     return self._execution_reply(executor, result.get("error", "Cần làm rõ yêu cầu."))
-                executed_tools_summary.append({
-                    "tool": tool_name,
-                    "name": tool_name,
-                    "arguments": tool_args,
-                    "result": result
-                })
                 tool_msg = {
                     "role": "tool",
                     "tool_call_id": tc["id"],
@@ -189,11 +198,7 @@ class PlanifyAgent:
                 llm_messages.append(tool_msg)
 
         final_response = await self._call_groq(llm_messages, allow_tools=False)
-        return {
-            "content": final_response.get("content", "Tôi đã thực hiện xong các thao tác theo yêu cầu của bạn! ✅"),
-            "tool_calls": executed_tools_summary if executed_tools_summary else None,
-            "tool_results": all_tool_results if all_tool_results else None
-        }
+        return self._llm_reply(executor, final_response, all_tool_results)
 
     async def _call_groq(self, messages: List[Dict[str, Any]], allow_tools: bool = True) -> Dict[str, Any]:
         headers = {
@@ -237,7 +242,7 @@ class PlanifyAgent:
 
         # Strip trailing time/date metadata clauses
         cleaned = re.sub(
-            r"\s+(bắt đầu từ|từ\s+\d|lúc\s+\d|vào\s+lúc|vào\s+ngày|hạn\s+chót|ngày\s+\d{4}-\d{2}-\d{2}|ngày\s+\d{1,2}/\d{1,2}|hôm nay|ngày mai| và đánh dấu| lặp lại).*$",
+            r"\s+(bắt đầu từ|vào mỗi|mỗi thứ|hàng tuần|hàng ngày|hàng tháng|hàng năm|từ\s+\d|lúc\s+\d|vào\s+lúc|vào\s+ngày|hạn\s+chót|ngày\s+\d{4}-\d{2}-\d{2}|ngày\s+\d{1,2}/\d{1,2}|hôm nay|ngày mai| và đánh dấu| lặp lại).*$",
             "",
             cleaned,
             flags=re.IGNORECASE
@@ -245,6 +250,9 @@ class PlanifyAgent:
         return cleaned or "Công việc mới"
 
     def _extract_date_from_text(self, text: str) -> Optional[date]:
+        recurrence, start = recurrence_request(text)
+        if recurrence.get('FREQ'):
+            return start or business_today()
         lower = text.lower()
         today = business_today()
 
@@ -309,10 +317,10 @@ class PlanifyAgent:
                     h1 += 12
                 if h2 < 12:
                     h2 += 12
-            s_dt = datetime.combine(base_date, time(min(23, h1), min(59, m1)))
-            e_dt = datetime.combine(base_date, time(min(23, h2), min(59, m2)))
+            s_dt = datetime.combine(base_date, time(h1, m1))
+            e_dt = datetime.combine(base_date, time(h2, m2))
             if e_dt <= s_dt:
-                e_dt = s_dt + timedelta(hours=1)
+                raise ValueError('Giờ kết thúc phải sau giờ bắt đầu. Chưa có dữ liệu nào được tạo.')
             return s_dt, e_dt
 
         # 3. Single time like "lúc 9h30", "14:00", "8 giờ sáng", "3 giờ chiều"
@@ -323,7 +331,7 @@ class PlanifyAgent:
             lower = text.lower()
             if ("chiều" in lower or "tối" in lower) and h < 12:
                 h += 12
-            s_dt = datetime.combine(base_date, time(min(23, h), min(59, m)))
+            s_dt = datetime.combine(base_date, time(h, m))
             # Check duration e.g. "45p", "30 phút", "2 tiếng"
             dur_mins = 60
             m_min = re.search(r"(\d+)\s*(?:phút|p\b)", lower)
@@ -337,6 +345,9 @@ class PlanifyAgent:
         return None, None
 
     def _extract_rrule(self, text: str) -> Optional[str]:
+        parts, _ = recurrence_request(text)
+        if parts.get('FREQ'):
+            return ';'.join(f'{key}={value}' for key, value in parts.items())
         lower = text.lower()
         if "hàng ngày" in lower or "mỗi ngày" in lower or "hằng ngày" in lower or "daily" in lower:
             return "FREQ=DAILY"
@@ -355,12 +366,14 @@ class PlanifyAgent:
         # Quoted task/event names are data, not commands (e.g. create "Hoàn thành báo cáo").
         lower = re.sub(r"['\"“”‘’][^'\"“”‘’]*['\"“”‘’]", "", text.lower())
         create_requested = bool(re.match(r"^(?:(?:hãy|giúp tôi|vui lòng)\s+)*(?:tạo|thêm|create|add|nhắc tôi|lên lịch|đặt lịch)\b", lower))
+        change_requested = bool(re.match(r"^(?:(?:hãy|giúp tôi|vui lòng)\s+)*(?:xóa|xoá|hủy|huỷ|dọn|hoàn thành|đánh dấu|dời|chuyển|clear|delete|complete|reschedule)\b", lower))
         executed_tools = []
         tool_results = []
 
         async def call_tool(name: str, args: dict):
             res = await executor.execute(name, args)
-            executed_tools.append({"tool": name, "name": name, "arguments": args, "result": res})
+            actual_name, actual_args, _ = executor.executions[-1]
+            executed_tools.append({"tool": actual_name, "name": actual_name, "arguments": actual_args, "result": res})
             tool_results.append({
                 "role": "tool",
                 "tool_call_id": f"local_{len(executed_tools)}",
@@ -369,7 +382,7 @@ class PlanifyAgent:
             return res
 
         # --- CASE 1: Auto-plan My Day / Lập kế hoạch thông minh ---
-        if any(k in lower for k in ["tự động lập kế hoạch", "sắp xếp ngày của tôi", "auto plan", "lên kế hoạch hôm nay giúp", "tối ưu lịch hôm nay"]):
+        if not create_requested and re.match(r'^(?:(?:hãy|giúp tôi|vui lòng)\s+)*(?:tự động lập kế hoạch|sắp xếp ngày của tôi|auto plan|lên kế hoạch hôm nay|tối ưu lịch hôm nay)', lower):
             res = await call_tool("auto_plan_my_day", {"max_tasks": 5, "assign_time_blocks": True})
             data = res.get("data") or {}
             items = data.get("planned_tasks") or []
@@ -385,20 +398,15 @@ class PlanifyAgent:
             return {"content": content, "tool_calls": executed_tools, "tool_results": tool_results}
 
         # --- CASE 2: Find free slots / Tìm khung giờ trống ---
-        if any(k in lower for k in ["giờ trống", "rảnh lúc nào", "khung giờ trống", "free slot", "thời gian trống"]):
+        if not create_requested and any(k in lower for k in ["giờ trống", "rảnh lúc nào", "khung giờ trống", "free slot", "thời gian trống"]):
             target_d = self._extract_date_from_text(text) or business_today()
-            res = await call_tool("find_free_slots", {"date": str(target_d), "duration_minutes": 60})
-            data = res.get("data") or {}
-            slots = data.get("free_slots") or []
-            if not slots:
-                content = f"📅 Ngày **{target_d}** của bạn đã kín lịch trong khung giờ làm việc!"
-            else:
-                slot_list = "\n".join([f"- 🟢 **{s['start']} – {s['end']}** ({s['duration_minutes']} phút)" for s in slots])
-                content = f"🕒 Các khung giờ trống trong ngày **{target_d}**:\n{slot_list}\n\nBạn muốn tôi đặt lịch họp hay xếp công việc vào khung giờ nào?"
-            return {"content": content, "tool_calls": executed_tools, "tool_results": tool_results}
+            duration_match = re.search(r"(\d+)\s*(phút|minutes?|tiếng|giờ)\b", lower)
+            duration = int(duration_match.group(1)) * (60 if duration_match.group(2) in {"tiếng", "giờ"} else 1) if duration_match else 60
+            await call_tool("find_free_slots", {"date": str(target_d), "duration_minutes": duration})
+            return {"content": execution_content(executor.executions), "tool_calls": executed_tools, "tool_results": tool_results}
 
         # --- CASE 3: Productivity Stats / Báo cáo thống kê năng suất ---
-        if any(k in lower for k in ["thống kê", "báo cáo năng suất", "tiến độ", "tỷ lệ hoàn thành", "dashboard"]):
+        if not create_requested and any(k in lower for k in ["thống kê", "báo cáo năng suất", "tiến độ", "tỷ lệ hoàn thành", "dashboard"]):
             res = await call_tool("get_productivity_stats", {})
             d = res.get("data") or {}
             content = (
@@ -412,7 +420,7 @@ class PlanifyAgent:
             return {"content": content, "tool_calls": executed_tools, "tool_results": tool_results}
 
         # --- CASE 4: Batch task actions (Overdue / Complete all My Day / Clear completed) ---
-        if not create_requested and "quá hạn" in lower and any(k in lower for k in ["dời", "chuyển", "reschedule"]):
+        if change_requested and "quá hạn" in lower and any(k in lower for k in ["dời", "chuyển", "reschedule"]):
             action = "reschedule_overdue_to_tomorrow" if "ngày mai" in lower else "reschedule_overdue_to_today"
             res = await call_tool("batch_update_tasks", {"action": action})
             cnt = (res.get("data") or {}).get("affected_count", 0)
@@ -423,7 +431,7 @@ class PlanifyAgent:
                 "tool_results": tool_results
             }
 
-        if any(k in lower for k in ["xóa các việc đã hoàn thành", "dọn dẹp việc đã xong", "clear completed"]):
+        if change_requested and any(k in lower for k in ["xóa các việc đã hoàn thành", "dọn dẹp việc đã xong", "clear completed"]):
             res = await call_tool("batch_update_tasks", {"action": "clear_completed"})
             cnt = (res.get("data") or {}).get("affected_count", 0)
             return {
@@ -433,7 +441,7 @@ class PlanifyAgent:
             }
 
         # --- CASE 5: Create Custom Task List or Calendar ---
-        if any(k in lower for k in ["tạo danh sách", "thêm danh sách", "tạo list"]):
+        if create_requested and any(k in lower for k in ["tạo danh sách", "thêm danh sách", "tạo list"]):
             name = self._extract_quoted_or_title(text, r"^.*?(?:tạo|thêm)\s+(?:danh sách|list)\s*(?:mới|công việc)?\s*(?:tên là)?\s*")
             res = await call_tool("create_task_list", {"name": name, "icon": "🚀", "color": "#4F46E5"})
             d = res.get("data") or {}
@@ -443,7 +451,7 @@ class PlanifyAgent:
                 "tool_results": tool_results
             }
 
-        if any(k in lower for k in ["tạo nhóm lịch", "tạo lịch mới", "thêm lịch mới"]):
+        if create_requested and any(k in lower for k in ["tạo nhóm lịch", "tạo lịch mới", "thêm lịch mới"]):
             name = self._extract_quoted_or_title(text, r"^.*?(?:tạo|thêm)\s+(?:nhóm\s+)?lịch\s*(?:mới)?\s*(?:tên là)?\s*")
             res = await call_tool("create_calendar", {"name": name, "color": "#10B981"})
             d = res.get("data") or {}
@@ -454,7 +462,7 @@ class PlanifyAgent:
             }
 
         # --- CASE 6: Complete / Delete Task or Event ---
-        if not create_requested and any(k in lower for k in ["hoàn thành", "đánh dấu xong", "xong việc", "complete task"]):
+        if change_requested and any(k in lower for k in ["hoàn thành", "đánh dấu xong", "xong việc", "complete task"]):
             title_q = self._extract_quoted_or_title(text, r"^.*?(?:đánh dấu\s+)?(?:hoàn thành|xong)\s+(?:công việc|việc|task)?\s*")
             res = await call_tool("complete_task", {"title_query": title_q, "is_completed": True})
             if res.get("success"):
@@ -464,7 +472,7 @@ class PlanifyAgent:
                 content = f"⚠️ {res.get('error', 'Không tìm thấy công việc cần đánh dấu hoàn thành.')}"
             return {"content": content, "tool_calls": executed_tools, "tool_results": tool_results}
 
-        if not create_requested and any(k in lower for k in ["xóa sự kiện", "hủy lịch", "hủy cuộc họp", "delete event"]):
+        if change_requested and any(k in lower for k in ["xóa sự kiện", "hủy lịch", "hủy cuộc họp", "delete event"]):
             title_q = self._extract_quoted_or_title(text, r"^.*?(?:xóa|hủy)\s+(?:sự kiện|lịch|cuộc họp|event)\s*")
             res = await call_tool("delete_event", {"title_query": title_q})
             if res.get("success"):
@@ -474,7 +482,7 @@ class PlanifyAgent:
                 content = f"⚠️ {res.get('error', 'Không tìm thấy sự kiện cần xóa.')}"
             return {"content": content, "tool_calls": executed_tools, "tool_results": tool_results}
 
-        if not create_requested and any(k in lower for k in ["xóa việc", "xóa công việc", "xóa task", "delete task"]):
+        if change_requested and any(k in lower for k in ["xóa việc", "xóa công việc", "xóa task", "delete task"]):
             title_q = self._extract_quoted_or_title(text, r"^.*?(?:xóa|bỏ)\s+(?:công việc|việc cần làm|việc|task)\s*")
             res = await call_tool("delete_task", {"title_query": title_q})
             if res.get("success"):
@@ -485,28 +493,28 @@ class PlanifyAgent:
             return {"content": content, "tool_calls": executed_tools, "tool_results": tool_results}
 
         # Unsupported local edit/delete requests must never fall through to CREATE.
-        if not create_requested and re.search(r"\b(?:xóa|xoá|xoa|delete|remove|sửa|đổi|dời|update|edit|move|reschedule|hoàn thành|complete)\b", lower):
+        if not create_requested and re.match(r"^(?:(?:hãy|giúp tôi|vui lòng)\s+)*(?:xóa|xoá|xoa|delete|remove|sửa|đổi|dời|update|edit|move|reschedule|hoàn thành|complete)\b", lower):
             return {"content": "Tôi chưa xác định rõ thao tác và mục cần thay đổi. Không có dữ liệu nào được sửa. Vui lòng nêu ID, thao tác và thời gian cụ thể hoặc dùng form chỉnh sửa.", "tool_calls": executed_tools or None, "tool_results": tool_results or None}
 
         # --- CASE 7: Create Task (To Do) ---
         is_task_intent = any(k in lower for k in [
             "việc cần làm", "tạo việc", "thêm việc", "tạo công việc", "thêm công việc",
-            "tạo task", "thêm task", "todo", "to-do", "nhắc tôi làm"
-        ])
+            "tạo task", "thêm task", "todo", "to-do", "nhắc tôi làm", "nhiệm vụ"
+        ]) or bool(re.search(r"\b(?:tạo|thêm)\s+(?:cho tôi\s+)?(?:một\s+)?công việc\b", lower))
         is_event_intent = any(k in lower for k in [
             "sự kiện", "lên lịch", "đặt lịch", "họp", "cuộc họp", "lịch hẹn", "tạo lịch", "event"
-        ])
+        ]) or bool(re.search(r"\b(?:tạo|thêm)\s+(?:cho tôi\s+)?(?:một\s+)?lịch\b", lower))
 
-        if is_task_intent and not ("sự kiện" in lower):
+        if create_requested and is_task_intent and not ("sự kiện" in lower):
             title = self._extract_quoted_or_title(
                 text,
-                r"^.*?(?:hãy\s+)?(?:tạo|thêm)\s+(?:cho tôi\s+)?(?:một\s+)?(?:công việc|việc cần làm|việc|task)\s*(?:mới)?\s*"
+                r"^.*?(?:hãy\s+)?(?:tạo|thêm)\s+(?:cho tôi\s+)?(?:một\s+)?(?:công việc|nhiệm vụ|việc cần làm|việc|task)\s*(?:mới)?\s*"
             )
             due_d = self._extract_date_from_text(text)
             s_dt, e_dt = self._extract_datetimes_or_times(text, due_d or business_today())
             rrule = self._extract_rrule(text)
             is_imp = any(k in lower for k in ["quan trọng", "important", "ưu tiên", "đánh dấu sao"])
-            is_my_day = any(k in lower for k in ["my day", "ngày của tôi", "hôm nay"])
+            is_my_day = bool(due_d == business_today() or any(k in lower for k in ["my day", "ngày của tôi"]))
 
             task_args: Dict[str, Any] = {
                 "title": title,
@@ -519,7 +527,7 @@ class PlanifyAgent:
                 task_args["due_date"] = str(s_dt.date())
                 task_args["start_time"] = s_dt.strftime("%H:%M")
                 task_args["end_time"] = e_dt.strftime("%H:%M")
-                task_args["duration_minutes"] = max(15, int((e_dt - s_dt).total_seconds() // 60))
+                task_args["duration_minutes"] = max(1, int((e_dt - s_dt).total_seconds() // 60))
                 task_args["is_all_day"] = False
             if rrule:
                 task_args["recurrence_rule"] = rrule
@@ -545,7 +553,7 @@ class PlanifyAgent:
             }
 
         # --- CASE 8: Create Event (Calendar) ---
-        if is_event_intent:
+        if create_requested and is_event_intent:
             title = self._extract_quoted_or_title(
                 text,
                 r"^.*?(?:hãy\s+)?(?:tạo|thêm|lên lịch|đặt lịch)\s+(?:cho tôi\s+)?(?:một\s+)?(?:sự kiện|cuộc họp|lịch hẹn|lịch)?\s*"
@@ -594,9 +602,10 @@ class PlanifyAgent:
                 content = "\n".join(lines)
             return {"content": content, "tool_calls": executed_tools, "tool_results": tool_results}
 
-        if any(k in lower for k in ["danh sách việc", "việc cần làm", "liệt kê công việc", "my day", "ngày của tôi"]):
+        if any(k in lower for k in ["danh sách việc", "việc cần làm", "liệt kê công việc", "liệt kê việc", "đã hoàn thành", "đã xong", "my day", "ngày của tôi"]):
             view = "my_day" if ("my day" in lower or "ngày của tôi" in lower) else "all"
-            res = await call_tool("list_tasks", {"view": view, "is_completed": False})
+            completed = bool(re.search(r'đã (?:hoàn thành|xong)', lower))
+            res = await call_tool("list_tasks", {"view": view, "is_completed": completed})
             items = res.get("data") or []
             if not items:
                 content = "🎉 Danh sách công việc của bạn hiện đang trống!"
@@ -622,7 +631,7 @@ class PlanifyAgent:
                     f"*(Hiện có {ev_cnt} sự kiện, {md_cnt} việc My Day, {ov_cnt} việc quá hạn)*:\n\n"
                     f"1. **Quy tắc 3 Việc Trọng Tâm (MITs)**: Chọn ra tối đa 3 việc có dấu ⭐ Quan trọng nhất trong *My Day* và giải quyết dứt điểm vào khung giờ năng lượng đỉnh cao buổi sáng.\n"
                     f"2. **Đặt Khung Giờ Cố Định (Time-Blocking)**: Kéo các việc cần làm thả trực tiếp vào lưới giờ trên **Calendar** để bảo vệ thời gian tập trung, tránh bị gián đoạn.\n"
-                    f"3. **Làm việc theo nhịp Pomodoro (25p / 5p)**: Bấm nút **⏱️ Focus Timer** trên thanh công cụ để làm việc sâu 25 phút và nghỉ ngắn 5 phút giúp duy trì sự tỉnh táo cả ngày."
+                    f"3. **Nghỉ ngắn có kế hoạch**: Sau mỗi khoảng tập trung khoảng 25 phút, dành 5 phút nghỉ trước khi quay lại công việc."
                 ),
                 "tool_calls": executed_tools,
                 "tool_results": tool_results
@@ -630,40 +639,9 @@ class PlanifyAgent:
 
         # --- DEFAULT: Schedule Summary for Today or Requested Date ---
         target_d = self._extract_date_from_text(text) or business_today()
-        res = await call_tool("get_schedule_summary", {"date": str(target_d)})
-        d = res.get("data") or {}
-        evs = d.get("events") or []
-        tasks = d.get("my_day_tasks") or []
-        overdue = d.get("overdue_tasks") or []
-        free_slots = d.get("free_slots") or []
-
-        lines = [f"📅 **Tổng quan Lịch trình & Công việc ngày {d.get('date', target_d)}:**\n"]
-        if evs:
-            lines.append(f"**🗓️ Sự kiện trên lịch ({len(evs)}):**")
-            for e in evs:
-                lines.append(f"- `{e['time']}`: **{e['title']}**" + (f" ({e['location']})" if e.get("location") else ""))
-        else:
-            lines.append("- 🗓️ **Sự kiện**: Chưa có sự kiện nào trên lịch.")
-
-        if tasks:
-            lines.append(f"\n**☀️ Việc cần làm trong My Day ({len(tasks)}):**")
-            for t in tasks:
-                status_ic = "☑️" if t.get("is_completed") else "☐"
-                star = " ⭐" if t.get("is_important") else ""
-                lines.append(f"- {status_ic} **{t['title']}**{star}")
-        else:
-            lines.append("- ☀️ **My Day**: Chưa có công việc nào được chọn cho hôm nay.")
-
-        if overdue:
-            lines.append(f"\n⚠️ **Cảnh báo quá hạn**: Bạn có **{len(overdue)} công việc quá hạn** cần xử lý.")
-
-        if free_slots:
-            slot_str = ", ".join([f"`{s['start']}-{s['end']}`" for s in free_slots[:3]])
-            lines.append(f"\n🟢 **Khung giờ trống gợi ý**: {slot_str}")
-
-        lines.append("\n💬 *Bạn có thể yêu cầu tôi: \"Tự động lập kế hoạch hôm nay\", \"Tạo lịch họp lúc 14h\", hoặc \"Thêm việc cần làm...\"!*")
+        await call_tool("get_schedule_summary", {"date": str(target_d)})
         return {
-            "content": "\n".join(lines),
+            "content": execution_content(executor.executions),
             "tool_calls": executed_tools,
             "tool_results": tool_results
         }

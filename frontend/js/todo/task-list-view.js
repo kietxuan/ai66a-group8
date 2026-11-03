@@ -48,24 +48,23 @@ export class TaskListView {
   /**
    * Kiểm tra một công việc chưa hoàn thành có bị Quá hạn hay không:
    * - Không có due_date -> Vĩnh viễn (Cột Cần làm), KHÔNG quá hạn.
-   * - Có due_date < hôm nay -> Quá hạn.
-   * - Có due_date == hôm nay và có giờ kết thúc (end_time / due_time / start_time) < giờ hiện tại -> Quá hạn.
+   * Dùng giờ kết thúc; nếu chỉ có giờ bắt đầu thì cộng duration_minutes,
+   * giống backend. Công việc cả ngày hết hạn ở đầu ngày tiếp theo.
    */
   isTaskOverdue(t, todayStr, nowTimeStr) {
     if (t.is_completed) return false;
     if (!t.due_date) return false;
     const dStr = String(t.due_date).slice(0, 10);
-    if (dStr < todayStr) return true;
-    if (dStr === todayStr && !t.is_all_day) {
-      const endT = String(t.end_time || t.due_time || t.start_time || "").slice(
-        0,
-        5,
-      );
-      if (endT && endT < nowTimeStr) {
-        return true;
-      }
+    const now = new Date(`${todayStr}T${nowTimeStr.length === 5 ? nowTimeStr + ':00' : nowTimeStr}`);
+    let end = new Date(`${dStr}T00:00:00`);
+    if (!t.is_all_day && (t.end_time || t.start_time || t.due_time)) {
+      const clock = String(t.end_time || t.start_time || t.due_time);
+      end = new Date(`${dStr}T${clock.length === 5 ? clock + ':00' : clock}`);
+      if (!t.end_time) end = new Date(end.getTime() + (t.duration_minutes || 60) * 60000);
+    } else {
+      end.setDate(end.getDate() + 1);
     }
-    return false;
+    return end <= now;
   }
 
   /**
@@ -155,8 +154,8 @@ export class TaskListView {
   renderGeneralKanbanBoard() {
     const allFiltered = this.filterTasks();
     const now = businessNow();
-    const todayStr = formatDate(now, "YYYY-MM-DD");
-    const nowTimeStr = formatDate(now, "HH:mm");
+    const todayStr = formatDate(now, 'YYYY-MM-DD');
+    const nowTimeStr = `${formatDate(now, 'HH:mm')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
     const listMap = (store.get("taskLists") || []).reduce((acc, l) => {
       acc[l.id] = l.name;

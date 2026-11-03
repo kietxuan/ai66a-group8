@@ -1,13 +1,73 @@
 """Calendar recurrence in business time. Invalid month dates are skipped, never overflowed."""
 import calendar
 import re
-from datetime import datetime, timedelta
-from app.core.time import BUSINESS_TZ
+from datetime import datetime, time, timedelta
+from app.core.time import BUSINESS_TZ, local_now
 
 DAY_MAP = {name: i for i, name in enumerate(("MO", "TU", "WE", "TH", "FR", "SA", "SU"))}
 
 def aware(value):
     return value.replace(tzinfo=BUSINESS_TZ) if value.tzinfo is None else value.astimezone(BUSINESS_TZ)
+
+def parse_until(value):
+    """DATE includes the whole business day; DATE-TIME is an inclusive instant."""
+    value = value.strip().upper()
+    if re.fullmatch(r"\d{8}|\d{4}-\d{2}-\d{2}", value):
+        day = datetime.strptime(value.replace("-", ""), "%Y%m%d").date()
+        return datetime.combine(day, time.max, BUSINESS_TZ)
+    if "T" not in value:
+        raise ValueError("UNTIL phải là ngày hoặc ngày giờ ISO hợp lệ.")
+    return aware(datetime.fromisoformat(value.replace("Z", "+00:00")))
+
+
+def parse_rule(rule):
+    """Validate the supported RFC subset before any consumer uses it."""
+    parts = {}
+    for part in rule.split(";"):
+        if part.count("=") != 1:
+            raise ValueError("RRULE phải gồm các cặp khóa=giá trị.")
+        key, value = (item.strip().upper() for item in part.split("=", 1))
+        if not key or not value or key in parts:
+            raise ValueError("RRULE có khóa trùng hoặc giá trị trống.")
+        parts[key] = value
+    freq = parts.get("FREQ")
+    if freq not in {"DAILY", "WEEKLY", "MONTHLY", "YEARLY"} or set(parts) - {"FREQ", "INTERVAL", "COUNT", "UNTIL", "BYDAY", "BYMONTHDAY"}:
+        raise ValueError("Chu kỳ lặp chưa được hỗ trợ.")
+    for key in ("INTERVAL", "COUNT"):
+        if key in parts and (not re.fullmatch(r"[0-9]+", parts[key]) or not 1 <= int(parts[key]) <= 1000000):
+            raise ValueError("Chu kỳ lặp không hợp lệ.")
+    if "COUNT" in parts and "UNTIL" in parts:
+        raise ValueError("Chỉ chọn COUNT hoặc UNTIL, không đồng thời cả hai.")
+    if "BYDAY" in parts:
+        pattern = r"(?:[+-]?[1-5])?(MO|TU|WE|TH|FR|SA|SU)" if freq in {"MONTHLY", "YEARLY"} else r"(MO|TU|WE|TH|FR|SA|SU)"
+        if any(not re.fullmatch(pattern, day) for day in parts["BYDAY"].split(",")):
+            raise ValueError("Ngày lặp không hợp lệ.")
+    if "BYMONTHDAY" in parts:
+        if freq == "WEEKLY" or any(not re.fullmatch(r"[0-9]+", day) or not 1 <= int(day) <= 31 for day in parts["BYMONTHDAY"].split(",")):
+            raise ValueError("Ngày trong tháng không hợp lệ hoặc không dùng với WEEKLY.")
+    if "UNTIL" in parts:
+        parse_until(parts["UNTIL"])
+    return parts
+
+
+def task_end_at(task):
+    """One business-time end boundary for completion, overdue views and scheduler."""
+    if not task.due_date:
+        return None
+    if not task.is_all_day:
+        if task.end_time:
+            return aware(datetime.combine(task.due_date, task.end_time))
+        clock = task.start_time or task.due_time
+        if clock:
+            return aware(datetime.combine(task.due_date, clock)) + timedelta(minutes=task.duration_minutes or 60)
+    start = datetime.combine(task.due_date, time.min, BUSINESS_TZ)
+    return start + timedelta(days=1) if task.due_date < datetime.max.date() else datetime.max.replace(tzinfo=BUSINESS_TZ)
+
+
+def is_task_overdue(task, now=None):
+    end = task_end_at(task)
+    return not task.is_completed and end is not None and end <= aware(now or local_now())
+
 
 def occurrences(start, end, rule, range_start, range_end, recurrence_end=None):
     start, end, lo, hi = map(aware, (start, end, range_start, range_end))
@@ -15,7 +75,7 @@ def occurrences(start, end, rule, range_start, range_end, recurrence_end=None):
         if start < hi and end > lo:
             yield start, end
         return
-    params = dict(part.upper().split("=", 1) for part in rule.split(";") if "=" in part)
+    params = parse_rule(rule)
     freq = params.get("FREQ")
     interval = int(params.get("INTERVAL", 1))
     count = int(params["COUNT"]) if "COUNT" in params else None
@@ -23,12 +83,7 @@ def occurrences(start, end, rule, range_start, range_end, recurrence_end=None):
         raise ValueError("RRULE không hợp lệ hoặc chưa được hỗ trợ.")
     until = aware(recurrence_end) if recurrence_end else None
     if params.get("UNTIL"):
-        value = params["UNTIL"]
-        if len(value) == 8:
-            parsed = datetime.strptime(value, "%Y%m%d").replace(hour=23, minute=59, second=59, tzinfo=BUSINESS_TZ)
-        else:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-            parsed = aware(parsed)
+        parsed = parse_until(params["UNTIL"])
         until = min(until, parsed) if until else parsed
     duration = end - start
     cur = start
@@ -36,7 +91,7 @@ def occurrences(start, end, rule, range_start, range_end, recurrence_end=None):
         cur = datetime.combine((lo - duration).date(), start.timetz())
     total = examined = 0
     monday = start.date() - timedelta(days=start.weekday())
-    while cur <= hi and (until is None or cur <= until):
+    while cur < hi and (until is None or cur <= until):
         examined += 1
         if examined > 366000:
             raise ValueError("Khoảng tính lịch lặp quá lớn.")
@@ -50,22 +105,29 @@ def occurrences(start, end, rule, range_start, range_end, recurrence_end=None):
                 if not match or DAY_MAP[match[2]] != cur.weekday():
                     continue
                 ordinal = int(match[1]) if match[1] else 0
-                last = calendar.monthrange(cur.year, cur.month)[1]
-                if not ordinal or (ordinal > 0 and (cur.day - 1) // 7 + 1 == ordinal) or (ordinal < 0 and -((last - cur.day) // 7 + 1) == ordinal):
+                position = (cur - cur.replace(month=1, day=1)).days if freq == "YEARLY" else cur.day - 1
+                remaining = (cur.replace(month=12, day=31) - cur).days if freq == "YEARLY" else calendar.monthrange(cur.year, cur.month)[1] - cur.day
+                if not ordinal or (ordinal > 0 and position // 7 + 1 == ordinal) or (ordinal < 0 and -(remaining // 7 + 1) == ordinal):
                     byday = True
         monthday = cur.day in [int(v) for v in params["BYMONTHDAY"].split(",")] if params.get("BYMONTHDAY") else (True if params.get("BYDAY") else cur.day == start.day)
         matches = (
             freq == "DAILY" and days % interval == 0 and byday or
             freq == "WEEKLY" and ((cur.date() - monday).days // 7) % interval == 0 and (byday if params.get("BYDAY") else cur.weekday() == start.weekday()) or
             freq == "MONTHLY" and months % interval == 0 and monthday and byday or
-            freq == "YEARLY" and (cur.year - start.year) % interval == 0 and cur.month == start.month and monthday and byday
+            freq == "YEARLY" and (cur.year - start.year) % interval == 0 and (True if params.get("BYDAY") or params.get("BYMONTHDAY") else cur.month == start.month) and monthday and byday
         )
+        if params.get("BYMONTHDAY"):
+            matches = matches and monthday
         if matches and cur >= start:
             total += 1
             if count and total > count:
                 break
             if cur < hi and cur + duration > lo:
                 yield cur, cur + duration
+            if count is not None and total >= count:
+                break
+        if cur.date() == datetime.max.date():
+            break
         cur += timedelta(days=1)
 
 def expand_event_rows(rows, range_start, range_end):

@@ -2,7 +2,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pydantic import BaseModel, field_validator, ValidationInfo
-import re
+from app.services.recurrence import parse_rule
 
 
 class InputValidation(BaseModel):
@@ -18,21 +18,9 @@ class InputValidation(BaseModel):
     def valid_rule(cls, value):
         if value is None:
             return value
-        parts = dict(p.upper().split("=", 1) for p in value.split(";") if "=" in p)
-        if parts.get("FREQ") not in {"DAILY", "WEEKLY", "MONTHLY", "YEARLY"} or set(parts) - {"FREQ", "INTERVAL", "COUNT", "UNTIL", "BYDAY", "BYMONTHDAY"}:
-            raise ValueError("Chu kỳ lặp chưa được hỗ trợ.")
-        for key in ("INTERVAL", "COUNT"):
-            if key in parts and (not parts[key].isdigit() or not 1 <= int(parts[key]) <= 1000000):
-                raise ValueError("Chu kỳ lặp không hợp lệ.")
-        if "COUNT" in parts and "UNTIL" in parts:
-            raise ValueError("Chỉ chọn COUNT hoặc UNTIL, không đồng thời cả hai.")
-        if "BYDAY" in parts and any(not re.fullmatch(r"[+-]?[1-5]?(MO|TU|WE|TH|FR|SA|SU)", day) for day in parts["BYDAY"].split(",")):
-            raise ValueError("Ngày lặp không hợp lệ.")
-        if "BYMONTHDAY" in parts and any(not day.isdigit() or not 1 <= int(day) <= 31 for day in parts["BYMONTHDAY"].split(",")):
-            raise ValueError("Ngày trong tháng không hợp lệ.")
-        if "UNTIL" in parts:
-            datetime.fromisoformat(parts["UNTIL"].replace("Z", "+00:00"))
-        return value.upper()
+        parts = parse_rule(value)
+        return ";".join(f"{key}={item}" for key, item in parts.items())
+
     @field_validator("title", "name", "nickname", check_fields=False)
     @classmethod
     def nonblank(cls, value):

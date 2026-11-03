@@ -28,7 +28,7 @@
     }
   },
   "postCreateCommand": "if [ ! -f /workspace/.env ]; then cp /workspace/.env.example /workspace/.env; fi",
-  "postStartCommand": "pip install --user -r /workspace/backend/requirements.txt && cd /workspace/frontend && npm install",
+  "postStartCommand": "pip install --user -r /workspace/backend/requirements.txt",
   "customizations": {
     "vscode": {
       "extensions": [

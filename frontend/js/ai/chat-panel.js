@@ -4,6 +4,7 @@ import { Toast } from '../components/toast.js';
 import { store } from '../store.js';
 import { ChatMessage } from './message.js';
 import { ChatInput } from './chat-input.js';
+import { notifyAiDataChanges } from './sync.js';
 
 export class ChatPanel {
   static instance = null;
@@ -222,6 +223,7 @@ export class ChatPanel {
     if (!content.trim() || this.sending || !store.get('user')) return;
     this.sending = true;
     const generation = this.generation;
+    const userId = store.get('user').id;
 
     // 1. Render user message in chat
     const userMsgEl = ChatMessage.create({
@@ -247,6 +249,7 @@ export class ChatPanel {
         }
       }
 
+      if (store.get('user')?.id === userId) notifyAiDataChanges(resp.tool_calls);
       if (generation !== this.generation) return;
       this.hideTypingIndicator();
 
@@ -269,15 +272,6 @@ export class ChatPanel {
       this.messagesListEl.appendChild(assistantMsgEl);
       this.scrollToBottom();
 
-      // 4. If tools were executed, trigger cross-module real-time reactive sync
-      if (toolCalls && toolCalls.length > 0) {
-        window.dispatchEvent(new CustomEvent('planify:data-changed', {
-          detail: { source: 'ai-assistant', action: 'tool-executed', type: 'all', toolCalls }
-        }));
-        document.dispatchEvent(new CustomEvent('task-changed', {
-          detail: { action: 'ai-tool-executed', toolCalls }
-        }));
-      }
     } catch (err) {
       if (generation !== this.generation) return;
       this.hideTypingIndicator();

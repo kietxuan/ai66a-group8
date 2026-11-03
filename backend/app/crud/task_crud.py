@@ -5,6 +5,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import or_
 from app.core.time import business_today, local_now
+from app.services.recurrence import is_task_overdue
 from app.crud.base import CRUDBase
 from app.models.task_model import Task, TaskStep
 from app.schemas.task_schema import TaskCreate, TaskUpdate, TaskStepCreate, TaskStepUpdate, ItemReorder
@@ -45,7 +46,7 @@ class CRUDTask(CRUDBase[Task]):
         elif view == "planned":
             stmt = stmt.where(Task.due_date.isnot(None))
         elif view == "overdue":
-            stmt = stmt.where(Task.is_completed == False, Task.due_date < today)
+            stmt = stmt.where(Task.is_completed == False, Task.due_date <= today)
         elif view == "completed":
             stmt = stmt.where(Task.is_completed == True)
         elif view == "time_blocked":
@@ -70,7 +71,11 @@ class CRUDTask(CRUDBase[Task]):
 
         stmt = stmt.order_by(Task.due_date.asc().nulls_last(), Task.start_time.asc().nulls_last(), Task.position.asc(), Task.id.desc())
         result = await db.execute(stmt)
-        return list(result.scalars().all())
+        tasks = list(result.scalars().all())
+        if view == "overdue":
+            now = local_now()
+            tasks = [task for task in tasks if is_task_overdue(task, now)]
+        return tasks
 
     async def create(self, db: AsyncSession, user_id: int, obj_in: TaskCreate, commit: bool = True, recurrence_source_id=None) -> Task:
         today = business_today()

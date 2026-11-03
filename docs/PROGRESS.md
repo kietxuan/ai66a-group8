@@ -1,17 +1,19 @@
 # PROJECT PROGRESS
 
-## Sửa lỗi audit và regression — 2026-11-03
+## Tinh gọn nhánh fix/audit-regressions — 2026-11-03
 
-- Nhánh codex/fix-audit-regressions; chỉ bugfix chức năng sẵn có, không thêm feature từ bảng đề xuất. Đối chiếu L/S, modules, tests và giới hạn ở [BUGFIX_VERIFICATION_2026-11-03](BUGFIX_VERIFICATION_2026-11-03.md).
-- Sửa isolation/foreign parent, OTP/admin/JWT, AI confirmation/ambiguity/fallback, task/event recurrence/anchors, validation/all-day/timezone, free slots/auto-plan, Dashboard/export, cache/stale response và toolbar mobile.
-- PostgreSQL/Redis test riêng, provider/SMTP mock; 35 backend tests PASS (gồm migration và property test 250 tập khoảng bận), 38 frontend tests PASS (21 core chạy cả TZ America/Los_Angeles + 17 auth/settings/agenda). Fresh Docker build + pip check + Python/JS syntax và diff check PASS.
-- UI QA A → logout → B không còn cache A; Todo → Calendar → complete → Todo đồng bộ; mobile 390/320 không cắt nút sau sửa flex-wrap. Dùng computer-use kiểm tra DOM và ảnh, không giả nhận chỉ từ scrollWidth.
-- Không sửa .env hoặc app/DB web-template đang mount từ todo-list-pro; không gọi Groq/gửi email thật, không tự thêm sync Google/Outlook/Pomodoro/priority/category/filter mới. Các probe/benchmark cũ được đánh dấu lịch sử, không tính là bằng chứng mới.
-- Chưa xác minh provider/SMTP/cloud/thiết bị thật; không cam kết 0 lỗi tuyệt đối. Trước áp dụng thật phải backup DB, dùng đúng source/mount và bổ sung SMTP_* độc lập admin nếu dùng OTP/email.
+- Theo yêu cầu user, gỡ 35 file test/probe, report QA, workflow regression, Compose test và package.json chỉ phục vụ test; không bỏ các bản sửa lỗi của ứng dụng.
+- Giữ migration, requirements.lock, cấu hình chạy và các module runtime. Bỏ lệnh npm install thừa trong devcontainer vì frontend là HTML/CSS/JS tĩnh, không còn package npm.
+- Sửa README và liên kết tới báo cáo đã gỡ. Tài liệu kế hoạch và nội dung của nhóm được giữ; ghi chú môi trường local có sẵn không đưa vào commit.
+- Không rewrite lịch sử Git: các bộ test/báo cáo vẫn khôi phục được từ commit 9b040d4. Sau khi bỏ workflow, nhánh không tự chạy regression trên GitHub.
+- Không sửa .env, không restart app/DB thật trong đợt dọn file.
+- Kiểm tra sau cleanup: 175 file nguồn/cấu hình chạy và .env giữ nguyên hash; 35 backend + 38 frontend tests đọc trực tiếp từ lịch sử Git chạy trên source đã dọn đều PASS, không thêm lại test vào checkout. Build Docker backend/frontend, pip check, Python/JS syntax, JSON devcontainer, diff check và HTTP frontend/health backend của QA riêng đều PASS. Không coi đây là CI mới sau khi đã gỡ workflow.
 
-- Tích hợp origin/main cedef4b để giữ Landing/auth trượt mới của nhóm, giải quyết bốn conflict thủ công. Sửa thêm retry sau OTP đã tiêu thụ, Settings stale render/local preference, logout sau đổi mật khẩu, mở đúng form từ Lịch biểu và callback refresh Event. UI sau tích hợp: Guide redirect, lưu profile, tải/đọc ICS+JSON, tuần → lịch biểu sửa → complete → Dashboard; workspace A/B không reload, mobile composer nhìn thấy. Không suy ra remote CI pass từ kiểm thử local.
-- Kiểm tra cuối phát hiện JWT secret mẫu trong .env riêng ai66a-group8. User đã duyệt đổi SECRET_KEY và push nhánh: sinh khóa ngẫu nhiên 48 bytes chỉ trong .env ignored, không in/commit và không chạm .env todo-list-pro. Settings.validate_security và Compose config PASS. Khi chạy bản mới cần đăng nhập lại; email SMTP thật chưa xác minh.
-- Tích hợp tiếp main 33ef7ef (ảnh/mô tả Landing do nhóm thêm trong lúc audit); giữ đủ ba ảnh. Browser QA trên nhánh tích hợp ở 320px xác nhận cả ba ảnh tải được, nằm trong viewport và trang không tràn ngang. Chỉnh alt ảnh Calendar thành lịch tuần đúng nội dung minh họa. Không tự phát triển thêm Landing trong nhánh bugfix.
+## Sửa lỗi ứng dụng — 2026-11-03
+
+- Sửa isolation/foreign parent, OTP/admin/JWT, AI confirmation/ambiguity/fallback, recurrence/anchors, validation/all-day/timezone, free slots/auto-plan, Dashboard/export, cache/stale response, Settings/Agenda và toolbar mobile; không tự thêm tính năng.
+- Commit 9b040d4 đã qua 35 backend + 38 frontend tests và UI QA riêng; [CI của commit đó](https://github.com/kietxuan/ai66a-group8/actions/runs/41510221336) PASS. Đây là evidence trước khi gỡ file test, không phải CI mới sau cleanup.
+- Đã giữ các thay đổi auth/Landing của nhóm đến main 33ef7ef. JWT secret local được user duyệt thay ở lượt trước, không commit; SMTP/Groq/thiết bị thật chưa được xác minh lại, không cam kết 0 lỗi tuyệt đối.
 ## Mở rộng phần giới thiệu tính năng trên landing — 2026-11-03
 
 - Thay ba thẻ mô tả ngắn bằng ba mục Công việc, Lịch biểu, Trợ lý AI có mô tả và ví dụ thao tác cụ thể, dựa trên chức năng của frontend hiện tại. Giữ nội dung chỉ để giới thiệu, không gắn thao tác giả.

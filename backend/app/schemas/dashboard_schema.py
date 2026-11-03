@@ -59,3 +59,4 @@ class DashboardStatsResponse(BaseModel):
     tasks_my_day: List[TaskResponse] = []
     tasks_important: List[TaskResponse] = []
     tasks_overdue: List[TaskResponse] = []
+    tasks_todo: List[TaskResponse] = []

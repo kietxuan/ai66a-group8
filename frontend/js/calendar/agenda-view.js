@@ -161,16 +161,15 @@ export class AgendaView {
           className: "agenda-items-list",
         });
 
-        group.items.forEach((item) => {
-          const isEvent = item._type === "event";
-          const isTask = item._type === "task" || !!item.is_task;
-          const startTimeStr = item.is_all_day
-            ? "Cả ngày"
-            : formatDate(item._dateObj, "HH:mm");
-          const endTimeStr =
-            item.is_all_day || !item.end_at
-              ? ""
-              : ` - ${formatDate(new Date(item.end_at), "HH:mm")}`;
+        group.items.forEach(item => {
+          const isEvent = item._type === 'event';
+          const isTask = item._type === 'task' || !!item.is_task;
+          const isAutoEvent = isTask && !!item.auto_complete;
+          const eventLabel = isEvent || isAutoEvent;
+          const location = item.location || item.raw_task?.location;
+          const recurrenceRule = item.recurrence_rule || item.raw_task?.recurrence_rule;
+          const startTimeStr = item.is_all_day ? 'Cả ngày' : formatDate(item._dateObj, 'HH:mm');
+          const endTimeStr = (item.is_all_day || !item.end_at) ? '' : ` - ${formatDate(new Date(item.end_at), 'HH:mm')}`;
           const timeLabel = `${startTimeStr}${endTimeStr}`;
 
           const itemCard = createElement("div", {
@@ -218,48 +217,36 @@ export class AgendaView {
           }
 
           // Title & Details
-          const contentCol = createElement(
-            "div",
-            {
-              className: "agenda-item-content",
-            },
-            [
-              createElement(
-                "div",
-                {
-                  className: "agenda-item-title-row",
-                },
-                [
-                  taskCheckbox,
-                  createElement("span", {
-                    className: "agenda-item-icon",
-                    textContent: isEvent ? "🗓️" : "✅",
-                  }),
-                  createElement("span", {
-                    className: `agenda-item-title ${item.is_completed ? "strikethrough" : ""}`,
-                    textContent: item.title,
-                  }),
-                ],
-              ),
-              item.location
-                ? createElement("div", {
-                    className: "agenda-item-detail agenda-item-location",
-                    textContent: `📍 ${item.location}`,
-                  })
-                : null,
-              item.recurrence_rule
-                ? createElement("div", {
-                    className: "agenda-item-detail agenda-item-recurrence",
-                    textContent: "🔄 Lặp lại",
-                  })
-                : null,
-            ],
-          );
+          const contentCol = createElement('div', {
+            className: 'agenda-item-content'
+          }, [
+            createElement('div', {
+              className: 'agenda-item-title-row'
+            }, [
+              taskCheckbox,
+              createElement('span', {
+                className: 'agenda-item-icon',
+                textContent: eventLabel ? '🗓️' : '✅'
+              }),
+              createElement('span', {
+                className: `agenda-item-title ${item.is_completed ? 'strikethrough' : ''}`,
+                textContent: item.title
+              })
+            ]),
+            location ? createElement('div', {
+              className: 'agenda-item-detail agenda-item-location',
+              textContent: `📍 ${location}`
+            }) : null,
+            recurrenceRule ? createElement('div', {
+              className: 'agenda-item-detail agenda-item-recurrence',
+              textContent: '🔄 Lặp lại'
+            }) : null
+          ]);
 
           // Type Pill
-          const typePill = createElement("span", {
-            className: `agenda-type-pill ${isEvent ? "event" : "task"}`,
-            textContent: "Việc cần làm",
+          const typePill = createElement('span', {
+            className: `agenda-type-pill ${eventLabel ? 'event' : 'task'}`,
+            textContent: isAutoEvent ? 'Sự kiện (Tự hoàn thành)' : isEvent ? 'Sự kiện' : 'Việc cần làm'
           });
 
           itemCard.appendChild(timeBadge);

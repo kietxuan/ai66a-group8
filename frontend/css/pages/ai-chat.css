@@ -1,5 +1,77 @@
 /* ===== Slide-over AI Drawer & Full AI Workspace Page ===== */
 
+/* AI access card: self-contained styling, independent of the app theme. */
+.ai-payment-overlay { background: rgba(236, 241, 255, 0.91); backdrop-filter: blur(8px); padding: 24px; }
+.ai-payment-overlay .modal-dialog { position: relative; width: 100%; max-height: calc(100dvh - 48px); overflow-y: auto; border: 1px solid #e5eafb; border-radius: 26px; background: #fff; color: #0d1538; box-shadow: 0 18px 80px rgba(38, 71, 154, 0.09); }
+.ai-payment-overlay .modal-header { position: absolute; top: 12px; right: 12px; z-index: 2; padding: 0; border: 0; }
+.ai-payment-overlay .modal-title { display: none; }
+.ai-payment-overlay .modal-close-btn { color: #7d88a8; }
+.ai-payment-overlay .modal-body { padding: 48px 36px 30px; overflow: visible; }
+.ai-payment-layout { display: grid; grid-template-columns: 0.85fr 1.25fr; gap: 38px; align-items: center; }
+.ai-payment-details { min-width: 0; }
+.ai-payment-heading { margin: 0 0 14px; color: #0b1230; font-size: clamp(25px, 2.8vw, 37px); font-weight: 800; line-height: 1.18; letter-spacing: -1.2px; }
+.ai-payment-description { margin: 0; color: #69728d; font-size: 18px; line-height: 1.5; }
+.ai-payment-price { display: flex; align-items: baseline; gap: 13px; padding: 16px 0 22px; margin-bottom: 22px; border-bottom: 1px solid #e0e5f0; }
+.ai-payment-price strong { color: #090f2d; font-size: clamp(55px, 6vw, 76px); line-height: 1.2; font-weight: 800; letter-spacing: -3px; }
+.ai-payment-price > span { color: #737c96; font-size: 25px; }
+.ai-payment-methods { min-width: 0; margin: 0; padding: 0; border: 0; }
+.ai-payment-methods legend { margin-bottom: 13px; padding: 0; color: #151e40; font-size: 19px; font-weight: 600; }
+.ai-payment-option { position: relative; display: flex; align-items: center; gap: 13px; padding: 14px 17px; margin-bottom: 10px; border: 1.5px solid #e0e5ef; border-radius: 13px; cursor: pointer; background: #fff; color: #17203e; transition: border-color 0.15s, box-shadow 0.15s; }
+.ai-payment-option.is-selected { border-color: #3265ff; box-shadow: 0 0 0 2px #eef2ff; }
+.ai-payment-option:focus-within { outline: 2px solid #3265ff; outline-offset: 3px; }
+.ai-payment-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.ai-payment-radio { flex: 0 0 21px; width: 21px; height: 21px; border: 2px solid #cbd2e2; border-radius: 50%; background: #fff; }
+.ai-payment-option.is-selected .ai-payment-radio { border-color: #2762ff; background: #2762ff; box-shadow: inset 0 0 0 3px #fff; }
+.ai-payment-method-icon { flex: 0 0 27px; font-size: 26px; font-weight: 800; text-align: center; line-height: 1; }
+.ai-payment-method-paypal { font-style: italic; color: #0879cc; text-shadow: -3px -2px 0 #052a83; }
+.ai-payment-method-bank { color: #7d849b; }
+.ai-payment-method-label { font-size: 16px; line-height: 1.3; }
+.ai-payment-brands { margin-left: auto; color: #173caa; font-size: 12px; font-style: italic; font-weight: 800; white-space: nowrap; }
+.ai-payment-pay { display: flex; align-items: center; justify-content: center; gap: 22px; width: 100%; margin-top: 13px; padding: 17px 20px; border: 0; border-radius: 15px; background: linear-gradient(115deg, #1761ef, #1f50db); box-shadow: 0 5px 14px rgba(28, 85, 225, 0.15); color: #fff; font-size: 23px; font-weight: 700; cursor: pointer; }
+.ai-payment-pay:hover { background: linear-gradient(115deg, #1053dc, #1845c6); }
+.ai-payment-pay:focus-visible { outline: 3px solid #6c96ff; outline-offset: 4px; }
+.ai-payment-pay > span:last-child { font-size: 29px; line-height: 1; }
+.ai-payment-signature { margin: 16px 0 0; text-align: center; color: #8490aa; font-size: 11px; letter-spacing: 2px; }
+.ai-payment-art { position: relative; height: 380px; min-width: 0; }
+.ai-payment-halo { position: absolute; inset: 0 0 35px; border-radius: 50% 43% 52% 40%; background: linear-gradient(150deg, #f0f6ff, #e6efff); transform: rotate(-15deg); }
+.ai-payment-shadow { position: absolute; left: 0; right: 0; bottom: 23px; height: 29px; border-radius: 50%; background: #dce7ff; }
+.ai-payment-card { position: absolute; left: 6%; top: 28%; width: 85%; height: 53%; border: 1px solid #326bea; border-radius: 20px; background: linear-gradient(155deg, #5e92ff 0%, #3468e3 50%, #1044b5 100%); box-shadow: 0 9px 0 #133ca6, 3px 18px 24px rgba(29, 74, 169, 0.17); transform: rotate(-14deg); overflow: hidden; }
+.ai-payment-card::before { content: ''; position: absolute; inset: -40% -20%; background: linear-gradient(150deg, transparent 47%, rgba(10, 42, 141, 0.15) 47%); }
+.ai-payment-chip { position: absolute; left: 12%; top: 25%; width: 47px; height: 36px; border: 1px solid #efbb51; border-radius: 9px; background: repeating-linear-gradient(0deg, transparent 0 11px, #dfab42 11px 13px), repeating-linear-gradient(90deg, #ffda81 0 17px, #dfab42 17px 19px); }
+.ai-payment-contactless { position: absolute; right: 12%; top: 15%; color: #9dbfff; font-size: 34px; font-weight: 700; letter-spacing: -6px; transform: rotate(4deg); }
+.ai-payment-card-lines { position: absolute; display: flex; gap: 10px; left: 12%; right: 12%; bottom: 25%; }
+.ai-payment-card-lines span { height: 9px; width: 27%; background: #a1c4ff; border-radius: 8px; }
+.ai-payment-card-name { position: absolute; left: 12%; bottom: 13%; width: 40%; height: 8px; border-radius: 6px; background: #a1c4ff; }
+.ai-payment-ticket { position: absolute; right: -1%; bottom: 5%; width: 45%; height: 30%; display: flex; align-items: center; justify-content: center; border: 3px solid #b2c9ff; border-top-color: #fff; border-left-color: #fff; border-radius: 20px; background: linear-gradient(135deg, #fff, #edf3ff); color: #0f3b9f; font-size: 54px; font-weight: 800; letter-spacing: -2px; transform: rotate(6deg); box-shadow: 0 4px 9px rgba(70, 111, 198, 0.08); }
+.ai-payment-sparks { position: absolute; right: 0; bottom: 40%; width: 44px; height: 55px; transform: rotate(8deg); }
+.ai-payment-sparks i { position: absolute; width: 7px; height: 24px; border-radius: 6px; background: #5686ff; }
+.ai-payment-sparks i:nth-child(2) { left: 20px; top: 9px; transform: rotate(35deg); }
+.ai-payment-sparks i:nth-child(3) { left: 33px; top: 30px; height: 19px; transform: rotate(65deg); }
+@media (max-width: 800px) {
+  .ai-payment-overlay .modal-body { padding: 40px 24px 24px; }
+  .ai-payment-layout { grid-template-columns: 1fr; gap: 18px; }
+  .ai-payment-art { width: 270px; max-width: 85%; height: 230px; margin: 0 auto; }
+  .ai-payment-ticket { font-size: 39px; }
+  .ai-payment-heading { font-size: 29px; letter-spacing: -0.6px; }
+  .ai-payment-description { font-size: 16px; }
+}
+@media (max-width: 480px) {
+  .ai-payment-overlay { padding: 12px; }
+  .ai-payment-overlay .modal-dialog { max-height: calc(100dvh - 24px); border-radius: 20px; }
+  .ai-payment-overlay .modal-body { padding: 30px 18px 20px; }
+  .ai-payment-art { width: 230px; height: 190px; }
+  .ai-payment-card { border-radius: 13px; }
+  .ai-payment-chip { width: 34px; height: 26px; }
+  .ai-payment-ticket { font-size: 32px; border-radius: 14px; }
+  .ai-payment-price { padding: 14px 0 18px; margin-bottom: 18px; }
+  .ai-payment-price strong { font-size: 59px; }
+  .ai-payment-price > span { font-size: 21px; }
+  .ai-payment-option { padding: 13px 11px; gap: 10px; }
+  .ai-payment-method-label { font-size: 14px; }
+  .ai-payment-brands { display: none; }
+  .ai-payment-pay { font-size: 19px; padding: 15px; }
+}
+
 .ai-panel {
   width: var(--ai-panel-width);
   height: 100vh;

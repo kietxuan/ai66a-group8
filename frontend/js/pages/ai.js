@@ -4,6 +4,7 @@ import { Toast } from '../components/toast.js';
 import { ChatMessage } from '../ai/message.js';
 import { ChatInput } from '../ai/chat-input.js';
 import { store } from '../store.js';
+import { notifyAiDataChanges } from '../ai/sync.js';
 
 const PROMPT_CATEGORIES = [
   {
@@ -293,6 +294,7 @@ export const aiPage = {
     if (!content || !content.trim() || !this.messagesListEl || this.sending || !store.get('user')) return;
     this.sending = true;
     const generation = this.generation;
+    const userId = store.get('user').id;
 
     this.messagesListEl.appendChild(ChatMessage.create({
       role: 'user',
@@ -324,6 +326,7 @@ export const aiPage = {
           this.currentConversationId = resp.conversation_id;
         }
       }
+      if (store.get('user')?.id === userId) notifyAiDataChanges(resp.tool_calls);
       if (generation !== this.generation || !this.container) return;
       typingEl.remove();
 
@@ -342,14 +345,6 @@ export const aiPage = {
       }));
       this.scrollToBottom();
 
-      if (toolCalls && toolCalls.length > 0) {
-        window.dispatchEvent(new CustomEvent('planify:data-changed', {
-          detail: { source: 'ai-page', action: 'tool-executed', toolCalls }
-        }));
-        document.dispatchEvent(new CustomEvent('task-changed', {
-          detail: { action: 'ai-tool-executed', toolCalls }
-        }));
-      }
     } catch (err) {
       typingEl.remove();
       if (generation !== this.generation || !this.container) return;

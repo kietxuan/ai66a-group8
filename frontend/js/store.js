@@ -59,11 +59,17 @@ class Store {
   set(key, value) {
     const oldValue = this.state[key];
     if (key === 'user' && oldValue?.id !== value?.id) {
+      const sameSavedUser = value?.id != null && localStorage.getItem('planify_user_id') === String(value.id);
       for (const name of ['calendars', 'events', 'taskLists', 'tasks']) this.state[name] = [];
       this.state.selectedTask = null;
-      this.state.activeTodoList = 'board';
       this.set('isAiPanelOpen', false);
-      for (const name of ['planify_todo_active_list', 'planify_notify_enabled', 'planify_notify_minutes_before']) localStorage.removeItem(name);
+      if (!sameSavedUser) {
+        this.state.activeTodoList = 'board';
+        localStorage.removeItem('planify_todo_active_list');
+      }
+      if (value?.id != null) localStorage.setItem('planify_user_id', String(value.id));
+      else localStorage.removeItem('planify_user_id');
+      for (const name of ['planify_notify_enabled', 'planify_notify_minutes_before']) localStorage.removeItem(name);
       for (const name of ['planify_notified_reminders', 'planify_ai_pending_prompt']) sessionStorage.removeItem(name);
       this.emit('session-reset');
     }
