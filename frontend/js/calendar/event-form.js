@@ -6,6 +6,8 @@ import { api } from '../api.js';
 import { store } from '../store.js';
 import { formatDate } from '../utils/date.js';
 import { recurrenceContext, eventDeleteUrl } from './rrule.js';
+import { confirmDeleteItem } from '../utils/confirm-delete.js';
+import { newRequestId } from '../utils/request-id.js';
 
 const PRESET_COLORS = [
   '#4F46E5', '#2563EB', '#0EA5E9', '#10B981',
@@ -42,7 +44,9 @@ export class EventForm {
     onUpdated,
     onDeleted
   } = {}) {
+    if (Modal.activeModal?.beforeClose && Modal.activeModal.close() === false) return;
     let modalRef = null;
+    let createAttempt = null;
     const userId = store.get('user')?.id;
 
     // Gộp dữ liệu nếu đang sửa task hoặc event
@@ -130,6 +134,9 @@ export class EventForm {
       placeholder: 'Nhập tên công việc...',
       required: true
     });
+    const titleLimit = isLegacyEvent ? 200 : 500;
+    const titleError = createElement('small', { role: 'alert', style: { color: 'var(--color-danger, #dc2626)' } });
+
     // 2. Tùy chọn Tự động hoàn thành & Quan trọng (ngôi sao tick)
     const checkRow = createElement('div', {
       style: {
@@ -417,6 +424,7 @@ export class EventForm {
       value: existingItem?.location || '',
       placeholder: 'Địa điểm hoặc liên kết họp (tùy chọn)...'
     });
+    const locError = createElement('small', { role: 'alert', style: { color: 'var(--color-danger, #dc2626)' } });
 
     const descInput = createElement('textarea', {
       'aria-label': 'Ghi chú chi tiết',
@@ -425,20 +433,29 @@ export class EventForm {
       placeholder: 'Ghi chú chi tiết nội dung công việc...'
     });
     descInput.value = existingItem?.note || existingItem?.description || '';
+    const noteError = createElement('small', { role: 'alert', style: { color: 'var(--color-danger, #dc2626)' } });
+    titleInput.addEventListener('input', () => { titleError.textContent = [...titleInput.value].length > titleLimit ? `Tiêu đề tối đa ${titleLimit} ký tự.` : ''; });
+    locInput.addEventListener('input', () => { locError.textContent = [...locInput.value].length > 300 ? 'Địa điểm tối đa 300 ký tự.' : ''; });
+    descInput.addEventListener('input', () => {
+      noteError.textContent = [...descInput.value].length > 5000 ? 'Ghi chú tối đa 5.000 ký tự.' : '';
+    });
 
     const formContent = createElement('div', {
       style: { display: 'flex', flexDirection: 'column', gap: '12px' }
     }, [
       createElement('div', { className: 'form-group' }, [
         createElement('label', { className: 'form-label', textContent: 'Tiêu đề *' }),
-        titleInput
+        titleInput,
+        titleError
       ]),
       checkRow,
       listAndCategoryGrid,
       scheduleBox,
       createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr', gap: '10px' } }, [
         locInput,
-        descInput
+        locError,
+        descInput,
+        noteError
       ])
     ]);
 
@@ -448,6 +465,21 @@ export class EventForm {
       if (!title) {
         Toast.error('Vui lòng nhập tiêu đề công việc.');
         titleInput.focus();
+        return;
+      }
+      if ([...title].length > titleLimit) {
+        titleError.textContent = `Tiêu đề tối đa ${titleLimit} ký tự.`;
+        titleInput.focus();
+        return;
+      }
+      if ([...locInput.value.trim()].length > 300) {
+        locError.textContent = 'Địa điểm tối đa 300 ký tự.';
+        locInput.focus();
+        return;
+      }
+      if ([...descInput.value].length > 5000) {
+        noteError.textContent = 'Ghi chú tối đa 5.000 ký tự.';
+        descInput.focus();
         return;
       }
 
@@ -498,8 +530,16 @@ export class EventForm {
         recurrence_rule: (isEdit || scheduleEnabled) ? (rruleSelect.value || null) : null
       };
 
+      if (!isEdit) {
+        const signature = JSON.stringify(taskPayload);
+        if (createAttempt?.signature !== signature) createAttempt = { signature, id: newRequestId() };
+        taskPayload.client_request_id = createAttempt.id;
+      }
       try {
         if (isEdit) {
+          const revision = existingItem.updated_at || existingItem.created_at;
+          if (!revision) throw new Error('Thiếu phiên bản dữ liệu. Hãy tải lại mục trước khi lưu.');
+          const editOptions = { headers: { 'If-Match': revision } };
           if (isLegacyEvent) {
             // Preserve the event identity and recurring occurrence; never create a task twin.
             if (!dueDateVal) throw new Error('Sự kiện phải có ngày diễn ra.');
@@ -512,15 +552,15 @@ export class EventForm {
               start_at: start, end_at: `${formatDate(endDate)}T${isAllDay ? '00:00:00' : endTimeVal}`,
               is_all_day: isAllDay, color: selectedColor, recurrence_rule: taskPayload.recurrence_rule,
               ...recurrenceContext(existingItem)
-            });
+            }, editOptions);
             Toast.success('Đã cập nhật sự kiện!');
-            modalRef.close();
+            modalRef.close(true);
             window.dispatchEvent(new CustomEvent('planify:data-changed'));
             if (onUpdated) onUpdated(updated);
           } else {
-            const updated = await api.put(`/tasks/${existingItem.id}`, taskPayload);
+            const updated = await api.put(`/tasks/${existingItem.id}`, taskPayload, editOptions);
             Toast.success('Đã lưu thay đổi!');
-            modalRef.close();
+            modalRef.close(true);
             window.dispatchEvent(new CustomEvent('planify:data-changed'));
             if (onUpdated) onUpdated(updated);
           }
@@ -530,11 +570,16 @@ export class EventForm {
             ? 'vào cột Cần làm'
             : (dueDateVal === todayStr ? 'vào cột Hôm nay & Lịch biểu' : `vào ngày ${dueDateVal}`);
           Toast.success(`Đã thêm công việc "${title}" ${placeLabel}!`);
-          modalRef.close();
+          modalRef.close(true);
           window.dispatchEvent(new CustomEvent('planify:data-changed'));
           if (onCreated) onCreated(created);
         }
       } catch (err) {
+        if (err.code === 'SCHEDULE_CANCEL') return;
+        if (err.code === 'SCHEDULE_CHANGE') {
+          (scheduleEnabled && !isAllDay ? startTimeInput : dateInput).focus();
+          return;
+        }
         Toast.error(err.message || 'Không thể lưu dữ liệu.');
       }
     };
@@ -545,7 +590,7 @@ export class EventForm {
         label: 'Xóa mục này',
         className: 'btn btn-danger',
         onClick: async () => {
-          if (!confirm(`Bạn có chắc chắn muốn xóa "${existingItem.title}" không?`)) return;
+          if (!confirmDeleteItem(existingItem, { scope: isLegacyEvent && (existingItem.recurrence_rule || existingItem.parent_event_id) ? 'this' : null })) return;
           try {
             if (isLegacyEvent) {
               await api.delete(eventDeleteUrl(existingItem));
@@ -553,7 +598,7 @@ export class EventForm {
               await api.delete(`/tasks/${existingItem.id}`);
             }
             Toast.success('Đã xóa thành công.');
-            modalRef.close();
+            modalRef.close(true);
             window.dispatchEvent(new CustomEvent('planify:data-changed'));
             if (onDeleted) onDeleted(existingItem.id);
           } catch (err) {
@@ -573,6 +618,15 @@ export class EventForm {
       content: formContent,
       footerButtons
     });
+    if (modalRef.content !== formContent) return;
+
+    const snapshot = () => JSON.stringify({
+      fields: [...formContent.querySelectorAll('input, textarea, select')].map(input => input.type === 'checkbox' ? input.checked : input.value),
+      scheduleEnabled, isAllDay, isImportant, isAutoComplete, selectedColor
+    });
+    const original = snapshot();
+    modalRef.beforeClose = () => snapshot() === original || confirm('Bạn có thay đổi chưa lưu. Bạn có muốn bỏ các thay đổi này không?');
+    modalRef.isDirty = () => snapshot() !== original;
 
     setTimeout(() => titleInput.focus(), 60);
   }

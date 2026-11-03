@@ -13,13 +13,12 @@
   /* Make 4-column Kanban wrap into a clean 2x2 grid on medium screens so columns never get squished */
   .todo-kanban-board {
     grid-template-columns: repeat(2, minmax(240px, 1fr)) !important;
-    overflow-y: auto !important;
+    overflow-y: visible !important;
     height: auto !important;
-    max-height: 100%;
+    max-height: none;
   }
   .kanban-column {
     min-height: 290px;
-    max-height: 440px;
   }
 }
 
@@ -224,6 +223,17 @@
     overflow-y: auto;
   }
 
+  .todo-list-container {
+    flex: none;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .todo-list-scroll {
+    flex: none;
+    overflow: visible;
+  }
+
   .todo-header {
     padding: 12px 14px;
     margin-bottom: 12px;
@@ -237,7 +247,7 @@
 
   .todo-kanban-board {
     grid-template-columns: 1fr !important;
-    overflow-y: auto !important;
+    overflow-y: visible !important;
     height: auto !important;
     gap: 12px;
     padding-bottom: 40px;
@@ -245,7 +255,6 @@
 
   .kanban-column {
     min-height: 200px;
-    max-height: 380px;
   }
 
   .task-detail-container {

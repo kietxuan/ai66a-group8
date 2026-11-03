@@ -1,6 +1,6 @@
 from typing import List, Optional
 from datetime import datetime
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Header, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.api.deps import get_current_user
@@ -49,12 +49,13 @@ async def get_event(
 async def update_event(
     event_id: int,
     event_in: EventUpdate,
+    if_match: Optional[str] = Header(None, alias="If-Match"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Cập nhật sự kiện (hỗ trợ scope: this | following | all)"""
     return await event_service.update_event(
-        db, event_id=event_id, user_id=current_user.id, event_in=event_in
+        db, event_id=event_id, user_id=current_user.id, event_in=event_in, expected_revision=if_match
     )
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)

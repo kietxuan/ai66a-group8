@@ -6,6 +6,8 @@ import { getMonthMatrix, isToday, isSameDay, formatDate, toLocalISOString } from
 import { EventCard } from './event-card.js';
 import { EventForm } from './event-form.js';
 import { api } from '../api.js';
+import { isScheduleDismissal } from '../utils/api-error.js';
+import { revisionOptions } from '../utils/revision.js';
 import { Toast } from '../components/toast.js';
 
 export class MonthView {
@@ -139,7 +141,7 @@ export class MonthView {
                   is_in_my_day: targetDateStr === todayStr
                 };
                 if (data.color) updatePayload.color = data.color;
-                await api.put(`/tasks/${data.id}`, updatePayload);
+                await api.put(`/tasks/${data.id}`, updatePayload, revisionOptions(data));
                 Toast.success(`Đã xếp "${data.title || 'công việc'}" vào ngày ${targetDateStr}`);
               } else {
                 const origS = data.start_at ? new Date(data.start_at) : new Date(cell.date);
@@ -152,12 +154,15 @@ export class MonthView {
               ...recurrenceContext(data),
                   start_at: toLocalISOString(newS),
                   end_at: toLocalISOString(newE)
-                });
+                }, revisionOptions(data));
                 Toast.success(`Đã dời công việc sang ngày ${targetDateStr}`);
               }
               window.dispatchEvent(new CustomEvent('planify:data-changed'));
               if (this.onRefresh) this.onRefresh();
-            } catch (_) {}
+            } catch (err) {
+              if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể dời mục trên lịch.');
+              if (this.onRefresh) this.onRefresh();
+            }
           }
         });
 
@@ -227,6 +232,8 @@ export class MonthView {
             ev.stopPropagation();
             ev.dataTransfer.setData('text/plain', JSON.stringify({
               id: item.id,
+              updated_at: (item.raw_task || item).updated_at,
+              created_at: (item.raw_task || item).created_at,
               is_task: !!item.is_task,
               ...recurrenceContext(item),
               start_at: item.start_at,

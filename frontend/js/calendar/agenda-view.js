@@ -207,7 +207,7 @@ export class AgendaView {
               onclick: async (e) => {
                 e.stopPropagation();
                 try {
-                  await toggleCalendarTaskComplete(item.id, item.is_completed);
+                  await toggleCalendarTaskComplete(item.id, item.is_completed, item.raw_task || item);
                   if (this.onRefresh) this.onRefresh();
                 } catch (err) {
                   // Handled in toggleCalendarTaskComplete

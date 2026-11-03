@@ -13,6 +13,7 @@ import { router } from './router.js';
 import { store } from './store.js';
 import { api } from './api.js';
 import { keyboardManager } from './utils/keyboard.js';
+import { initPasswordVisibility } from './utils/password-visibility.js?v=6.0.2';
 
 import { landingPage } from './pages/landing.js';
 import { authPage } from './pages/auth-page.js';
@@ -32,8 +33,9 @@ class App {
     // 1. Initialize Theme & Toast
     ThemeManager.init();
     Toast.init();
+    initPasswordVisibility();
     store.on('session-reset', () => {
-      for (const modal of [...Modal.modalStack]) modal.close();
+      for (const modal of [...Modal.modalStack]) modal.close(true);
       ContextMenu.close();
     });
 
@@ -82,6 +84,28 @@ class App {
     });
 
     window.addEventListener('planify:data-changed', () => this.refreshNavBadge());
+    const refreshVisible = () => {
+      if (!AuthManager.isAuthenticated() || document.hidden) return;
+      const route = store.get('currentRoute');
+      if (route === 'dashboard') dashboardPage.loadAndRender(document.getElementById('dashboard-root'));
+      if (route === 'todo') todoPage.fetchTasks({ preserveDetail: true, refreshLists: true });
+      if (route === 'calendar') calendarPage.updateView();
+      this.refreshNavBadge();
+    };
+    document.addEventListener('visibilitychange', refreshVisible);
+    window.addEventListener('focus', refreshVisible);
+    window.addEventListener('storage', event => {
+      if (event.key === 'planify_data_revision') refreshVisible();
+    });
+    window.addEventListener('planify:data-changed', () => {
+      try { localStorage.setItem('planify_data_revision', `${Date.now()}:${Math.random()}`); } catch (_) {}
+    });
+    window.addEventListener('beforeunload', event => {
+      if (Modal.activeModal?.isDirty?.() || document.querySelector('.todo-input')?.value.trim()) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    });
 
     const profileBadge = document.getElementById('user-profile-badge');
     if (profileBadge) {
@@ -129,9 +153,13 @@ class App {
       if (badge && Array.isArray(tasks)) {
         const count = tasks.length;
         badge.textContent = String(count);
+        badge.title = `${count} công việc chưa hoàn thành`;
         badge.classList.toggle('hidden', count === 0);
       }
-    } catch (_) {}
+    } catch (_) {
+      const badge = document.getElementById('nav-todo-badge');
+      if (badge) { badge.textContent = '!'; badge.title = 'Không tải được số công việc'; badge.classList.remove('hidden'); }
+    }
   }
 }
 

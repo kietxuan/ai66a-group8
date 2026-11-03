@@ -46,7 +46,7 @@ class DashboardSummaryMetrics(BaseModel):
     events_today_count: int = 0
     events_week_count: int = 0
     busy_hours_today: float = 0.0
-    productivity_score: int = 0
+    productivity_score: Optional[int] = None
 
 class DashboardStatsResponse(BaseModel):
     date: date

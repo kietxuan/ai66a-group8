@@ -6,6 +6,9 @@ import { store } from '../store.js';
 import { formatDate } from '../utils/date.js';
 import { soundManager } from '../utils/sound.js';
 import { EventForm } from '../calendar/event-form.js';
+import { confirmDeleteItem } from '../utils/confirm-delete.js';
+import { revisionOptions } from '../utils/revision.js';
+import { isScheduleDismissal } from '../utils/api-error.js';
 
 export class TaskDetail {
   constructor(container, { onUpdate = null, onClose = null } = {}) {
@@ -17,9 +20,15 @@ export class TaskDetail {
   }
 
   queueScheduleUpdate(taskId, updates) {
-    const save = this.scheduleSave.then(() => api.put(`/tasks/${taskId}`, updates));
+    const save = this.scheduleSave.then(() => this.putTask(taskId, updates));
     this.scheduleSave = save.catch(() => {});
     return save;
+  }
+
+  async putTask(taskId, updates) {
+    const result = await api.put(`/tasks/${taskId}`, updates, revisionOptions(this.task));
+    if (this.task?.id === taskId && result?.updated_at) this.task.updated_at = result.updated_at;
+    return result;
   }
 
   show(task) {
@@ -92,18 +101,23 @@ export class TaskDetail {
       className: 'flex items-center gap-sm',
       style: { marginBottom: '14px' }
     });
+    const titleError = createElement('small', { role: 'alert', style: { color: 'var(--color-danger, #dc2626)' } });
 
     const checkbox = createElement('div', {
       className: 'task-checkbox',
       onclick: async () => {
-        const nextState = !t.is_completed;
-        if (nextState) {
-          soundManager.playTaskComplete();
+        try {
+          const nextState = !t.is_completed;
+          const updated = await api.patch(`/tasks/${t.id}/complete`, { is_completed: nextState }, revisionOptions(t));
+          if (updated?.updated_at) t.updated_at = updated.updated_at;
+          t.is_completed = nextState;
+          if (nextState) soundManager.playTaskComplete();
+          this.render();
+          this.notifyChanged('complete');
+        } catch (err) {
+          if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể cập nhật trạng thái.');
+          if (this.onUpdate) this.onUpdate();
         }
-        await api.patch(`/tasks/${t.id}/complete`, { is_completed: nextState });
-        t.is_completed = nextState;
-        this.render();
-        this.notifyChanged('complete');
       }
     }, [
       t.is_completed ? createElement('span', { style: { color: '#fff', fontSize: '12px' }, textContent: '✓' }) : null
@@ -114,12 +128,18 @@ export class TaskDetail {
       className: 'input flex-1',
       value: t.title,
       style: { fontWeight: '700', textDecoration: t.is_completed ? 'line-through' : 'none' },
+      oninput: () => { titleError.textContent = [...titleInput.value].length > 500 ? 'Tiêu đề tối đa 500 ký tự.' : ''; },
       onchange: async () => {
         const val = titleInput.value.trim();
+        if ([...val].length > 500) { titleError.textContent = 'Tiêu đề tối đa 500 ký tự.'; return; }
         if (val) {
-          await api.put(`/tasks/${t.id}`, { title: val });
-          t.title = val;
-          this.notifyChanged('update');
+          try {
+            await this.putTask(t.id, { title: val });
+            t.title = val;
+            this.notifyChanged('update');
+          } catch (err) {
+            titleError.textContent = err.message || 'Không thể lưu tiêu đề.';
+          }
         }
       }
     });
@@ -130,17 +150,24 @@ export class TaskDetail {
       title: 'Đánh dấu Quan trọng',
       innerHTML: t.is_important ? '&#9733;' : '&#9734;',
       onclick: async () => {
-        const nextState = !t.is_important;
-        await api.patch(`/tasks/${t.id}/important`, { is_important: nextState });
-        t.is_important = nextState;
-        this.render();
-        this.notifyChanged('important');
+        try {
+          const nextState = !t.is_important;
+          const updated = await api.patch(`/tasks/${t.id}/important`, { is_important: nextState }, revisionOptions(t));
+          if (updated?.updated_at) t.updated_at = updated.updated_at;
+          t.is_important = nextState;
+          this.render();
+          this.notifyChanged('important');
+        } catch (err) {
+          Toast.error(err.message || 'Không thể cập nhật quan trọng.');
+          if (this.onUpdate) this.onUpdate();
+        }
       }
     });
 
     titleRow.appendChild(checkbox);
     titleRow.appendChild(titleInput);
     titleRow.appendChild(starBtn);
+    titleRow.appendChild(titleError);
 
 
 
@@ -197,6 +224,7 @@ export class TaskDetail {
         style: { width: '24px', height: '24px', fontSize: '12px' },
         innerHTML: '&times;',
         onclick: async () => {
+          if (!confirmDeleteItem({ title: step.title })) return;
           await api.delete(`/tasks/${t.id}/steps/${step.id}`);
           t.steps = t.steps.filter(s => s.id !== step.id);
           this.render();
@@ -292,7 +320,8 @@ export class TaskDetail {
           markScheduleChanged();
         } catch (err) {
           e.target.value = t.due_date ? String(t.due_date).slice(0, 10) : '';
-          Toast.error('Không thể lưu ngày thực hiện');
+          if (err.code === 'SCHEDULE_CHANGE') e.target.focus();
+          if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể lưu ngày thực hiện');
         }
       }
     });
@@ -333,7 +362,8 @@ export class TaskDetail {
               markScheduleChanged();
             } catch (err) {
               e.target.value = t.start_time ? String(t.start_time).substring(0, 5) : '';
-              Toast.error('Không thể lưu giờ bắt đầu');
+              if (err.code === 'SCHEDULE_CHANGE') e.target.focus();
+              if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể lưu giờ bắt đầu');
             }
           }
         })
@@ -353,7 +383,8 @@ export class TaskDetail {
               markScheduleChanged();
             } catch (err) {
               e.target.value = t.end_time ? String(t.end_time).substring(0, 5) : '';
-              Toast.error('Không thể lưu giờ kết thúc');
+              if (err.code === 'SCHEDULE_CHANGE') e.target.focus();
+              if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể lưu giờ kết thúc');
             }
           }
         })
@@ -404,7 +435,8 @@ export class TaskDetail {
               markScheduleChanged();
             } catch (err) {
               e.target.checked = !nextAllDay;
-              Toast.error('Không thể cập nhật chế độ cả ngày');
+              if (err.code === 'SCHEDULE_CHANGE') dueInput.focus();
+              if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể cập nhật chế độ cả ngày');
             }
           }
         }),
@@ -426,7 +458,7 @@ export class TaskDetail {
         className: 'select',
         onchange: async (e) => {
           const val = parseInt(e.target.value, 10);
-          await api.put(`/tasks/${t.id}`, { list_id: val });
+          await this.putTask(t.id, { list_id: val });
           t.list_id = val;
           this.notifyChanged('list_move');
         }
@@ -439,6 +471,7 @@ export class TaskDetail {
     actionsGroup.appendChild(listRow);
 
     // 6. Notes textarea
+    const notesError = createElement('small', { role: 'alert', style: { color: 'var(--color-danger, #dc2626)' } });
     const notesSection = createElement('div', {
       className: 'form-group',
       style: { marginBottom: '16px' }
@@ -449,12 +482,24 @@ export class TaskDetail {
         rows: 3,
         placeholder: 'Thêm ghi chú chi tiết...',
         value: t.note || '',
+        oninput: e => { notesError.textContent = [...e.target.value].length > 5000 ? 'Ghi chú tối đa 5.000 ký tự.' : ''; },
         onchange: async (e) => {
           const val = e.target.value.trim() || null;
-          await api.put(`/tasks/${t.id}`, { note: val });
-          t.note = val;
+          if (val && [...val].length > 5000) {
+            notesError.textContent = 'Ghi chú tối đa 5.000 ký tự.';
+            return;
+          }
+          notesError.textContent = '';
+          try {
+            await this.putTask(t.id, { note: val });
+            t.note = val;
+            this.notifyChanged('note', { preserveDetail: true });
+          } catch (err) {
+            notesError.textContent = err.message || 'Không thể lưu ghi chú.';
+          }
         }
-      })
+      }),
+      notesError
     ]);
 
     // 7. Delete Button
@@ -464,7 +509,7 @@ export class TaskDetail {
       style: { width: '100%' },
       textContent: '🗑️ Xóa mục này',
       onclick: async () => {
-        if (confirm(`Bạn có chắc chắn muốn xóa "${t.title}"?`)) {
+        if (confirmDeleteItem(t)) {
           await api.delete(`/tasks/${t.id}`);
           Toast.success('Đã xóa thành công.');
           this.notifyChanged('delete');

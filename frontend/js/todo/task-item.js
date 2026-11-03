@@ -3,6 +3,8 @@ import { createElement } from '../utils/dom.js';
 import { isToday, formatDate } from '../utils/date.js';
 import { soundManager } from '../utils/sound.js';
 import { ContextMenu } from '../components/contextmenu.js';
+import { confirmDeleteItem } from '../utils/confirm-delete.js';
+import { revisionOptions } from '../utils/revision.js';
 import { EventForm } from '../calendar/event-form.js';
 import { api } from '../api.js';
 import { Toast } from '../components/toast.js';
@@ -118,11 +120,15 @@ export class TaskItem {
             if (ke.key === 'Enter') {
               const newVal = inlineInput.value.trim();
               if (newVal && newVal !== task.title) {
-                await api.put(`/tasks/${task.id}`, { title: newVal });
-                task.title = newVal;
-                Toast.success('Đã cập nhật tên công việc!');
-                window.dispatchEvent(new CustomEvent('planify:data-changed'));
-                if (onUpdated) onUpdated();
+                try {
+                  await api.put(`/tasks/${task.id}`, { title: newVal }, revisionOptions(task));
+                  task.title = newVal;
+                  Toast.success('Đã cập nhật tên công việc!');
+                  window.dispatchEvent(new CustomEvent('planify:data-changed'));
+                  if (onUpdated) onUpdated();
+                } catch (err) {
+                  Toast.error(err.message || 'Không thể đổi tên công việc.');
+                }
               } else {
                 titleEl.style.display = '';
                 inlineInput.remove();
@@ -307,7 +313,7 @@ export class TaskItem {
           icon: '☀️',
           label: 'Chuyển vào cột Hôm nay',
           onClick: async () => {
-            await api.put(`/tasks/${task.id}`, { due_date: todayStr, is_completed: false, is_in_my_day: true });
+            await api.put(`/tasks/${task.id}`, { due_date: todayStr, is_completed: false, is_in_my_day: true }, revisionOptions(task));
             Toast.success('Đã chuyển vào cột Hôm nay!');
             window.dispatchEvent(new CustomEvent('planify:data-changed'));
             if (onUpdated) onUpdated();
@@ -317,7 +323,7 @@ export class TaskItem {
           icon: '🌤️',
           label: 'Dời sang Ngày mai (Cột Cần làm)',
           onClick: async () => {
-            await api.put(`/tasks/${task.id}`, { due_date: tomorrowStr, is_completed: false });
+            await api.put(`/tasks/${task.id}`, { due_date: tomorrowStr, is_completed: false }, revisionOptions(task));
             Toast.success('Đã dời lịch sang Ngày mai (Cột Cần làm)!');
             window.dispatchEvent(new CustomEvent('planify:data-changed'));
             if (onUpdated) onUpdated();
@@ -334,7 +340,7 @@ export class TaskItem {
               end_time: null,
               is_all_day: true,
               is_completed: false
-            });
+            }, revisionOptions(task));
             Toast.success('Đã đặt làm Vĩnh viễn trong cột Cần làm!');
             window.dispatchEvent(new CustomEvent('planify:data-changed'));
             if (onUpdated) onUpdated();
@@ -346,8 +352,7 @@ export class TaskItem {
           label: 'Xóa mục này',
           danger: true,
           onClick: async () => {
-            const when = task.due_date ? ` (${task.due_date}${task.start_time ? ` ${String(task.start_time).slice(0, 5)}` : ''})` : '';
-            if (!confirm(`Bạn có chắc chắn muốn xóa "${task.title}"${when}?`)) return;
+            if (!confirmDeleteItem(task)) return;
             await api.delete(`/tasks/${task.id}`);
             Toast.success('Đã xóa thành công');
             window.dispatchEvent(new CustomEvent('planify:data-changed'));

@@ -2,6 +2,8 @@ import { toLocalISOString } from '../utils/date.js';
 import { api } from '../api.js';
 import { store } from '../store.js';
 import { Toast } from '../components/toast.js';
+import { isScheduleDismissal } from '../utils/api-error.js';
+import { revisionOptions } from '../utils/revision.js';
 
 /**
  * Adapts Unified Tasks (with due_date) into Calendar items.
@@ -66,10 +68,10 @@ export function adaptTasksForCalendar(tasks = []) {
   return (tasks || []).map(adaptTaskForCalendar).filter(Boolean);
 }
 
-export async function toggleCalendarTaskComplete(taskId, currentStatus) {
+export async function toggleCalendarTaskComplete(taskId, currentStatus, task = null) {
   try {
     const nextStatus = !currentStatus;
-    const updated = await api.patch(`/tasks/${taskId}/complete`, { is_completed: nextStatus });
+    const updated = await api.patch(`/tasks/${taskId}/complete`, { is_completed: nextStatus }, revisionOptions(task));
 
     const tasks = store.get('tasks') || [];
     const idx = tasks.findIndex(t => t.id === taskId);
@@ -88,7 +90,7 @@ export async function toggleCalendarTaskComplete(taskId, currentStatus) {
     Toast.success(nextStatus ? 'Đã hoàn thành!' : 'Đã mở lại công việc.');
     return updated;
   } catch (err) {
-    Toast.error('Lỗi khi cập nhật trạng thái');
+    if (!isScheduleDismissal(err)) Toast.error(err.message || 'Lỗi khi cập nhật trạng thái');
     throw err;
   }
 }

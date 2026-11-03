@@ -1010,13 +1010,8 @@ export const settingsPage = {
           Toast.error("Vui lòng điền đủ mật khẩu cũ và mới.");
           return;
         }
-        if (
-          newPassInput.value.length < 8 ||
-          new TextEncoder().encode(newPassInput.value).length > 72
-        ) {
-          Toast.error(
-            "Mật khẩu mới phải có ít nhất 8 ký tự và không quá 72 bytes UTF-8.",
-          );
+        if ([...newPassInput.value].length < 8 || new TextEncoder().encode(newPassInput.value).length > 72) {
+          Toast.error('Mật khẩu mới phải có ít nhất 8 ký tự và không quá 72 bytes UTF-8.');
           return;
         }
         try {

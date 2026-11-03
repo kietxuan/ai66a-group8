@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Date, Time, ForeignKey, Text, func
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Date, Time, ForeignKey, Text, Index, func
 from sqlalchemy.orm import relationship
+from datetime import datetime, timezone
 from app.core.database import Base
 
 class TaskList(Base):
@@ -24,9 +25,11 @@ class TaskList(Base):
 
 class Task(Base):
     __tablename__ = "tasks"
+    __table_args__ = (Index("uq_tasks_user_request", "user_id", "client_request_id", unique=True),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    client_request_id = Column(String(36), nullable=True)
     list_id = Column(Integer, ForeignKey("task_lists.id", ondelete="CASCADE"), nullable=False, index=True)
 
     title = Column(String(500), nullable=False)
@@ -58,7 +61,7 @@ class Task(Base):
     position = Column(Integer, default=0, nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships

@@ -15,10 +15,11 @@ export class Modal {
     onCancel = null,
     width = '540px',
     onClose = null,
-    allowStack = false
+    allowStack = false,
+    guardUnsaved = false
   } = {}) {
     if (!allowStack && Modal.activeModal) {
-      Modal.activeModal.close();
+      if (Modal.activeModal.close() === false) return Modal.activeModal;
     }
 
     let footerEl = footer;
@@ -74,7 +75,7 @@ export class Modal {
               if (onConfirm) {
                 const result = await onConfirm();
                 if (result !== false) {
-                  modal.close();
+                  modal.close(true);
                 }
               } else {
                 modal.close();
@@ -91,6 +92,13 @@ export class Modal {
 
     const modal = new Modal({ title, content, footer: footerEl, width, onClose });
     modal.open();
+    if (guardUnsaved) {
+      const fields = [...modal.backdrop.querySelectorAll('.modal-body input, .modal-body textarea, .modal-body select')];
+      const snapshot = () => JSON.stringify(fields.map(input => input.type === 'checkbox' ? input.checked : input.value));
+      const initial = snapshot();
+      modal.isDirty = () => snapshot() !== initial;
+      modal.beforeClose = () => !modal.isDirty() || confirm('Bạn có thay đổi chưa lưu. Bạn có muốn bỏ các thay đổi này không?');
+    }
     return modal;
   }
 
@@ -191,7 +199,8 @@ export class Modal {
     }
   }
 
-  close() {
+  close(force = false) {
+    if (!force && typeof this.beforeClose === 'function' && this.beforeClose() === false) return false;
     if (this.backdrop && this.backdrop.parentNode) {
       this.backdrop.parentNode.removeChild(this.backdrop);
       this.backdrop = null;
@@ -203,5 +212,6 @@ export class Modal {
     if (typeof this.onClose === 'function') {
       this.onClose();
     }
+    return true;
   }
 }

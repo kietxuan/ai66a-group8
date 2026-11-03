@@ -43,7 +43,10 @@ export class ContextMenu {
           e.preventDefault();
           e.stopPropagation();
           ContextMenu.close();
-          if (typeof item.onClick === 'function') item.onClick();
+          if (typeof item.onClick === 'function') Promise.resolve().then(() => item.onClick()).catch(err => {
+            if (err.code === 'SCHEDULE_CANCEL' || err.code === 'SCHEDULE_CHANGE') return;
+            import('./toast.js').then(({ Toast }) => Toast.error(err.message || 'Không thể thực hiện thao tác.'));
+          });
         }
       }, [
         item.icon ? createElement('span', { className: 'dropdown-icon', textContent: item.icon }) : null,

@@ -55,14 +55,15 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if isinstance(exc.detail, dict) and isinstance(exc.detail.get("code"), str):
+        error = {**exc.detail, "message": str(exc.detail.get("message") or "Yêu cầu không thể thực hiện.")}
+    else:
+        error = {"code": "HTTP_EXCEPTION", "message": exc.detail}
     return JSONResponse(
         status_code=exc.status_code,
         content={
             "success": False,
-            "error": {
-                "code": "HTTP_EXCEPTION",
-                "message": exc.detail
-            }
+            "error": error
         }
     )
 

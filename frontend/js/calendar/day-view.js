@@ -8,6 +8,8 @@ import { EventCard } from './event-card.js';
 import { isSameDay, formatDate, toLocalISOString } from '../utils/date.js';
 import { layoutTimedItems } from './week-view.js';
 import { api } from '../api.js';
+import { isScheduleDismissal } from '../utils/api-error.js';
+import { revisionOptions } from '../utils/revision.js';
 import { Toast } from '../components/toast.js';
 
 export class DayView {
@@ -259,6 +261,8 @@ export class DayView {
       e.stopPropagation();
       const dragPayload = {
         id: el.item.id,
+        updated_at: (el.item.raw_task || el.item).updated_at,
+        created_at: (el.item.raw_task || el.item).created_at,
         is_task: !!el.item.is_task,
               ...recurrenceContext(el.item),
         durationMinutes: (new Date(el.item.end_at) - new Date(el.item.start_at)) / 60000,
@@ -336,7 +340,7 @@ export class DayView {
             await api.put(`/tasks/${el.item.id}`, {
               end_time: `${String(newEnd.getHours()).padStart(2, '0')}:${String(newEnd.getMinutes()).padStart(2, '0')}:00`,
               duration_minutes: finalDurationMins
-            });
+            }, revisionOptions(el.item));
             Toast.success(`Đã cập nhật thời lượng: ${finalDurationMins} phút`);
             window.dispatchEvent(new CustomEvent('planify:data-changed', {
               detail: { source: 'calendar-day', action: 'resize', type: 'task', id: el.item.id }
@@ -349,7 +353,7 @@ export class DayView {
               ...recurrenceContext(el.item),
               start_at: toLocalISOString(startAt),
               end_at: toLocalISOString(newEnd)
-            });
+            }, revisionOptions(el.item));
             Toast.success(`Đã cập nhật thời lượng: ${finalDurationMins} phút`);
             window.dispatchEvent(new CustomEvent('planify:data-changed', {
               detail: { source: 'calendar-day', action: 'resize', type: 'event', id: el.item.id }
@@ -357,7 +361,7 @@ export class DayView {
           }
           if (this.onRefresh) this.onRefresh();
         } catch (err) {
-          Toast.error(err.message || 'Lỗi khi cập nhật thời lượng.');
+          if (!isScheduleDismissal(err)) Toast.error(err.message || 'Lỗi khi cập nhật thời lượng.');
           if (this.onRefresh) this.onRefresh();
         }
       };
@@ -415,7 +419,7 @@ export class DayView {
             duration_minutes: duration
           };
           if (data.color) updatePayload.color = data.color;
-          await api.put(`/tasks/${data.id}`, updatePayload);
+          await api.put(`/tasks/${data.id}`, updatePayload, revisionOptions(data));
           Toast.success(`Đã xếp công việc vào ${formatDate(newStart, 'HH:mm')}`);
           window.dispatchEvent(new CustomEvent('planify:data-changed', {
             detail: { source: 'calendar-day', action: 'move', type: 'task', id: data.id }
@@ -428,7 +432,7 @@ export class DayView {
               ...recurrenceContext(data),
             start_at: toLocalISOString(newStart),
             end_at: toLocalISOString(newEnd)
-          });
+          }, revisionOptions(data));
           Toast.success(`Đã dời công việc sang ${formatDate(newStart, 'HH:mm')}`);
           window.dispatchEvent(new CustomEvent('planify:data-changed', {
             detail: { source: 'calendar-day', action: 'move', type: 'event', id: data.id }
@@ -436,7 +440,7 @@ export class DayView {
         }
         if (this.onRefresh) this.onRefresh();
       } catch (err) {
-        Toast.error(err.message || 'Lỗi khi cập nhật thời gian.');
+        if (!isScheduleDismissal(err)) Toast.error(err.message || 'Lỗi khi cập nhật thời gian.');
       }
     });
   }

@@ -74,11 +74,15 @@ class TaskBase(BaseModel):
     recurrence_rule: Optional[str] = Field(None, max_length=500)
 
 class TaskCreate(TaskBase, InputValidation):
+    note: Optional[str] = Field(None, max_length=5000)
     steps: Optional[List[TaskStepCreate]] = None
+    allow_overlap: bool = False
+    client_request_id: Optional[str] = Field(None, max_length=36)
 
 class TaskUpdate(InputValidation):
+    allow_overlap: bool = False
     title: Optional[str] = Field(None, max_length=500)
-    note: Optional[str] = None
+    note: Optional[str] = Field(None, max_length=5000)
     location: Optional[str] = Field(None, max_length=300)
     list_id: Optional[int] = None
     is_completed: Optional[bool] = None

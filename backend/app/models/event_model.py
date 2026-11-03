@@ -1,12 +1,15 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, func
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Index, func
 from sqlalchemy.orm import relationship
+from datetime import datetime, timezone
 from app.core.database import Base
 
 class Event(Base):
     __tablename__ = "events"
+    __table_args__ = (Index("uq_events_user_request", "user_id", "client_request_id", unique=True),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    client_request_id = Column(String(36), nullable=True)
     calendar_id = Column(Integer, ForeignKey("calendars.id", ondelete="CASCADE"), nullable=False, index=True)
 
     title = Column(String(200), nullable=False)
@@ -29,7 +32,7 @@ class Event(Base):
     original_start = Column(DateTime(timezone=True), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = relationship("User", back_populates="events")

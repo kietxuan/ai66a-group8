@@ -4,7 +4,7 @@ export function isValidEmail(email) {
 }
 
 export function isValidPassword(password, minLength = 8) {
-  return typeof password === 'string' && password.length >= Math.max(8, minLength) && new TextEncoder().encode(password).length <= 72;
+  return typeof password === 'string' && [...password].length >= Math.max(8, minLength) && new TextEncoder().encode(password).length <= 72;
 }
 
 export function sanitizeText(text) {

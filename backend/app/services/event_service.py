@@ -1,6 +1,6 @@
-from app.services.write_lock import serialized_write
+from app.services.write_lock import serialized_write, lock_owner
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
@@ -41,6 +41,10 @@ class EventService:
 
     @serialized_write
     async def create_event(self, db: AsyncSession, user_id: int, event_in: EventCreate) -> Event:
+        if event_in.client_request_id:
+            existing = (await db.execute(select(Event.id).where(Event.user_id == user_id, Event.client_request_id == event_in.client_request_id))).scalar_one_or_none()
+            if existing:
+                return await event_crud.get_with_reminders(db, existing)
         # If calendar_id not specified, assign default calendar
         if not event_in.calendar_id:
             default_cal = await calendar_crud.get_default(db, user_id)
@@ -61,8 +65,16 @@ class EventService:
                     event_in.calendar_id = new_cal.id
 
         await self._check_calendar(db, event_in.calendar_id, user_id)
+        await lock_owner(db, user_id)
+        if event_in.client_request_id:
+            existing = (await db.execute(select(Event.id).where(Event.user_id == user_id, Event.client_request_id == event_in.client_request_id))).scalar_one_or_none()
+            if existing:
+                return await event_crud.get_with_reminders(db, existing)
         if event_in.end_at <= event_in.start_at:
             raise HTTPException(422, "Kết thúc phải sau bắt đầu.")
+        if not event_in.is_all_day:
+            from app.services.schedule_conflict import check_overlap
+            await check_overlap(db, user_id, event_in.start_at, event_in.end_at, allowed=event_in.allow_overlap, rule=event_in.recurrence_rule, recurrence_end=event_in.recurrence_end)
 
         return await event_crud.create(db, user_id=user_id, obj_in=event_in)
 
@@ -72,9 +84,12 @@ class EventService:
         db: AsyncSession,
         event_id: int,
         user_id: int,
-        event_in: EventUpdate
+        event_in: EventUpdate,
+        expected_revision: Optional[str] = None
     ) -> Event:
         event = await self.get_event_by_id(db, event_id, user_id)
+        from app.services.revision import require_current_revision
+        require_current_revision(event, expected_revision)
         scope = event_in.scope or "this"
         if "calendar_id" in event_in.model_fields_set:
             await self._check_calendar(db, event_in.calendar_id, user_id)
@@ -95,6 +110,16 @@ class EventService:
         end = event_in.end_at or (start + (event.end_at - event.start_at))
         if end <= start:
             raise HTTPException(422, "Kết thúc phải sau bắt đầu.")
+        schedule_changed = bool({"start_at", "end_at", "is_all_day", "recurrence_rule", "recurrence_end", "is_cancelled"} & event_in.model_fields_set)
+        remains_cancelled = event_in.is_cancelled if event_in.is_cancelled is not None else event.is_cancelled
+        if schedule_changed and not remains_cancelled and not (event_in.is_all_day if event_in.is_all_day is not None else event.is_all_day):
+            from app.services.schedule_conflict import check_overlap
+            proposed_rule = event_in.recurrence_rule if 'recurrence_rule' in event_in.model_fields_set else event.recurrence_rule
+            # Editing one instance must not check hypothetical repeats of that exception.
+            if event.recurrence_rule and scope == 'this':
+                proposed_rule = None
+            proposed_end = event_in.recurrence_end if 'recurrence_end' in event_in.model_fields_set else event.recurrence_end
+            await check_overlap(db, user_id, start, end, exclude=("event", event.id), allowed=event_in.allow_overlap, rule=proposed_rule, recurrence_end=proposed_end)
         if event_in.start_at and "end_at" not in event_in.model_fields_set:
             event_in = event_in.model_copy(update={"end_at": end})
 
@@ -132,6 +157,7 @@ class EventService:
             for rem in reminders_to_add:
                 db.add(EventReminder(event_id=exception_event.id, minutes_before=rem.minutes_before))
 
+            event.updated_at = datetime.now(timezone.utc)
             await db.commit()
             return await event_crud.get_with_reminders(db, exception_event.id)
 

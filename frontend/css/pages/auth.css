@@ -171,6 +171,10 @@
   font-size: 15px;
 }
 
+.auth-card .password-field .input {
+  padding-right: 44px;
+}
+
 .auth-card .input::placeholder {
   color: var(--color-text-tertiary);
   opacity: 0.75;
