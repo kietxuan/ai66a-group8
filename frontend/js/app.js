@@ -132,20 +132,9 @@ class App {
   }
 
   static async refreshNavBadge() {
-    if (!AuthManager.isAuthenticated()) return;
-    try {
-      const tasks = await api.get('/tasks', { is_completed: false });
-      const badge = document.getElementById('nav-todo-badge');
-      if (badge && Array.isArray(tasks)) {
-        const count = tasks.length;
-        badge.textContent = String(count);
-        badge.title = `${count} công việc chưa hoàn thành`;
-        badge.classList.toggle('hidden', count === 0);
-      }
-    } catch (_) {
-      const badge = document.getElementById('nav-todo-badge');
-      if (badge) { badge.textContent = '!'; badge.title = 'Không tải được số công việc'; badge.classList.remove('hidden'); }
-    }
+    // Badge on To Do nav item has been removed as requested
+    const badge = document.getElementById('nav-todo-badge');
+    if (badge) badge.classList.add('hidden');
   }
 }
 

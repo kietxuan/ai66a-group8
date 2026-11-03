@@ -12,9 +12,9 @@ const DASHBOARD_FALLBACK_CSS = `
 .dashboard-page { width:100%; height:100%; overflow-y:auto; overflow-x:hidden; padding:22px 26px 48px; display:flex; flex-direction:column; gap:20px; background-color:var(--color-bg-primary); }
 .dashboard-page > * { flex-shrink: 0; }
 .dash-hero-banner { background:linear-gradient(135deg,#4F46E5 0%,#2563EB 55%,#0EA5E9 100%); border-radius:18px; padding:24px 28px; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:24px; box-shadow:0 12px 28px -8px rgba(37,99,235,0.38); }
-.dash-hero-left { display:flex; flex-direction:column; gap:6px; max-width:680px; }
+.dash-hero-left { display:flex; flex-direction:column; gap:6px; max-width:860px; flex:1; }
 .dash-hero-greeting { font-size:24px; font-weight:800; color:#fff; margin:0; }
-.dash-hero-subtitle { font-size:13.5px; color:rgba(255,255,255,0.92); line-height:1.55; margin:0; }
+.dash-hero-subtitle { font-size:13.5px; color:rgba(255,255,255,0.92); line-height:1.55; margin:0; text-wrap:pretty; }
 .dash-hero-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
 .btn-dash-white { background:#fff; color:#1E40AF; font-weight:700; font-size:13px; padding:9px 16px; border-radius:10px; border:none; cursor:pointer; }
 .btn-dash-glass { background:rgba(255,255,255,0.18); color:#fff; font-weight:600; font-size:13px; padding:9px 15px; border-radius:10px; border:1px solid rgba(255,255,255,0.32); cursor:pointer; }
@@ -47,7 +47,10 @@ const DASHBOARD_FALLBACK_CSS = `
 .eisenhower-quadrant { background:var(--color-bg-secondary); border:1px solid var(--color-border-light); border-radius:12px; padding:12px 14px; display:flex; flex-direction:column; gap:8px; min-height:110px; }
 .eisenhower-q-header { display:flex; align-items:center; justify-content:space-between; font-size:12.5px; font-weight:800; }
 .eisenhower-q-list { display:flex; flex-direction:column; gap:6px; }
-.eisenhower-task-pill { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px; background:var(--color-surface); border:1px solid var(--color-border-light); font-size:12.5px; }
+.eisenhower-task-pill { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px; background:var(--color-surface); border:1px solid var(--color-border-light); font-size:12.5px; transition:all 0.25s ease; }
+.eisenhower-task-pill.dash-completing { opacity:0; transform:scale(0.96); }
+.eisenhower-task-pill.dash-completing .dash-task-title { text-decoration:line-through; color:var(--color-text-tertiary); }
+.dash-kpi-badge { font-size:13px; font-weight:700; padding:4px 10px; border-radius:8px; }
 .dash-task-complete { width:22px; height:22px; border:1.5px solid var(--color-text-tertiary); border-radius:50%; background:transparent; cursor:pointer; flex-shrink:0; }
 .dash-task-complete:hover, .dash-task-complete:focus-visible { border-color:var(--color-primary); outline:2px solid var(--color-primary); outline-offset:2px; }
 .dash-task-complete:disabled { cursor:wait; opacity:0.5; }
@@ -89,7 +92,10 @@ export const dashboardPage = {
     });
     container.appendChild(page);
 
-    this.dataChangedHandler = () => this.loadAndRender(page);
+    this.dataChangedHandler = (event) => {
+      if (event?.detail?.source === "dashboard-complete") return;
+      this.loadAndRender(page, { silent: true });
+    };
     window.addEventListener("planify:data-changed", this.dataChangedHandler);
     document.addEventListener("task-changed", this.dataChangedHandler);
     this.themeListener = store.on("theme", () => {
@@ -110,17 +116,68 @@ export const dashboardPage = {
     await this.loadAndRender(page);
   },
 
-  async loadAndRender(pageEl) {
+  getTrendSnapshotKey() {
+    const userId = store.get("user")?.id || "default";
+    return `planify_dashboard_trend_snapshot_${userId}`;
+  },
+
+  mergeWithSnapshot(weeklyTrend) {
+    if (!Array.isArray(weeklyTrend) || weeklyTrend.length === 0) return weeklyTrend;
+    const key = this.getTrendSnapshotKey();
+    let snapshot = {};
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) snapshot = JSON.parse(raw);
+    } catch (_) {}
+
+    const minDate = weeklyTrend[0]?.date;
+
+    // 1. Cập nhật snapshot với dữ liệu hiện tại (bảo toàn giá trị max từng đạt được)
+    weeklyTrend.forEach((item) => {
+      const d = item.date;
+      const prev = snapshot[d] || { due_tasks: 0, overdue_tasks: 0, completed_tasks: 0 };
+      snapshot[d] = {
+        due_tasks: Math.max(prev.due_tasks || 0, item.due_tasks || 0),
+        overdue_tasks: Math.max(prev.overdue_tasks || 0, item.overdue_tasks || 0),
+        completed_tasks: Math.max(prev.completed_tasks || 0, item.completed_tasks || 0),
+      };
+    });
+
+    // 2. Tự động dọn dẹp sau 7 ngày: Xóa các ngày trong snapshot cũ hơn ngày đầu của biểu đồ
+    Object.keys(snapshot).forEach((dateStr) => {
+      if (minDate && dateStr < minDate) {
+        delete snapshot[dateStr];
+      }
+    });
+
+    try {
+      localStorage.setItem(key, JSON.stringify(snapshot));
+    } catch (_) {}
+
+    // 3. Hợp nhất vào weeklyTrend để hiển thị biểu đồ
+    return weeklyTrend.map((item) => {
+      const snap = snapshot[item.date] || {};
+      return {
+        ...item,
+        due_tasks: Math.max(item.due_tasks || 0, snap.due_tasks || 0),
+        overdue_tasks: Math.max(item.overdue_tasks || 0, snap.overdue_tasks || 0),
+        completed_tasks: Math.max(item.completed_tasks || 0, snap.completed_tasks || 0),
+      };
+    });
+  },
+
+  async loadAndRender(pageEl, { silent = false } = {}) {
     if (!pageEl) return;
     const generation = (this.generation = (this.generation || 0) + 1);
-    this.stats = null;
-    pageEl.replaceChildren(
-      createElement("div", {
-        className: "dash-panel-card",
-        role: "status",
-        textContent: "Đang tải thống kê…",
-      }),
-    );
+    if (!silent && !this.stats) {
+      pageEl.replaceChildren(
+        createElement("div", {
+          className: "dash-panel-card",
+          role: "status",
+          textContent: "Đang tải thống kê…",
+        }),
+      );
+    }
     try {
       const stats = await api.get("/dashboard/stats");
       if (generation !== this.generation || !this.container) return;
@@ -137,30 +194,35 @@ export const dashboardPage = {
       this.stats = stats;
     } catch (err) {
       if (generation !== this.generation || !this.container) return;
-      this.stats = null;
-      pageEl.innerHTML = "";
-      pageEl.appendChild(
-        createElement(
-          "div",
-          {
-            className: "dash-panel-card",
-            role: "alert",
-            textContent: `Không tải được dữ liệu Dashboard: ${err.message || "Lỗi không xác định."}`,
-          },
-          [
-            createElement("button", {
-              type: "button",
-              className: "btn btn-primary",
-              textContent: "Thử lại",
-              onclick: () => this.loadAndRender(pageEl),
-            }),
-          ],
-        ),
-      );
-      return;
+      if (!this.stats) {
+        pageEl.innerHTML = "";
+        pageEl.appendChild(
+          createElement(
+            "div",
+            {
+              className: "dash-panel-card",
+              role: "alert",
+              textContent: `Không tải được dữ liệu Dashboard: ${err.message || "Lỗi không xác định."}`,
+            },
+            [
+              createElement("button", {
+                type: "button",
+                className: "btn btn-primary",
+                textContent: "Thử lại",
+                onclick: () => this.loadAndRender(pageEl),
+              }),
+            ],
+          ),
+        );
+        return;
+      }
     }
     if (generation !== this.generation || !this.container) return;
+    const scrollPos = pageEl.scrollTop;
     this.renderContent(pageEl, this.stats);
+    if (scrollPos > 0) {
+      pageEl.scrollTop = scrollPos;
+    }
   },
 
   drawScoreRingCanvas(canvas, score) {
@@ -235,7 +297,7 @@ export const dashboardPage = {
     const maxVal = Math.max(
       4,
       ...trendItems.map((i) =>
-        Math.max(i.completed_tasks || 0, i.events_count || 0, i.due_tasks || 0),
+        Math.max(i.due_tasks || 0, i.overdue_tasks || 0, i.completed_tasks || 0),
       ),
     );
 
@@ -282,10 +344,11 @@ export const dashboardPage = {
       const centerX = padLeft + idx * groupW + groupW / 2;
       const startX = centerX - (barW * 3 + 6) / 2;
 
+      // Thứ tự lần lượt: Số công việc trong ngày -> Quá hạn (Màu đỏ) -> Đã làm xong (Xanh lá)
       const series = [
-        { val: item.completed_tasks || 0, color: "#10B981" },
-        { val: item.events_count || 0, color: "#6366F1" },
         { val: item.due_tasks || 0, color: "#F59E0B" },
+        { val: item.overdue_tasks || 0, color: "#EF4444" },
+        { val: item.completed_tasks || 0, color: "#10B981" },
       ];
 
       series.forEach((ser, sIdx) => {
@@ -406,12 +469,12 @@ export const dashboardPage = {
           }),
           createElement("p", {
             className: "dash-hero-subtitle",
-            textContent: `Hôm nay bạn có ${todayColumnCount} công việc / sự kiện trong cột Hôm nay, ${s.overdue_count || 0} việc quá hạn và đã hoàn thành ${s.completion_rate || 0}% tổng khối lượng công việc.`,
+            textContent: `Hôm nay bạn có ${todayColumnCount} công việc trong cột Hôm nay, ${s.overdue_count || 0} việc quá hạn và đã hoàn thành ${s.completion_rate || 0}% khối lượng công\u00A0việc.`,
           }),
           createElement("div", { className: "dash-hero-actions" }, [
             createElement("button", {
               className: "btn-dash-white",
-              textContent: "＋ Tạo Công việc / Sự kiện mới",
+              textContent: "＋ Tạo Công việc",
               onclick: () =>
                 EventForm.showFullModal({
                   hasDate: false,
@@ -420,7 +483,7 @@ export const dashboardPage = {
             }),
             createElement("button", {
               className: "btn-dash-glass",
-              textContent: "📋 Mở Bảng Kanban Chung",
+              textContent: "📋 Mở Bảng Quản Lý Chung",
               onclick: () => {
                 store.set("activeTodoList", "board");
                 window.location.hash = "#todo";
@@ -465,36 +528,36 @@ export const dashboardPage = {
       {
         bg: "rgba(99, 102, 241, 0.15)",
         color: "#6366F1",
+        title: "Cần làm",
         value: `${needToDoCount}`,
-        badge: "Cột Cần làm",
-        label: "Việc cần làm & tương lai",
+        label: "Việc cần làm sắp tới",
       },
       {
         bg: "rgba(245, 158, 11, 0.15)",
         color: "#F59E0B",
+        title: "Hôm nay",
         value: `${todayColumnCount}`,
-        badge: "Cột Hôm nay",
-        label: "Công việc & Sự kiện hôm nay",
+        label: "Công việc & sự kiện hôm nay",
       },
       {
         bg: "rgba(239, 68, 68, 0.15)",
         color: "#EF4444",
+        title: "Quá hạn",
         value: `${s.overdue_count || 0}`,
-        badge: s.overdue_count > 0 ? "Cần xử lý" : "Tốt",
-        label: "Công việc quá hạn",
+        label: s.overdue_count > 0 ? "Cần xử lý ngay" : "Không có việc quá hạn",
       },
       {
         bg: "rgba(16, 185, 129, 0.15)",
         color: "#10B981",
-        value: `${s.completed_tasks || 0}/${s.total_tasks || 0}`,
-        badge: `${s.completion_rate || 0}%`,
-        label: "Đã hoàn thành",
+        title: "Đã hoàn thành",
+        value: `${s.completed_tasks || 0}`,
+        label: `Trên tổng số ${s.total_tasks || 0} việc (${s.completion_rate || 0}%)`,
       },
       {
         bg: "rgba(236, 72, 153, 0.15)",
         color: "#EC4899",
+        title: "Quan trọng",
         value: `${s.important_pending_count || 0}`,
-        badge: "Quan trọng",
         label: "Việc quan trọng chưa xong",
       },
     ];
@@ -508,7 +571,7 @@ export const dashboardPage = {
             createElement("span", {
               className: "dash-kpi-badge",
               style: { backgroundColor: k.bg, color: k.color },
-              textContent: k.badge,
+              textContent: k.title,
             }),
           ]),
           createElement("div", {
@@ -524,9 +587,8 @@ export const dashboardPage = {
     );
 
     // 3. CHARTS ROW
-    const trendItems = Array.isArray(data?.weekly_trend)
-      ? data.weekly_trend
-      : [];
+    const rawTrend = Array.isArray(data?.weekly_trend) ? data.weekly_trend : [];
+    const trendItems = this.mergeWithSnapshot(rawTrend);
 
     const barCanvas = createElement("canvas", { id: "dash-weekly-bar-canvas" });
     const barChartCard = createElement(
@@ -542,30 +604,30 @@ export const dashboardPage = {
             createElement("p", {
               className: "dash-panel-subtitle",
               textContent:
-                "So sánh mục đã hoàn thành, sự kiện và công việc theo từng ngày",
+                "So sánh việc trong ngày, quá hạn và đã làm xong theo từng ngày",
             }),
           ]),
           createElement("div", { className: "dash-bar-legend" }, [
             createElement("div", { className: "dash-legend-item" }, [
               createElement("span", {
                 className: "dash-legend-dot",
-                style: { backgroundColor: "#10B981" },
-              }),
-              createElement("span", { textContent: "Hoàn thành" }),
-            ]),
-            createElement("div", { className: "dash-legend-item" }, [
-              createElement("span", {
-                className: "dash-legend-dot",
-                style: { backgroundColor: "#6366F1" },
-              }),
-              createElement("span", { textContent: "Sự kiện" }),
-            ]),
-            createElement("div", { className: "dash-legend-item" }, [
-              createElement("span", {
-                className: "dash-legend-dot",
                 style: { backgroundColor: "#F59E0B" },
               }),
               createElement("span", { textContent: "Việc trong ngày" }),
+            ]),
+            createElement("div", { className: "dash-legend-item" }, [
+              createElement("span", {
+                className: "dash-legend-dot",
+                style: { backgroundColor: "#EF4444" },
+              }),
+              createElement("span", { textContent: "Quá hạn" }),
+            ]),
+            createElement("div", { className: "dash-legend-item" }, [
+              createElement("span", {
+                className: "dash-legend-dot",
+                style: { backgroundColor: "#10B981" },
+              }),
+              createElement("span", { textContent: "Đã làm xong" }),
             ]),
           ]),
         ]),
@@ -586,7 +648,7 @@ export const dashboardPage = {
     const donutSegments = [
       {
         key: "todo",
-        label: "Cần làm (Tương lai / Vĩnh viễn)",
+        label: "Cần làm",
         count: needToDoCount,
         color: "#6366F1",
       },
@@ -691,7 +753,7 @@ export const dashboardPage = {
         items: overdueTasks.slice(0, 4),
       },
       {
-        title: "Việc cần làm (Sắp tới / Vĩnh viễn)",
+        title: "Việc cần làm sắp tới",
         color: "#6366F1",
         items: (data?.tasks_todo || []).slice(0, 4),
       },
@@ -753,6 +815,8 @@ export const dashboardPage = {
                               const button = event.currentTarget;
                               if (button.disabled) return;
                               button.disabled = true;
+                              const pill = button.closest(".eisenhower-task-pill");
+                              if (pill) pill.classList.add("dash-completing");
                               try {
                                 await api.patch(
                                   `/tasks/${t.id}/complete`,
@@ -761,10 +825,12 @@ export const dashboardPage = {
                                 );
                                 soundManager.playTaskComplete();
                                 Toast.success(`Đã hoàn thành: "${t.title}"`);
+                                await this.loadAndRender(pageEl, { silent: true });
                                 window.dispatchEvent(
-                                  new CustomEvent("planify:data-changed"),
+                                  new CustomEvent("planify:data-changed", { detail: { source: "dashboard-complete" } }),
                                 );
                               } catch (err) {
+                                if (pill) pill.classList.remove("dash-completing");
                                 Toast.error(
                                   err.message ||
                                     "Không thể cập nhật công việc.",
@@ -775,7 +841,7 @@ export const dashboardPage = {
                             },
                           }),
                           createElement("span", {
-                            className: "truncate flex-1",
+                            className: "dash-task-title truncate flex-1",
                             textContent: t.title,
                           }),
                         ],

@@ -167,6 +167,16 @@ async def get_dashboard_stats(
             if t.is_completed and t.completed_at and t.completed_at.astimezone(BUSINESS_TZ).date() == d
         )
         due_cnt = sum(1 for t in all_tasks if t.due_date == d)
+        if d == today:
+            overdue_cnt = len(overdue_tasks)
+        else:
+            overdue_cnt = sum(
+                1 for t in all_tasks
+                if t.due_date == d and (
+                    (not t.is_completed) or 
+                    (t.completed_at and t.completed_at.astimezone(BUSINESS_TZ).date() > d)
+                )
+            )
         ev_day = [e for e in active_events if e.start_at.date() == d]
         ev_cnt = len(ev_day)
 
@@ -183,6 +193,7 @@ async def get_dashboard_stats(
             label=date_label,
             completed_tasks=comp_cnt,
             due_tasks=due_cnt,
+            overdue_tasks=overdue_cnt,
             events_count=ev_cnt,
             busy_hours=round(day_hours, 1)
         ))

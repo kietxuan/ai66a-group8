@@ -18,6 +18,7 @@ class DailyTrendItem(BaseModel):
     label: str
     completed_tasks: int = 0
     due_tasks: int = 0
+    overdue_tasks: int = 0
     events_count: int = 0
     busy_hours: float = 0.0
 
