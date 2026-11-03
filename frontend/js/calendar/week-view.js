@@ -589,13 +589,15 @@ export class WeekView {
 
       try {
         if (data.is_task) {
-          await api.put(`/tasks/${data.id}`, {
+          const updatePayload = {
             due_date: formatDate(newStart, 'YYYY-MM-DD'),
             start_time: `${String(newHour).padStart(2, '0')}:${String(newMin).padStart(2, '0')}:00`,
             end_time: `${String(newEnd.getHours()).padStart(2, '0')}:${String(newEnd.getMinutes()).padStart(2, '0')}:00`,
             is_all_day: false,
             duration_minutes: duration
-          }, revisionOptions(data));
+          };
+          if (data.color) updatePayload.color = data.color;
+          await api.put(`/tasks/${data.id}`, updatePayload, revisionOptions(data));
           Toast.success(`Đã xếp công việc vào ${formatDate(newStart, 'HH:mm')}`);
           window.dispatchEvent(new CustomEvent('planify:data-changed', {
             detail: { source: 'calendar-week', action: 'move', type: 'task', id: data.id }
@@ -609,7 +611,7 @@ export class WeekView {
             start_at: toLocalISOString(newStart),
             end_at: toLocalISOString(newEnd)
           }, revisionOptions(data));
-          Toast.success(`Đã dời sự kiện sang ${formatDate(newStart, 'HH:mm')}`);
+          Toast.success(`Đã dời công việc sang ${formatDate(newStart, 'HH:mm')}`);
           window.dispatchEvent(new CustomEvent('planify:data-changed', {
             detail: { source: 'calendar-week', action: 'move', type: 'event', id: data.id }
           }));

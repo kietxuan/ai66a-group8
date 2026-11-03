@@ -183,7 +183,7 @@ export class ChatPanel {
     this.messagesListEl.innerHTML = '';
     const welcomeEl = ChatMessage.create({
       role: 'assistant',
-      content: 'Xin chào! 👋 Tôi là Planify AI. Tôi có thể giúp bạn quản lý sự kiện trên lịch, tạo công việc cần làm, đặt lời nhắc và tối ưu hóa thời gian.\n\nBạn có thể thử các nút gợi ý phía dưới hoặc nhập câu hỏi trực tiếp!',
+      content: 'Xin chào! 👋 Tôi là Planify AI. Tôi có thể giúp bạn quản lý công việc trên lịch, đặt lời nhắc và tối ưu hóa thời gian.\n\nBạn có thể thử các nút gợi ý phía dưới hoặc nhập câu hỏi trực tiếp!',
       toolCalls: []
     });
     this.messagesListEl.appendChild(welcomeEl);

@@ -201,6 +201,8 @@
   color: var(--color-text-secondary);
   background-color: var(--color-bg-tertiary);
   transition: all var(--transition-fast);
+  font-size: 18px;
+  line-height: 1;
 }
 
 .theme-toggle-btn:hover {
@@ -208,16 +210,16 @@
   color: var(--color-text-primary);
 }
 
-[data-theme="light"] .theme-icon-dark {
+[data-theme="light"] .theme-icon-light {
   display: inline-block;
 }
-[data-theme="light"] .theme-icon-light {
+[data-theme="light"] .theme-icon-dark {
   display: none;
 }
-[data-theme="dark"] .theme-icon-light {
+[data-theme="dark"] .theme-icon-dark {
   display: inline-block;
 }
-[data-theme="dark"] .theme-icon-dark {
+[data-theme="dark"] .theme-icon-light {
   display: none;
 }
 

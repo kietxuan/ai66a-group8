@@ -46,8 +46,8 @@ export const landingPage = {
         themeButton.setAttribute('aria-pressed', ThemeManager.getSavedTheme() === 'dark' ? 'true' : 'false');
       }
     }, [
-      createElement('span', { className: 'landing-theme-icon-light', textContent: '☾', 'aria-hidden': 'true' }),
-      createElement('span', { className: 'landing-theme-icon-dark', textContent: '☀', 'aria-hidden': 'true' })
+      createElement('span', { className: 'landing-theme-icon-light', textContent: '☀', 'aria-hidden': 'true' }),
+      createElement('span', { className: 'landing-theme-icon-dark', textContent: '☾', 'aria-hidden': 'true' })
     ]);
 
     const header = createElement('header', { className: 'landing-navbar' }, [

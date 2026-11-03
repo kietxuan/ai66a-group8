@@ -6,7 +6,7 @@ from app.services.recurrence import parse_rule
 
 
 class InputValidation(BaseModel):
-    @field_validator("is_completed", "is_important", "is_in_my_day", "is_all_day", "auto_complete", "is_visible", "notify_enabled", "position", "duration_minutes", "notify_minutes_before", check_fields=False)
+    @field_validator("email", "is_completed", "is_important", "is_in_my_day", "is_all_day", "auto_complete", "is_visible", "notify_enabled", "position", "duration_minutes", "notify_minutes_before", check_fields=False)
     @classmethod
     def not_null(cls, value):
         if value is None:

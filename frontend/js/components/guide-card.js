@@ -88,33 +88,17 @@ export class GuideCard {
         createElement('div', { className: 'guide-col-title', textContent: '✋ Kéo thả & Thời lượng' }),
         createElement('ul', {}, [
           createElement('li', { textContent: 'Kéo thẻ di chuyển: Thay đổi khung giờ làm việc hoặc chuyển sang ngày khác.' }),
-          createElement('li', { textContent: 'Kéo cạnh dưới: Tăng hoặc giảm thời lượng sự kiện/việc làm trực tiếp.' }),
-          createElement('li', { textContent: 'Sự kiện lặp lại: Tự động hiển thị qua mọi tuần/tháng theo chu kỳ.' })
+          createElement('li', { textContent: 'Kéo cạnh dưới: Tăng hoặc giảm thời lượng công việc trực tiếp.' }),
+          createElement('li', { textContent: 'Công việc lặp lại: Tự động hiển thị qua mọi tuần/tháng theo chu kỳ.' })
         ])
       ]),
 
-      // Col 3: Shortcuts & Time-blocking
+      // Col 3: Time-blocking
       createElement('div', { className: 'guide-col' }, [
-        createElement('div', { className: 'guide-col-title', textContent: '⌨️ Phím tắt & Khung giờ' }),
+        createElement('div', { className: 'guide-col-title', textContent: '📌 Quản lý & Khung giờ' }),
         createElement('ul', {}, [
-          createElement('li', {}, [
-            createElement('span', { className: 'guide-kbd', textContent: 'D' }),
-            createElement('span', { textContent: ' Ngày | ' }),
-            createElement('span', { className: 'guide-kbd', textContent: 'W' }),
-            createElement('span', { textContent: ' Tuần | ' }),
-            createElement('span', { className: 'guide-kbd', textContent: 'M' }),
-            createElement('span', { textContent: ' Tháng | ' }),
-            createElement('span', { className: 'guide-kbd', textContent: 'A' }),
-            createElement('span', { textContent: ' Lịch trình' })
-          ]),
-          createElement('li', {}, [
-            createElement('span', { className: 'guide-kbd', textContent: 'T' }),
-            createElement('span', { textContent: ' Hôm nay | ' }),
-            createElement('span', { className: 'guide-kbd', textContent: 'C' }),
-            createElement('span', { textContent: ' Tạo lịch | ' }),
-            createElement('span', { className: 'guide-kbd', textContent: '?' }),
-            createElement('span', { textContent: ' Trợ giúp phím tắt' })
-          ]),
+          createElement('li', { textContent: 'Chuyển đổi linh hoạt giữa các chế độ xem Lịch Tháng, Tuần, Ngày và Lịch trình.' }),
+          createElement('li', { textContent: 'Nút "Hôm nay" giúp bạn lập tức quay trở lại ngày hiện tại trên Lịch biểu.' }),
           createElement('li', { textContent: 'Việc cần làm có cài đặt Giờ sẽ xuất hiện trực tiếp trên khung giờ lịch biểu.' })
         ])
       ])

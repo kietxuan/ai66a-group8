@@ -13,6 +13,7 @@ class CRUDEvent(CRUDBase[Event]):
             select(Event)
             .options(selectinload(Event.reminders))
             .where(Event.id == event_id)
+            .execution_options(populate_existing=True)
         )
         result = await db.execute(stmt)
         return result.scalars().first()

@@ -53,7 +53,24 @@ class UserService:
 
         return new_user
 
-    async def update_profile(self, db: AsyncSession, current_user: User, user_in: UserUpdate) -> User:
+    async def update_profile(self, db: AsyncSession, current_user: User, user_in: UserUpdate, redis = None) -> User:
+        if user_in.email and user_in.email != current_user.email:
+            existing = await user_crud.get_by_email(db, email=user_in.email)
+            if existing and existing.id != current_user.id:
+                raise UserErrors.EMAIL_ALREADY_EXISTS.throw()
+
+            from app.helper.otp import verify_action_token
+            from app.services.auth_service import auth_service
+            from fastapi import HTTPException
+            if redis is None:
+                raise HTTPException(503, "Dịch vụ xác minh email chưa sẵn sàng.")
+            proof = user_in.verified_token
+            if not proof and user_in.otp and redis:
+                proof = await auth_service.verify_otp_email(user_in.email, "verify-email", user_in.otp, redis)
+            if not proof:
+                raise UserErrors.OTP_REQUIRED.throw()
+            await verify_action_token(user_in.email, "verify-email", proof, redis)
+
         return await user_crud.update_profile(db, user=current_user, obj_in=user_in)
 
     async def change_password(self, db: AsyncSession, current_user: User, password_in: PasswordChange) -> None:

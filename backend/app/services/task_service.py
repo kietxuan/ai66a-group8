@@ -104,7 +104,6 @@ class TaskService:
                 return await task_crud.get_with_steps(db, existing)
         task_in = self._validate_schedule(task_in)
         from app.services.schedule_conflict import check_task_overlap
-        await check_task_overlap(db, user_id, task_in, allowed=task_in.allow_overlap)
         if not task_in.list_id:
             default_list = await task_list_crud.get_default(db, user_id)
             if default_list:
@@ -128,6 +127,7 @@ class TaskService:
             existing = (await db.execute(select(Task.id).where(Task.user_id == user_id, Task.client_request_id == task_in.client_request_id))).scalar_one_or_none()
             if existing:
                 return await task_crud.get_with_steps(db, existing)
+        await check_task_overlap(db, user_id, task_in, allowed=task_in.allow_overlap)
         task = await task_crud.create(db, user_id=user_id, obj_in=task_in)
         await self.evaluate_auto_complete(db, [task])
         return task
@@ -154,8 +154,9 @@ class TaskService:
         for key in ("due_time", "start_time", "end_time", "duration_minutes", "is_all_day"):
             payload[key] = getattr(validated, key)
         from app.services.schedule_conflict import check_task_overlap
-        schedule_changed = bool({"due_date", "due_time", "start_time", "end_time", "duration_minutes", "is_all_day"} & task_in.model_fields_set)
-        if completed is not True and (schedule_changed or completed is False):
+        schedule_changed = bool({"due_date", "due_time", "start_time", "end_time", "duration_minutes", "is_all_day", "recurrence_rule"} & task_in.model_fields_set)
+        remains_completed = task.is_completed if completed is None else completed
+        if not remains_completed and (schedule_changed or completed is False):
             await check_task_overlap(db, user_id, validated, exclude=("task", task_id), allowed=allow_overlap)
         task_in = TaskUpdate(**payload)
         updated = await task_crud.update(db, db_obj=task, obj_in=task_in)
@@ -201,7 +202,7 @@ class TaskService:
                 next_rrule = self._decrement_count_in_rrule(task.recurrence_rule)
                 new_task_in = TaskCreate(
                     title=task.title,
-                    note=task.note,
+                    note=None,
                     location=getattr(task, "location", None),
                     list_id=task.list_id,
                     is_important=task.is_important,
@@ -219,6 +220,7 @@ class TaskService:
                     recurrence_rule=next_rrule,
                     steps=[TaskStepCreate(title=s.title, position=s.position) for s in task.steps]
                 )
+                new_task_in = new_task_in.model_copy(update={"note": task.note})
                 await task_crud.create(db, user_id=user_id, obj_in=new_task_in, commit=False, recurrence_source_id=task.id)
 
         await db.flush()

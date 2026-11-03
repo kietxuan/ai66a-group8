@@ -46,10 +46,11 @@ export class EventForm {
   } = {}) {
     if (Modal.activeModal?.beforeClose && Modal.activeModal.close() === false) return;
     let modalRef = null;
+    let createAttempt = null;
+    const userId = store.get('user')?.id;
 
     // Gộp dữ liệu nếu đang sửa task hoặc event
     const existingItem = task || event || null;
-    const clientRequestId = newRequestId();
     const isEdit = Boolean(existingItem && existingItem.id);
     const isLegacyEvent = Boolean(existingItem && existingItem.start_at && !existingItem.list_id && !existingItem._isTask);
 
@@ -58,10 +59,20 @@ export class EventForm {
     if (!taskLists.length) {
       try {
         taskLists = await api.get('/task-lists') || [];
+        if (store.get('user')?.id !== userId) return;
         store.set('taskLists', taskLists);
       } catch (_) {}
     }
 
+    if (!store.get('categories')) {
+      try {
+        const catRes = await api.get('/categories');
+        if (store.get('user')?.id !== userId) return;
+        store.set('categories', Array.isArray(catRes) ? catRes : (catRes?.data || []));
+      } catch (_) {}
+    }
+
+    if (store.get('user')?.id !== userId) return;
     // Trạng thái ban đầu của các trường
     let selectedColor = existingItem?.color || '#4F46E5';
     let isImportant = Boolean(existingItem?.is_important);
@@ -102,7 +113,7 @@ export class EventForm {
         initialEndTime = formatDate(eDt, 'HH:mm');
         isAllDay = Boolean(existingItem.is_all_day);
       }
-    } else if (hasDate || fromCalendarSlot) {
+    } else {
       scheduleEnabled = Boolean(hasDate || fromCalendarSlot);
       if (startAt) {
         const sDt = new Date(startAt);
@@ -115,229 +126,176 @@ export class EventForm {
 
     // 1. Tiêu đề
     const titleInput = createElement('input', {
-      'aria-label': 'Tiêu đề Công việc / Sự kiện',
+      'aria-label': 'Tiêu đề Công việc',
       type: 'text',
       className: 'input',
       style: { fontSize: '15px', fontWeight: '700', padding: '11px 14px' },
       value: existingItem?.title || '',
-      placeholder: 'Nhập tên việc cần làm hoặc sự kiện (VD: Họp dự án, Tập thể dục...)',
+      placeholder: 'Nhập tên công việc...',
       required: true
     });
     const titleLimit = isLegacyEvent ? 200 : 500;
     const titleError = createElement('small', { role: 'alert', style: { color: 'var(--color-danger, #dc2626)' } });
 
-    // 2. Chế độ Hoàn thành (Tích thủ công vs Tự động hoàn thành khi hết giờ) & Quan trọng (⭐)
-    const modeRow = createElement('div', {
+    // 2. Tùy chọn Tự động hoàn thành & Quan trọng (ngôi sao tick)
+    const checkRow = createElement('div', {
       style: {
-        display: 'grid',
-        gridTemplateColumns: '1.5fr 1fr',
-        gap: '10px'
-      }
-    });
-
-    const autoCompleteCard = createElement('div', {
-      style: {
-        padding: '11px 13px',
-        borderRadius: '12px',
-        border: '1.5px solid var(--color-border)',
-        background: 'var(--color-bg-secondary)',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '10px',
-        transition: 'all 0.15s ease'
-      }
-    });
-
-    const autoCheck = createElement('input', {
-      'aria-label': 'Sự kiện (Tự động hoàn thành)',
-      type: 'checkbox',
-      checked: isAutoComplete,
-      style: { width: '17px', height: '17px', marginTop: '2px', accentColor: 'var(--color-primary)', cursor: 'pointer' }
-    });
-
-    const autoLabelDesc = createElement('div', { style: { fontSize: '11.5px', color: 'var(--color-text-secondary)', marginTop: '2px', lineHeight: '1.4' } });
-    const updateAutoUI = () => {
-      autoCheck.checked = isAutoComplete;
-      if (isAutoComplete) {
-        autoCompleteCard.style.borderColor = 'var(--color-primary)';
-        autoCompleteCard.style.background = 'var(--color-primary-light)';
-        autoLabelDesc.textContent = 'Tự động sang cột Hoàn thành sau khi hết thời gian. Nếu diễn ra hôm nay sẽ nằm ở cột Hôm nay.';
-      } else {
-        autoCompleteCard.style.borderColor = 'var(--color-border)';
-        autoCompleteCard.style.background = 'var(--color-bg-secondary)';
-        autoLabelDesc.textContent = 'Mặc định: Phải tích chọn thủ công mới hoàn thành.';
-      }
-    };
-
-    autoCompleteCard.onclick = (e) => {
-      if (e.target !== autoCheck) {
-        isAutoComplete = !isAutoComplete;
-      } else {
-        isAutoComplete = autoCheck.checked;
-      }
-      updateAutoUI();
-    };
-
-    autoCompleteCard.appendChild(autoCheck);
-    autoCompleteCard.appendChild(createElement('div', { style: { flex: '1' } }, [
-      createElement('div', { style: { fontSize: '13px', fontWeight: '800', color: 'var(--color-text-primary)' }, textContent: '⚡ Sự kiện (Tự động hoàn thành)' }),
-      autoLabelDesc
-    ]));
-    updateAutoUI();
-
-    const importantCard = createElement('div', {
-      role: 'checkbox', tabindex: '0', 'aria-label': 'Quan trọng',
-      onkeydown: e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); importantCard.click(); }
-      },
-      style: {
-        padding: '11px 13px',
-        borderRadius: '12px',
-        border: '1.5px solid var(--color-border)',
-        background: 'var(--color-bg-secondary)',
-        cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
-        gap: '10px',
-        transition: 'all 0.15s ease'
+        gap: '24px',
+        padding: '2px 0'
       }
     });
 
-    const starIcon = createElement('span', { style: { fontSize: '22px', lineHeight: '1' } });
-    const updateImportantUI = () => {
-      importantCard.setAttribute('aria-checked', String(isImportant));
-      if (isImportant) {
-        starIcon.textContent = '⭐';
-        importantCard.style.borderColor = '#F59E0B';
-        importantCard.style.background = 'rgba(245, 158, 11, 0.12)';
-      } else {
-        starIcon.textContent = '☆';
-        importantCard.style.borderColor = 'var(--color-border)';
-        importantCard.style.background = 'var(--color-bg-secondary)';
+    const autoCompleteCheck = createElement('input', {
+      type: 'checkbox',
+      checked: isAutoComplete,
+      style: { width: '16px', height: '16px', accentColor: 'var(--color-primary)', cursor: 'pointer' },
+      onchange: (e) => { isAutoComplete = e.target.checked; }
+    });
+
+    const autoCompleteLabel = createElement('label', {
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '8px',
+        fontSize: '13px',
+        fontWeight: '600',
+        color: 'var(--color-text-primary)',
+        cursor: 'pointer',
+        userSelect: 'none'
       }
-    };
-    importantCard.onclick = () => {
-      isImportant = !isImportant;
-      updateImportantUI();
-    };
-    importantCard.appendChild(starIcon);
-    importantCard.appendChild(createElement('div', {}, [
-      createElement('div', { style: { fontSize: '13px', fontWeight: '800', color: 'var(--color-text-primary)' }, textContent: 'Quan trọng' }),
-      createElement('div', { style: { fontSize: '11.5px', color: 'var(--color-text-secondary)' }, textContent: 'Hiện dấu ⭐ trên thẻ việc' })
-    ]));
-    updateImportantUI();
+    }, [autoCompleteCheck, createElement('span', { textContent: 'Tự động hoàn thành' })]);
 
-    modeRow.appendChild(autoCompleteCard);
-    modeRow.appendChild(importantCard);
+    const importantCheck = createElement('input', {
+      type: 'checkbox',
+      checked: isImportant,
+      style: { display: 'none' }
+    });
 
-    // 3. Danh sách lưu trữ & Màu sắc thẻ
+    const starIcon = createElement('span', {
+      style: {
+        fontSize: '18px',
+        lineHeight: '1',
+        color: isImportant ? '#F59E0B' : 'var(--color-text-muted)',
+        transition: 'color 0.15s ease',
+        userSelect: 'none'
+      },
+      textContent: isImportant ? '⭐' : '☆'
+    });
+
+    const importantLabel = createElement('label', {
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        fontSize: '13px',
+        fontWeight: '600',
+        color: isImportant ? '#D97706' : 'var(--color-text-primary)',
+        cursor: 'pointer',
+        userSelect: 'none'
+      }
+    }, [
+      importantCheck,
+      starIcon,
+      createElement('span', { textContent: 'Quan trọng' })
+    ]);
+
+    importantCheck.onchange = (e) => {
+      isImportant = e.target.checked;
+      starIcon.textContent = isImportant ? '⭐' : '☆';
+      starIcon.style.color = isImportant ? '#F59E0B' : 'var(--color-text-muted)';
+      importantLabel.style.color = isImportant ? '#D97706' : 'var(--color-text-primary)';
+    };
+
+    checkRow.appendChild(autoCompleteLabel);
+    checkRow.appendChild(importantLabel);
+
+    // 3. Thuộc danh sách & Phân loại
     const listSelect = createElement('select', { className: 'input', 'aria-label': 'Thuộc danh sách' });
     const targetListId = existingItem?.list_id || defaultListId || (taskLists[0]?.id ?? '');
     if (taskLists.length === 0) {
-      listSelect.appendChild(createElement('option', { value: '', textContent: '📝 Công việc cá nhân (Mặc định)' }));
+      listSelect.appendChild(createElement('option', { value: '', textContent: 'Công việc cá nhân' }));
     } else {
       taskLists.forEach(lst => {
         const opt = createElement('option', {
           value: String(lst.id),
-          textContent: `${lst.icon || '📝'} ${lst.name}`
+          textContent: lst.name
         });
         if (String(lst.id) === String(targetListId)) opt.selected = true;
         listSelect.appendChild(opt);
       });
     }
 
-    const colorRow = createElement('div', {
-      style: { display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap', marginTop: '4px' }
-    });
-    const customColorInput = createElement('input', {
-      type: 'color',
-      value: selectedColor,
-      title: 'Tùy chỉnh mã màu bất kỳ',
-      style: {
-        width: '28px',
-        height: '28px',
-        padding: '0',
-        border: '2px solid var(--color-border)',
-        borderRadius: '50%',
-        cursor: 'pointer',
-        background: 'transparent'
+    const categorySelect = createElement('select', { className: 'input', 'aria-label': 'Phân loại' });
+    const userCategories = store.get('categories') || [];
+    const unclassifiedOpt = createElement('option', { value: '', textContent: 'Chưa phân loại' });
+    unclassifiedOpt.dataset.color = '';
+    categorySelect.appendChild(unclassifiedOpt);
+
+    const categoriesList = userCategories.length > 0
+      ? userCategories.map(c => ({ name: c.name, color: c.color }))
+      : [
+          { name: 'Công việc', color: '#3B82F6' },
+          { name: 'Cá nhân', color: '#10B981' },
+          { name: 'Dự án', color: '#F97316' },
+          { name: 'Khẩn cấp', color: '#EF4444' },
+          { name: 'Học tập', color: '#8B5CF6' }
+        ];
+
+    categoriesList.forEach(cat => {
+      const opt = createElement('option', { value: cat.name, textContent: cat.name });
+      opt.dataset.color = cat.color;
+      if (existingItem?.color && String(existingItem.color).toLowerCase() === String(cat.color).toLowerCase()) {
+        opt.selected = true;
+      } else if (existingItem?.category && String(existingItem.category).toLowerCase() === String(cat.name).toLowerCase()) {
+        opt.selected = true;
       }
+      categorySelect.appendChild(opt);
     });
 
-    const updateSwatches = () => {
-      colorRow.querySelectorAll('.unified-color-swatch').forEach(sw => {
-        const active = sw.dataset.color.toLowerCase() === selectedColor.toLowerCase();
-        sw.style.transform = active ? 'scale(1.18)' : 'scale(1)';
-        sw.style.boxShadow = active ? `0 0 0 2px var(--color-surface), 0 0 0 4px ${selectedColor}` : 'none';
-      });
+    categorySelect.onchange = () => {
+      const selectedOpt = categorySelect.options[categorySelect.selectedIndex];
+      const catColor = selectedOpt?.dataset?.color;
+      if (catColor) {
+        selectedColor = catColor;
+      } else if (!categorySelect.value) {
+        selectedColor = null;
+      }
     };
 
-    PRESET_COLORS.forEach(c => {
-      const swatch = createElement('button', {
-        type: 'button',
-        className: 'unified-color-swatch',
-        'aria-label': `Chọn màu ${c}`,
-        dataset: { color: c },
-        style: {
-          width: '24px',
-          height: '24px',
-          borderRadius: '50%',
-          backgroundColor: c,
-          border: 'none',
-          cursor: 'pointer',
-          transition: 'all 0.15s ease'
-        },
-        onclick: () => {
-          selectedColor = c;
-          customColorInput.value = c;
-          updateSwatches();
-        }
-      });
-      colorRow.appendChild(swatch);
-    });
-    customColorInput.oninput = (e) => {
-      selectedColor = e.target.value;
-      updateSwatches();
-    };
-    colorRow.appendChild(customColorInput);
-    updateSwatches();
-
-    const listAndColorGrid = createElement('div', {
-      style: { display: 'grid', gridTemplateColumns: '1fr 1.15fr', gap: '12px', alignItems: 'end' }
+    const listAndCategoryGrid = createElement('div', {
+      style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }
     }, [
       createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: '📁 Thuộc danh sách' }),
+        createElement('label', { className: 'form-label', textContent: 'Thuộc danh sách' }),
         listSelect
       ]),
       createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: '🎨 Màu sắc thẻ & lịch' }),
-        colorRow
+        createElement('label', { className: 'form-label', textContent: 'Phân loại' }),
+        categorySelect
       ])
     ]);
-
-    // 4. Khối Thời gian & Lịch biểu (Mặc định tắt để vĩnh viễn / kéo thả vào lịch)
+    // 4. Khối Thời gian (Mặc định không cài đặt)
     const scheduleBox = createElement('div', {
       style: {
-        padding: '13px 14px',
-        borderRadius: '12px',
+        padding: '12px 14px',
+        borderRadius: '8px',
         background: 'var(--color-bg-secondary)',
         border: '1px solid var(--color-border-light)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px'
+        gap: '10px'
       }
     });
 
     const scheduleHeader = createElement('div', {
-      style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }
+      style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }
     });
 
-    const scheduleStatusText = createElement('div', {
-      style: { fontSize: '13px', fontWeight: '800', color: 'var(--color-text-primary)' }
-    });
-    const scheduleSubText = createElement('div', {
-      style: { fontSize: '11.5px', color: 'var(--color-text-secondary)', marginTop: '2px' }
+    const scheduleLabel = createElement('span', {
+      style: { fontSize: '13px', fontWeight: '700', color: 'var(--color-text-primary)' },
+      textContent: 'Thời gian'
     });
 
     const toggleScheduleBtn = createElement('button', {
@@ -349,112 +307,53 @@ export class EventForm {
       }
     });
 
-    scheduleHeader.appendChild(createElement('div', {}, [scheduleStatusText, scheduleSubText]));
+    scheduleHeader.appendChild(scheduleLabel);
     scheduleHeader.appendChild(toggleScheduleBtn);
 
-    const scheduleFieldsWrap = createElement('div', {
-      style: { display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '8px', borderTop: '1px dashed var(--color-border)' }
+    // Lưới 4 ô: 2 ô trên, 2 ô dưới
+    // 2 ô bên trái: Ngày (trên) & Chu kỳ lặp lại (dưới)
+    // 2 ô bên phải: Giờ bắt đầu (trên) & Giờ kết thúc (dưới)
+    const scheduleFieldsGrid = createElement('div', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '10px 14px',
+        paddingTop: '8px',
+        borderTop: '1px solid var(--color-border-light)'
+      }
     });
 
+    // 1. Ô trái trên: Ngày
     const dateInput = createElement('input', {
-      'aria-label': 'Ngày thực hiện',
+      'aria-label': 'Ngày',
       type: 'date',
       className: 'input',
       value: initialDateStr
     });
 
-    const quickDateBar = createElement('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap' } }, [
-      createElement('button', {
-        type: 'button',
-        className: 'btn btn-secondary btn-xs',
-        textContent: '☀️ Hôm nay',
-        onclick: () => { dateInput.value = formatDate(businessNow(), 'YYYY-MM-DD'); }
-      }),
-      createElement('button', {
-        type: 'button',
-        className: 'btn btn-secondary btn-xs',
-        textContent: '🌤️ Ngày mai',
-        onclick: () => {
-          const d = businessNow();
-          d.setDate(d.getDate() + 1);
-          dateInput.value = formatDate(d, 'YYYY-MM-DD');
-        }
-      }),
-      createElement('button', {
-        type: 'button',
-        className: 'btn btn-secondary btn-xs',
-        textContent: '📅 Thứ Hai tới',
-        onclick: () => {
-          const d = businessNow();
-          const day = d.getDay();
-          const diff = (8 - day) % 7 || 7;
-          d.setDate(d.getDate() + diff);
-          dateInput.value = formatDate(d, 'YYYY-MM-DD');
-        }
-      })
+    const dateGroup = createElement('div', { className: 'form-group' }, [
+      createElement('label', { className: 'form-label', textContent: 'Ngày' }),
+      dateInput
     ]);
 
+    // 2. Ô phải trên: Giờ bắt đầu
     const startTimeInput = createElement('input', {
       'aria-label': 'Giờ bắt đầu',
       type: 'time',
       className: 'input',
       value: initialStartTime
     });
-    const endTimeInput = createElement('input', {
-      'aria-label': 'Giờ kết thúc',
-      type: 'time',
-      className: 'input',
-      value: initialEndTime
-    });
 
-    const allDayCheck = createElement('input', {
-      type: 'checkbox',
-      checked: isAllDay,
-      style: { width: '16px', height: '16px', accentColor: 'var(--color-primary)' },
-      onchange: (e) => {
-        isAllDay = e.target.checked;
-        timeInputsGrid.style.display = isAllDay ? 'none' : 'grid';
-      }
-    });
-
-    const timeInputsGrid = createElement('div', {
-      style: {
-        display: isAllDay ? 'none' : 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '10px'
-      }
-    }, [
-      createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: '🕒 Giờ bắt đầu' }),
-        startTimeInput
-      ]),
-      createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: '🏁 Giờ kết thúc' }),
-        endTimeInput
-      ])
+    const startTimeGroup = createElement('div', { className: 'form-group' }, [
+      createElement('label', { className: 'form-label', textContent: 'Giờ bắt đầu' }),
+      startTimeInput
     ]);
-
-    // Nhắc nhở & Lặp lại
-    const defaultRemind = existingItem?.reminder_minutes ?? store.get('user')?.notify_minutes_before ?? 15;
-    const reminderSelect = createElement('select', { className: 'input', 'aria-label': 'Thông báo nhắc trước' }, [
-      { val: '0', label: 'Đúng giờ diễn ra (0 phút)' },
-      { val: '5', label: 'Trước 5 phút' },
-      { val: '10', label: 'Trước 10 phút' },
-      { val: '15', label: 'Trước 15 phút (Mặc định)' },
-      { val: '30', label: 'Trước 30 phút' },
-      { val: '60', label: 'Trước 1 tiếng (60 phút)' }
-    ].map(o => {
-      const opt = createElement('option', { value: o.val, textContent: o.label });
-      if (String(defaultRemind) === o.val) opt.selected = true;
-      return opt;
-    }));
 
     const currentRule = existingItem?.recurrence_rule || '';
     const recurrenceOptions = [
       { val: '', label: 'Không lặp lại' },
       { val: 'FREQ=DAILY', label: 'Hàng ngày' },
       { val: 'FREQ=WEEKLY', label: 'Hàng tuần' },
-      { val: 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR', label: 'Thứ 2 - Thứ 6 (Ngày làm việc)' },
       { val: 'FREQ=MONTHLY', label: 'Hàng tháng' }
     ];
     if (currentRule && !recurrenceOptions.some(o => o.val === currentRule)) {
@@ -466,57 +365,56 @@ export class EventForm {
       return opt;
     }));
 
-    scheduleFieldsWrap.appendChild(createElement('div', {
-      style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }
-    }, [
-      createElement('div', { style: { flex: '1', minWidth: '150px' } }, [
-        createElement('label', { className: 'form-label', textContent: '📅 Ngày thực hiện' }),
-        dateInput
-      ]),
-      createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px' } }, [
-        createElement('label', { className: 'form-label', textContent: 'Chọn nhanh ngày' }),
-        quickDateBar
-      ])
-    ]));
+    const rruleGroup = createElement('div', { className: 'form-group' }, [
+      createElement('label', { className: 'form-label', textContent: 'Chu kỳ lặp lại' }),
+      rruleSelect
+    ]);
 
-    scheduleFieldsWrap.appendChild(createElement('label', {
-      style: { display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: '600', cursor: 'pointer' }
-    }, [allDayCheck, createElement('span', { textContent: 'Diễn ra cả ngày (Không giới hạn khung giờ cụ thể)' })]));
+    // 4. Ô phải dưới: Giờ kết thúc
+    const endTimeInput = createElement('input', {
+      'aria-label': 'Giờ kết thúc',
+      type: 'time',
+      className: 'input',
+      value: initialEndTime
+    });
 
-    scheduleFieldsWrap.appendChild(timeInputsGrid);
+    const endTimeGroup = createElement('div', { className: 'form-group' }, [
+      createElement('label', { className: 'form-label', textContent: 'Giờ kết thúc' }),
+      endTimeInput
+    ]);
 
-    scheduleFieldsWrap.appendChild(createElement('div', {
-      style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }
-    }, [
-      createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: '🔔 Thông báo nhắc trước' }),
-        reminderSelect
-      ]),
-      createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: '🔄 Chu kỳ lặp lại' }),
-        rruleSelect
-      ])
-    ]));
+    const allDayCheck = createElement('input', {
+      type: 'checkbox', 'aria-label': 'Cả ngày', checked: isAllDay,
+      onchange: (e) => { isAllDay = e.target.checked; refreshScheduleUI(); }
+    });
+    const allDayLabel = createElement('label', {
+      style: { display: 'flex', alignItems: 'center', gap: '8px', gridColumn: '1 / -1' }
+    }, [allDayCheck, createElement('span', { textContent: 'Cả ngày' })]);
+
+    // Gắn vào lưới theo thứ tự: Trái trên (Ngày), Phải trên (Giờ bắt đầu), Trái dưới (Chu kỳ lặp), Phải dưới (Giờ kết thúc)
+    scheduleFieldsGrid.appendChild(dateGroup);
+    scheduleFieldsGrid.appendChild(startTimeGroup);
+    scheduleFieldsGrid.appendChild(rruleGroup);
+    scheduleFieldsGrid.appendChild(endTimeGroup);
+    scheduleFieldsGrid.appendChild(allDayLabel);
 
     const refreshScheduleUI = () => {
+      startTimeInput.disabled = isAllDay;
+      endTimeInput.disabled = isAllDay;
       if (scheduleEnabled) {
-        scheduleStatusText.textContent = '📅 Đã bật Thời gian & Lịch biểu';
-        scheduleSubText.textContent = 'Sẽ hiển thị trực tiếp trên Lịch (Calendar) và tự động phân vào cột Hôm nay / Cần làm / Quá hạn.';
         toggleScheduleBtn.className = 'btn btn-secondary btn-sm';
-        toggleScheduleBtn.textContent = '✕ Bỏ thời gian (Đặt Vĩnh viễn)';
-        scheduleFieldsWrap.style.display = 'flex';
+        toggleScheduleBtn.textContent = 'Bỏ cài đặt thời gian';
+        scheduleFieldsGrid.style.display = 'grid';
       } else {
-        scheduleStatusText.textContent = '📌 Chưa đặt thời gian (Vĩnh viễn — Cột Cần làm)';
-        scheduleSubText.textContent = 'Mặc định lưu ở cột Cần làm và khay bên trái Lịch để bạn có thể kéo thả vào Lịch bất cứ lúc nào.';
         toggleScheduleBtn.className = 'btn btn-primary btn-sm';
-        toggleScheduleBtn.textContent = '＋ Đặt Ngày & Giờ trên Lịch';
-        scheduleFieldsWrap.style.display = 'none';
+        toggleScheduleBtn.textContent = 'Cài đặt thời gian';
+        scheduleFieldsGrid.style.display = 'none';
       }
     };
     refreshScheduleUI();
 
     scheduleBox.appendChild(scheduleHeader);
-    scheduleBox.appendChild(scheduleFieldsWrap);
+    scheduleBox.appendChild(scheduleFieldsGrid);
 
     // 5. Địa điểm & Ghi chú
     const locInput = createElement('input', {
@@ -524,7 +422,7 @@ export class EventForm {
       type: 'text',
       className: 'input',
       value: existingItem?.location || '',
-      placeholder: '📍 Địa điểm hoặc đường dẫn Google Meet / Zoom (tùy chọn)...'
+      placeholder: 'Địa điểm hoặc liên kết họp (tùy chọn)...'
     });
     const locError = createElement('small', { role: 'alert', style: { color: 'var(--color-danger, #dc2626)' } });
 
@@ -532,7 +430,7 @@ export class EventForm {
       'aria-label': 'Ghi chú chi tiết',
       className: 'input',
       rows: 2,
-      placeholder: '📝 Ghi chú chi tiết, nội dung chuẩn bị hoặc các bước cần lưu ý...'
+      placeholder: 'Ghi chú chi tiết nội dung công việc...'
     });
     descInput.value = existingItem?.note || existingItem?.description || '';
     const noteError = createElement('small', { role: 'alert', style: { color: 'var(--color-danger, #dc2626)' } });
@@ -546,12 +444,12 @@ export class EventForm {
       style: { display: 'flex', flexDirection: 'column', gap: '12px' }
     }, [
       createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: 'Tiêu đề Công việc / Sự kiện *' }),
+        createElement('label', { className: 'form-label', textContent: 'Tiêu đề *' }),
         titleInput,
         titleError
       ]),
-      modeRow,
-      listAndColorGrid,
+      checkRow,
+      listAndCategoryGrid,
       scheduleBox,
       createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr', gap: '10px' } }, [
         locInput,
@@ -562,9 +460,10 @@ export class EventForm {
     ]);
 
     const handleSave = async () => {
+      if (store.get('user')?.id !== userId) return;
       const title = titleInput.value.trim();
       if (!title) {
-        Toast.error('Vui lòng nhập tiêu đề công việc / sự kiện.');
+        Toast.error('Vui lòng nhập tiêu đề công việc.');
         titleInput.focus();
         return;
       }
@@ -590,6 +489,10 @@ export class EventForm {
       let endTimeVal = null;
       let durationMins = 60;
 
+      if (scheduleEnabled && !dateInput.value) {
+        Toast.error('Vui lòng chọn ngày thực hiện.');
+        return;
+      }
       if (scheduleEnabled && dateInput.value) {
         dueDateVal = dateInput.value;
         if (!isAllDay) {
@@ -610,7 +513,6 @@ export class EventForm {
       const todayStr = formatDate(businessNow(), 'YYYY-MM-DD');
       const taskPayload = {
         title,
-        ...(!isEdit ? { client_request_id: clientRequestId } : {}),
         note: descInput.value.trim() || null,
         location: locInput.value.trim() || null,
         list_id: listSelect.value ? Number(listSelect.value) : null,
@@ -624,10 +526,15 @@ export class EventForm {
         duration_minutes: durationMins,
         is_all_day: scheduleEnabled ? isAllDay : true,
         color: selectedColor,
-        reminder_minutes: Number(reminderSelect.value || 15),
+        reminder_minutes: Number(existingItem?.reminder_minutes ?? store.get('user')?.notify_minutes_before ?? 15),
         recurrence_rule: (isEdit || scheduleEnabled) ? (rruleSelect.value || null) : null
       };
 
+      if (!isEdit) {
+        const signature = JSON.stringify(taskPayload);
+        if (createAttempt?.signature !== signature) createAttempt = { signature, id: newRequestId() };
+        taskPayload.client_request_id = createAttempt.id;
+      }
       try {
         if (isEdit) {
           const revision = existingItem.updated_at || existingItem.created_at;
@@ -659,11 +566,10 @@ export class EventForm {
           }
         } else {
           const created = await api.post('/tasks', taskPayload);
-          const modeLabel = isAutoComplete ? 'Sự kiện (tự động hoàn thành)' : 'Việc cần làm';
           const placeLabel = !dueDateVal
-            ? 'vào cột Cần làm (Vĩnh viễn)'
-            : `vào ngày ${dueDateVal} & Lịch biểu`;
-          Toast.success(`Đã thêm ${modeLabel} "${title}" ${placeLabel}!`);
+            ? 'vào cột Cần làm'
+            : (dueDateVal === todayStr ? 'vào cột Hôm nay & Lịch biểu' : `vào ngày ${dueDateVal}`);
+          Toast.success(`Đã thêm công việc "${title}" ${placeLabel}!`);
           modalRef.close(true);
           window.dispatchEvent(new CustomEvent('planify:data-changed'));
           if (onCreated) onCreated(created);
@@ -681,7 +587,7 @@ export class EventForm {
     const footerButtons = [];
     if (isEdit) {
       footerButtons.push({
-        label: '🗑️ Xóa mục này',
+        label: 'Xóa mục này',
         className: 'btn btn-danger',
         onClick: async () => {
           if (!confirmDeleteItem(existingItem, { scope: isLegacyEvent && (existingItem.recurrence_rule || existingItem.parent_event_id) ? 'this' : null })) return;
@@ -704,14 +610,15 @@ export class EventForm {
 
     footerButtons.push(
       { label: 'Hủy', className: 'btn btn-secondary', onClick: () => modalRef.close() },
-      { label: isEdit ? '💾 Lưu cập nhật' : '✨ Tạo mới ngay', className: 'btn btn-primary', onClick: handleSave }
+      { label: isEdit ? 'Lưu cập nhật' : 'Tạo mới', className: 'btn btn-primary', onClick: handleSave }
     );
 
     modalRef = Modal.open({
-      title: isEdit ? '✏️ Chỉnh sửa Công việc / Sự kiện' : '✨ Thêm Công việc / Sự kiện mới',
+      title: isEdit ? 'Chỉnh sửa công việc' : 'Thêm công việc mới',
       content: formContent,
       footerButtons
     });
+    if (modalRef.content !== formContent) return;
 
     const snapshot = () => JSON.stringify({
       fields: [...formContent.querySelectorAll('input, textarea, select')].map(input => input.type === 'checkbox' ? input.checked : input.value),

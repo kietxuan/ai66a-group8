@@ -41,6 +41,7 @@ class Store {
       events: [],
       taskLists: [],
       tasks: [],
+      categories: null,
       currentRoute: localStorage.getItem('planify_last_route') || 'dashboard',
       calendarView: loadSavedView(), // Mặc định 'month' (Lịch Tháng)
       selectedDate: loadSavedDate(),
@@ -61,6 +62,7 @@ class Store {
     if (key === 'user' && oldValue?.id !== value?.id) {
       const sameSavedUser = value?.id != null && localStorage.getItem('planify_user_id') === String(value.id);
       for (const name of ['calendars', 'events', 'taskLists', 'tasks']) this.state[name] = [];
+      this.state.categories = null;
       this.state.selectedTask = null;
       this.set('isAiPanelOpen', false);
       if (!sameSavedUser) {

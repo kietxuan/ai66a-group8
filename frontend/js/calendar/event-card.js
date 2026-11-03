@@ -56,7 +56,7 @@ export class EventCard {
       const checkBtn = createElement('span', {
         className: 'event-task-check-icon cursor-pointer',
         style: { fontWeight: 'bold', flexShrink: '0' },
-        textContent: event.is_completed ? '☑' : (isAutoComplete ? '⚡' : '☐'),
+        textContent: event.is_completed ? '☑' : '☐',
         title: event.is_completed ? 'Đã hoàn thành (Bấm để mở lại)' : 'Bấm để đánh dấu hoàn thành',
         onclick: async (e) => {
           e.stopPropagation();
@@ -126,18 +126,7 @@ export class EventCard {
               if (onUpdate) onUpdate();
             }
           },
-          {
-            icon: '⚡',
-            label: rawTask?.auto_complete
-              ? 'Chuyển sang: Phải tích mới hoàn thành'
-              : 'Chuyển sang: Sự kiện (Tự động hoàn thành)',
-            onClick: async () => {
-              await api.put(`/tasks/${event.id}`, { auto_complete: !rawTask?.auto_complete }, revisionOptions(rawTask || event));
-              Toast.success('Đã cập nhật chế độ hoàn thành!');
-              window.dispatchEvent(new CustomEvent('planify:data-changed'));
-              if (onUpdate) onUpdate();
-            }
-          },
+
           {
             icon: '📌',
             label: 'Bỏ ngày giờ (Đưa về cột Cần làm vĩnh viễn)',
@@ -177,7 +166,7 @@ export class EventCard {
         items: [
           {
             icon: '✏️',
-            label: 'Chỉnh sửa sự kiện (Form đầy đủ)',
+            label: 'Chỉnh sửa công việc',
             onClick: () => EventForm.showFullModal({ event, onUpdated: onUpdate, onDeleted: onUpdate })
           },
           {
@@ -193,7 +182,7 @@ export class EventCard {
                 start_at: toLocalISOString(s),
                 end_at: toLocalISOString(e)
               }, revisionOptions(event));
-              Toast.success('Đã dời sự kiện sang ngày mai!');
+              Toast.success('Đã dời công việc sang ngày mai!');
               window.dispatchEvent(new CustomEvent('planify:data-changed'));
               if (onUpdate) onUpdate();
             }
@@ -201,12 +190,12 @@ export class EventCard {
           { divider: true },
           {
             icon: '🗑️',
-            label: 'Xóa sự kiện',
+            label: 'Xóa công việc',
             danger: true,
             onClick: async () => {
               if (!confirmDeleteItem(event, { scope: event.recurrence_rule || event.parent_event_id ? 'this' : null })) return;
               await api.delete(eventDeleteUrl(event));
-              Toast.success('Đã xóa sự kiện');
+              Toast.success('Đã xóa công việc');
               window.dispatchEvent(new CustomEvent('planify:data-changed'));
               if (onUpdate) onUpdate();
             }

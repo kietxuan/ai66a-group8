@@ -26,7 +26,6 @@ export class MonthView {
     this.defaultCalendarId = defaultCalendarId;
     this.onNavigateMonth = onNavigateMonth;
     this.onRefresh = onRefresh;
-    this.wheelCooldown = false;
   }
 
   render() {
@@ -70,37 +69,17 @@ export class MonthView {
         textContent: isTodayCol ? `📍 ${label}` : label
       });
     }));
-
-    // Lịch Tháng hỗ trợ cuộn dọc mượt mà (overflow-y: auto) + lăn chuột chuyển tháng khi ở đầu/cuối bảng
+    // Lịch Tháng hiển thị vừa vặn không gian, không cuộn chuột chuyển tháng
     const monthGrid = createElement('div', {
-      className: 'month-grid-scrollable',
+      className: 'month-grid',
       style: {
         flex: '1',
         display: 'grid',
         gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-        gridAutoRows: 'minmax(132px, 1fr)',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        scrollBehavior: 'smooth'
+        gridTemplateRows: `repeat(${matrix.length}, minmax(0, 1fr))`,
+        overflow: 'hidden'
       }
     });
-
-    // Hỗ trợ lăn con lăn chuột (wheel) để cuộn nội dung tháng và chuyển tháng mượt mà khi cuộn kịch biên
-    monthGrid.addEventListener('wheel', (e) => {
-      if (this.wheelCooldown || !this.onNavigateMonth) return;
-      const atTop = monthGrid.scrollTop <= 0;
-      const atBottom = Math.ceil(monthGrid.scrollTop + monthGrid.clientHeight) >= monthGrid.scrollHeight - 2;
-
-      if (e.deltaY > 45 && atBottom) {
-        this.wheelCooldown = true;
-        this.onNavigateMonth(1);
-        setTimeout(() => { this.wheelCooldown = false; }, 420);
-      } else if (e.deltaY < -45 && atTop) {
-        this.wheelCooldown = true;
-        this.onNavigateMonth(-1);
-        setTimeout(() => { this.wheelCooldown = false; }, 420);
-      }
-    }, { passive: true });
 
     matrix.forEach(week => {
       week.forEach(cell => {
@@ -119,7 +98,7 @@ export class MonthView {
             boxShadow: isTod ? 'inset 0 0 0 1px rgba(99, 102, 241, 0.35), 0 4px 14px rgba(99, 102, 241, 0.16)' : 'none',
             display: 'flex',
             flexDirection: 'column',
-            minHeight: '132px',
+            minHeight: '0',
             cursor: 'pointer',
             position: 'relative',
             transition: 'background-color 0.15s ease'
@@ -157,10 +136,12 @@ export class MonthView {
               const todayStr = formatDate(businessNow(), 'YYYY-MM-DD');
 
               if (data.is_task) {
-                await api.put(`/tasks/${data.id}`, {
+                const updatePayload = {
                   due_date: targetDateStr,
                   is_in_my_day: targetDateStr === todayStr
-                }, revisionOptions(data));
+                };
+                if (data.color) updatePayload.color = data.color;
+                await api.put(`/tasks/${data.id}`, updatePayload, revisionOptions(data));
                 Toast.success(`Đã xếp "${data.title || 'công việc'}" vào ngày ${targetDateStr}`);
               } else {
                 const origS = data.start_at ? new Date(data.start_at) : new Date(cell.date);
@@ -174,7 +155,7 @@ export class MonthView {
                   start_at: toLocalISOString(newS),
                   end_at: toLocalISOString(newE)
                 }, revisionOptions(data));
-                Toast.success(`Đã dời sự kiện sang ngày ${targetDateStr}`);
+                Toast.success(`Đã dời công việc sang ngày ${targetDateStr}`);
               }
               window.dispatchEvent(new CustomEvent('planify:data-changed'));
               if (this.onRefresh) this.onRefresh();
@@ -265,12 +246,6 @@ export class MonthView {
 
         dayCell.appendChild(cellItems);
         monthGrid.appendChild(dayCell);
-
-        if (isTod) {
-          requestAnimationFrame(() => {
-            dayCell.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-          });
-        }
       });
     });
 

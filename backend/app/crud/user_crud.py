@@ -1,6 +1,8 @@
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
+from app.schemas.user_schema import UserErrors
 
 from app.crud.base import CRUDBase
 from app.models.user_model import User
@@ -40,9 +42,17 @@ class CRUDUser(CRUDBase[User]):
 
     async def update_profile(self, db: AsyncSession, user: User, obj_in: UserUpdate) -> User:
         update_data = obj_in.model_dump(exclude_unset=True)
+        update_data.pop("otp", None)
+        update_data.pop("verified_token", None)
         for field, value in update_data.items():
             setattr(user, field, value)
-        await db.commit()
+        try:
+            await db.commit()
+        except IntegrityError as exc:
+            await db.rollback()
+            if getattr(exc.orig, "sqlstate", None) == "23505":
+                raise UserErrors.EMAIL_ALREADY_EXISTS.throw() from exc
+            raise
         await db.refresh(user)
         return user
 
