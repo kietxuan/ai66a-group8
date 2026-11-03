@@ -5,5 +5,5 @@ export function showAiScheduleConflict(toolCalls, onChoice) {
     ? toolCalls.find(call => call.result?.code === 'SCHEDULE_CONFLICT')
     : null;
   if (!conflict) return;
-  chooseScheduleConflict(conflict.result.items || []).then(onChoice);
+  chooseScheduleConflict(conflict.result.items || [], conflict.result.requested).then(onChoice);
 }

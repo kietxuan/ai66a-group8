@@ -13,6 +13,7 @@ export function parseApiError(data, status) {
   error.status = status;
   error.code = structured?.code || outer?.code;
   error.items = Array.isArray(structured?.items) ? structured.items : [];
+  error.requested = structured?.requested || null;
   return error;
 }
 

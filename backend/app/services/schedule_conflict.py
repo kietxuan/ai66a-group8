@@ -18,6 +18,7 @@ async def check_overlap(db, user_id, start, end, exclude=None, allowed=False):
         raise HTTPException(409, detail={
             "code": "SCHEDULE_CONFLICT",
             "message": "Khung giờ này trùng lịch.",
+            "requested": {"start": start.isoformat(), "end": end.isoformat()},
             "items": [{"type": item["type"], "id": item["id"], "title": item["title"],
                        "start": item["start"].isoformat(), "end": item["end"].isoformat()}
                       for item in collisions]

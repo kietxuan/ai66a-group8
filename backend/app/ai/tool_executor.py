@@ -223,6 +223,7 @@ class ToolExecutor:
                 pending_actions.put((*self.context_key, "schedule"), tool_name, arguments)
                 result = {"success": False, "code": "SCHEDULE_CONFLICT",
                           "error": detail.get("message", "Khung giờ này trùng lịch."),
+                          "requested": detail.get("requested"),
                           "items": detail.get("items", [])}
             else:
                 result = {"success": False, "error": str(detail) if detail is not None else str(e)}

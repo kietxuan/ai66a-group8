@@ -23,6 +23,9 @@ def test_overlap_lists_colliding_event_and_ignores_adjacent_slot(monkeypatch):
         asyncio.run(check_overlap(None, 1, start, start + timedelta(hours=1)))
     assert error.value.status_code == 409
     assert error.value.detail["items"][0]["title"] == "Họp"
+    assert error.value.detail["requested"] == {
+        "start": start.isoformat(), "end": (start + timedelta(hours=1)).isoformat()
+    }
 
     asyncio.run(check_overlap(None, 1, start - timedelta(hours=1), start + timedelta(minutes=30)))
     asyncio.run(check_overlap(None, 1, start, start + timedelta(hours=1), allowed=True))
