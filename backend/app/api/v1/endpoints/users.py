@@ -172,5 +172,5 @@ async def send_test_reminder_email(
         "success": bool(sent_ok),
         "email_sent": sent_ok,
         "email": current_user.email,
-        "message": f"Đã gửi thông báo thử nghiệm tới {current_user.email}" if sent_ok else f"Đã kích hoạt thông báo (kiểm tra cấu hình SMTP trong .env cho {current_user.email})"
+        "message": f"Đã gửi thông báo thử nghiệm tới {current_user.email}" if sent_ok else f"Đã kích hoạt thông báo (kiểm tra tài khoản ADMIN trong .env cho {current_user.email})"
     }

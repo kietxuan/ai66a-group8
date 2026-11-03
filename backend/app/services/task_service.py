@@ -215,6 +215,7 @@ class TaskService:
                     duration_minutes=task.duration_minutes,
                     is_all_day=task.is_all_day,
                     color=task.color,
+                    category=task.category,
                     reminder_at=None,
                     reminder_minutes=getattr(task, "reminder_minutes", 15),
                     recurrence_rule=next_rrule,

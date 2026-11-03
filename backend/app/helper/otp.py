@@ -218,12 +218,64 @@ def _get_reminder_html_content(
     return subject, html
 
 
-def _send_email_sync(to_email: str, subject: str, html_content: str, debug_tag: str = "") -> bool:
-    """Hàm gửi email đồng bộ chạy trong thread pool qua Gmail SMTP"""
-    sender_email = (settings.SMTP_FROM_EMAIL or settings.SMTP_USERNAME or "").strip()
-    raw_password = (settings.SMTP_PASSWORD or "").strip()
-    # Gmail App Password thường có dạng 'xxxx xxxx xxxx xxxx' -> loại bỏ khoảng trắng để đăng nhập SMTP chuẩn xác
+def _get_admin_email_credentials() -> tuple[str, str]:
+    """Lấy email và mật khẩu trực tiếp từ tài khoản ADMIN trong .env"""
+    sender_email = (getattr(settings, "ADMIN_EMAIL", "") or "").strip()
+    raw_password = (getattr(settings, "ADMIN_PASSWORD", "") or "").strip()
     sender_password = raw_password.replace(" ", "")
+    return sender_email, sender_password
+
+
+def _send_email_sync(to_email: str, subject: str, html_content: str, debug_tag: str = "") -> bool:
+    """Hàm gửi email đồng bộ chạy trong worker thread qua tài khoản ADMIN (fallback)"""
+    sender_email, sender_password = _get_admin_email_credentials()
+
+    if not sender_email or not sender_password or sender_password in ["YOUR_SECRET_PASSWORD", "MAT_KHAU_ADMIN"]:
+        logger.warning("ADMIN_EMAIL hoặc ADMIN_PASSWORD chưa được cấu hình hợp lệ trong .env; không thể gửi email.")
+        return False
+
+    message = MIMEMultipart("alternative")
+    message["Subject"] = subject
+    message["From"] = f"Planify Pro <{sender_email}>"
+    message["To"] = to_email
+
+    part = MIMEText(html_content, "html", "utf-8")
+    message.attach(part)
+
+    server = None
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10.0)
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(sender_email, sender_password)
+        server.send_message(message)
+        logger.info(f"✅ Đã gửi email '{subject}' tới {to_email} thành công.")
+        return True
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error(f"❌ Xác thực Gmail thất bại cho tài khoản '{sender_email}': {e}")
+        return False
+    except smtplib.SMTPException as e:
+        logger.error(f"❌ Lỗi gửi email: {e}")
+        return False
+    except Exception as e:
+        logger.warning("Gửi email thất bại (%s: %s).", type(e).__name__, str(e))
+        return False
+    finally:
+        if server:
+            try:
+                server.quit()
+            except Exception:
+                pass
+
+
+async def _send_email_async(to_email: str, subject: str, html_content: str, debug_tag: str = "") -> bool:
+    """Hàm gửi email bất đồng bộ qua tài khoản ADMIN (ưu tiên aiosmtplib, fallback qua thread pool)"""
+    sender_email, sender_password = _get_admin_email_credentials()
+
+    if not sender_email or not sender_password or sender_password in ["YOUR_SECRET_PASSWORD", "MAT_KHAU_ADMIN"]:
+        logger.warning("ADMIN_EMAIL hoặc ADMIN_PASSWORD chưa được cấu hình hợp lệ trong .env; không thể gửi email.")
+        return False
 
     message = MIMEMultipart("alternative")
     message["Subject"] = subject
@@ -234,26 +286,33 @@ def _send_email_sync(to_email: str, subject: str, html_content: str, debug_tag: 
     message.attach(part)
 
     try:
-        if not sender_email or not sender_password or raw_password in ["YOUR_SECRET_PASSWORD", "MAT_KHAU_ADMIN"]:
-            logger.warning("SMTP credentials missing; email was not sent.")
-            return False
-
-        server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=8.0)
-        server.starttls()
-        server.login(settings.SMTP_USERNAME, sender_password)
-        server.send_message(message)
-        server.quit()
-        logger.info(f"✅ Đã gửi email '{subject}' tới {to_email} thành công.")
+        import aiosmtplib
+        await aiosmtplib.send(
+            message,
+            hostname="smtp.gmail.com",
+            port=587,
+            start_tls=True,
+            username=sender_email,
+            password=sender_password,
+            timeout=10.0
+        )
+        logger.info(f"✅ [Async] Đã gửi email '{subject}' tới {to_email} thành công.")
         return True
+    except ImportError:
+        logger.debug("aiosmtplib không có sẵn, chuyển sang gửi qua worker thread pool.")
+        return await asyncio.to_thread(_send_email_sync, to_email, subject, html_content, debug_tag)
     except Exception as e:
-        logger.warning("SMTP delivery failed (%s).", type(e).__name__)
-        return False
+        logger.warning("Async gửi mail gặp lỗi (%s: %s), thử fallback sang worker thread...", type(e).__name__, str(e))
+        try:
+            return await asyncio.to_thread(_send_email_sync, to_email, subject, html_content, debug_tag)
+        except Exception:
+            return False
 
 
 async def send_email(email: str, otp: str, reason: str = "verify-email") -> bool:
     """Hàm gửi mã OTP cho người dùng bất đồng bộ"""
     subject, html_content = _get_otp_html_content(otp, reason=reason)
-    return await asyncio.to_thread(_send_email_sync, email, subject, html_content)
+    return await _send_email_async(email, subject, html_content)
 
 
 async def send_reminder_email(
@@ -274,8 +333,7 @@ async def send_reminder_email(
         location=location,
         minutes_before=minutes_before
     )
-    return await asyncio.to_thread(
-        _send_email_sync,
+    return await _send_email_async(
         to_email,
         subject,
         html_content,

@@ -24,3 +24,6 @@ redis==8.1.0
 
 # HTTP client for Groq AI
 httpx==0.28.1
+
+# Async SMTP
+aiosmtplib==5.1.3

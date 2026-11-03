@@ -20,6 +20,7 @@ class Event(Base):
     end_at = Column(DateTime(timezone=True), nullable=False)
     is_all_day = Column(Boolean, default=False, nullable=False)
     color = Column(String(7), nullable=True)
+    category = Column(String(50), nullable=True)
 
     # Recurrence rules (RFC 5545)
     recurrence_rule = Column(String(500), nullable=True)

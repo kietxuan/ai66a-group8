@@ -52,6 +52,7 @@ class Task(Base):
     duration_minutes = Column(Integer, default=60, nullable=False)
     is_all_day = Column(Boolean, default=True, nullable=False)
     color = Column(String(7), nullable=True)
+    category = Column(String(50), nullable=True)
     reminder_at = Column(DateTime(timezone=True), nullable=True)
     reminder_minutes = Column(Integer, default=15, nullable=True)
     reminder_sent = Column(Boolean, default=False, nullable=False)

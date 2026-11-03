@@ -26,15 +26,24 @@ export function getAvailableCategories() {
 export function resolveCategoryForTask(task) {
   if (!task) return null;
   const cats = getAvailableCategories();
+  if (!Array.isArray(cats) || cats.length === 0) return null;
+
+  // 1. Ưu tiên khớp chính xác theo tên category nếu task có chỉ định
   if (task.category) {
     const match = cats.find(c => c.name.toLowerCase() === String(task.category).toLowerCase());
     if (match) return match;
+    // Nếu category đã bị xóa khỏi hệ thống -> coi như Chưa phân loại
+    return null;
   }
+
+  // 2. Nếu task chỉ có color mà không có category -> tìm theo mã màu trong các tag hiện có
   if (task.color) {
     const match = cats.find(c => c.color.toLowerCase() === String(task.color).toLowerCase());
     if (match) return match;
-    return { name: 'Thẻ màu', color: task.color };
+    // Nếu mã màu không thuộc bất kỳ tag nào đang có -> không tạo thẻ ảo, trả về null
+    return null;
   }
+
   return null;
 }
 

@@ -162,7 +162,7 @@ export const todoPage = {
 
     // 2. Main Content Container
     const mainEl = createElement("div", {
-      className: "todo-main flex-1 flex flex-col overflow-hidden",
+      className: "todo-main flex-1 flex flex-col",
       dataset: { view: String(this.activeListId) === 'board' ? 'board' : 'list' },
     });
 
@@ -223,7 +223,7 @@ export const todoPage = {
     const formContainer = createElement("div");
 
     // Task Items List / Kanban Container
-    const listContainer = createElement('div', { className: 'todo-list-container flex-1 overflow-hidden flex flex-col' });
+    const listContainer = createElement('div', { className: 'todo-list-container flex-1 flex flex-col' });
 
     mainEl.appendChild(headerEl);
     mainEl.appendChild(formContainer);
@@ -681,7 +681,7 @@ export const todoPage = {
       return;
     }
 
-    if (this.taskDetailComponent?.canLeave() === false) return;
+    if (this.taskDetailComponent?.canLeave?.() === false) return;
 
     this.activeTask = task;
     const detailContainer = this.container?.querySelector(
@@ -695,7 +695,7 @@ export const todoPage = {
   },
 
   closeDetail() {
-    if (this.taskDetailComponent?.canLeave() === false) return false;
+    if (this.taskDetailComponent?.canLeave?.() === false) return false;
     this.activeTask = null;
     const detailContainer = this.container?.querySelector(
       ".task-detail-container",
@@ -710,7 +710,11 @@ export const todoPage = {
   },
 
   canLeave() {
-    return this.taskDetailComponent?.canLeave() !== false;
+    try {
+      return this.taskDetailComponent?.canLeave?.() !== false;
+    } catch {
+      return true;
+    }
   },
 
   async toggleComplete(task, isCompleted) {
@@ -824,7 +828,7 @@ export const todoPage = {
     if (this.sidebarComponent?.destroy) {
       this.sidebarComponent.destroy();
     }
-    this.taskDetailComponent?.destroy();
+    try { this.taskDetailComponent?.destroy?.(); } catch {}
     if (this.container) {
       this.container.innerHTML = "";
       this.container = null;

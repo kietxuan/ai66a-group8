@@ -69,6 +69,7 @@ class TaskBase(BaseModel):
     duration_minutes: Optional[int] = 60
     is_all_day: Optional[bool] = True
     color: Optional[str] = None
+    category: Optional[str] = Field(None, max_length=50)
     reminder_at: Optional[datetime] = None
     reminder_minutes: Optional[int] = 15
     recurrence_rule: Optional[str] = Field(None, max_length=500)
@@ -96,6 +97,7 @@ class TaskUpdate(InputValidation):
     duration_minutes: Optional[int] = None
     is_all_day: Optional[bool] = None
     color: Optional[str] = None
+    category: Optional[str] = Field(None, max_length=50)
     reminder_at: Optional[datetime] = None
     reminder_minutes: Optional[int] = None
     reminder_sent: Optional[bool] = None
