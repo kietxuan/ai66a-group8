@@ -5,6 +5,7 @@ import { ChatMessage } from '../ai/message.js';
 import { ChatInput } from '../ai/chat-input.js';
 import { store } from '../store.js';
 import { notifyAiDataChanges } from '../ai/sync.js';
+import { showAiScheduleConflict } from '../ai/schedule-conflict.js';
 
 const PROMPT_CATEGORIES = [
   {
@@ -344,6 +345,11 @@ export const aiPage = {
         createdAt: resp.created_at || new Date()
       }));
       this.scrollToBottom();
+      const conversationId = this.currentConversationId;
+      showAiScheduleConflict(toolCalls, choice => {
+        if (generation !== this.generation || this.currentConversationId !== conversationId || store.get('user')?.id !== userId) return;
+        this.sendMessage(choice === 'continue' ? 'vẫn tiếp tục' : choice === 'change' ? 'đổi giờ' : 'hủy');
+      });
 
     } catch (err) {
       typingEl.remove();

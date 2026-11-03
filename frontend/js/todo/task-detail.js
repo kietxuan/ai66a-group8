@@ -8,7 +8,7 @@ import { soundManager } from '../utils/sound.js';
 import { confirmDeleteItem } from '../utils/confirm-delete.js';
 import { revisionOptions } from '../utils/revision.js';
 import { isScheduleDismissal } from '../utils/api-error.js';
-import { getAvailableCategories } from './task-item.js';
+import { getAvailableCategories, resolveCategoryForTask } from './task-item.js';
 
 export class TaskDetail {
   constructor(container, { onUpdate = null, onClose = null } = {}) {
@@ -297,12 +297,12 @@ export class TaskDetail {
     catSelect.appendChild(emptyCatOpt);
 
     let selectedColor = t.color || '';
+    const activeResolvedCat = resolveCategoryForTask(t);
     categories.forEach(c => {
       const opt = createElement('option', {
         value: c.name,
         textContent: c.name,
-        selected: (t.category && t.category.toLowerCase() === c.name.toLowerCase()) ||
-                  (!t.category && t.color && t.color.toLowerCase() === c.color.toLowerCase())
+        selected: activeResolvedCat ? (c.name.toLowerCase() === activeResolvedCat.name.toLowerCase()) : false
       });
       opt.dataset.color = c.color;
       catSelect.appendChild(opt);

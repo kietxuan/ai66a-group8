@@ -15,6 +15,9 @@ from app.ai.replies import execution_content
 from app.ai.scheduling import recurrence_request
 from app.ai.confirmation import pending_actions
 from app.core.time import local_now, business_today
+from app.ai.intent import action as request_action, command, recent_creations, refers_to_recent, relevant_tools, QUOTED
+from app.ai.scheduling import fold
+from app.ai.deletion import plan_deletion
 
 
 class PlanifyAgent:
@@ -91,19 +94,51 @@ class PlanifyAgent:
             }
 
         executor = ToolExecutor(user_id=user_id, db=db, conversation_id=conversation_id, request_text=last_user_msg)
-        normalized = last_user_msg.strip().lower().rstrip('.!')
-        pending = pending_actions.take(executor.context_key)
-        if normalized in {"xác nhận xóa", "confirm delete"}:
+        executor.recent_items = recent_creations(messages)
+        normalized = ' '.join(fold(last_user_msg).strip().rstrip('.!').split())
+        schedule_key = (user_id, conversation_id, "schedule")
+        if normalized in {"van tiep tuc", "continue"}:
+            scheduled = pending_actions.take(schedule_key)
+            if not scheduled:
+                return {"content": "Cảnh báo trùng lịch đã hết hạn. Vui lòng gửi lại yêu cầu ban đầu.", "tool_calls": None, "tool_results": None}
+            name, arguments = scheduled
+            executor.confirmed_overlap_action = (name, arguments)
+            result = await executor.execute(name, arguments)
+            return self._execution_reply(executor, result.get("error") if not result.get("success") and result.get("code") != "SCHEDULE_CONFLICT" else None)
+        if normalized in {"doi gio", "change time"}:
+            pending_actions.take(schedule_key)
+            return {"content": "Bạn muốn đổi sang ngày và khung giờ nào? Hãy gửi lại yêu cầu với thời gian mới.", "tool_calls": None, "tool_results": None}
+        if normalized in {"xac nhan xoa", "toi xac nhan xoa", "dong y xoa", "confirm delete"}:
+            pending = pending_actions.take(executor.context_key)
             if not pending:
                 return {"content": "Không có thao tác xóa đang chờ hoặc xác nhận đã hết hạn. Vui lòng yêu cầu lại.", "tool_calls": None, "tool_results": None}
             name, arguments = pending
             executor.confirmed_action = (name, arguments)
             result = await executor.execute(name, arguments)
-            return self._execution_reply(executor, "Đã thực hiện thao tác xóa." if result.get("success") else result.get("error"))
-        if normalized in {"hủy", "huỷ", "cancel", "không", "khong"}:
-            return {"content": "Đã hủy. Không thực hiện thao tác xóa.", "tool_calls": None, "tool_results": None}
-        if re.search(r"(?:không|khong|đừng|dung|do not|don't|never)\s+(?:.*?\s)?(?:xóa|xoa|delete|remove|tạo|thêm|create|sửa|update|hoàn thành|complete|dời|reschedule|đánh dấu)", normalized):
+            return self._execution_reply(executor)
+        if normalized in {"huy", "cancel", "khong"}:
+            pending_actions.take(executor.context_key)
+            pending_actions.take(schedule_key)
+            return {"content": "Đã hủy. Không thay đổi lịch hoặc công việc.", "tool_calls": None, "tool_results": None}
+        if re.search(r"(?:khong|dung|do not|don't|never)\s+(?:.*?\s)?(?:xoa|delete|remove|tao|them|create|sua|update|hoan thanh|complete|doi|reschedule|danh dau)", command(last_user_msg)):
+            pending_actions.take(executor.context_key)
+            pending_actions.take(schedule_key)
             return {"content": "Tôi sẽ không thực hiện thao tác đó.", "tool_calls": None, "tool_results": None}
+
+        # Read-only follow-ups must not consume an outstanding confirmation.
+        if request_action(last_user_msg) not in {None, 'read'}:
+            pending_actions.take(executor.context_key)
+            pending_actions.take(schedule_key)
+        if request_action(last_user_msg) == 'create':
+            try:
+                time_request = re.sub(QUOTED, '', last_user_msg)
+                if not re.search(r'qua đêm|hôm sau|ngày tiếp theo|overnight', time_request, re.I):
+                    self._extract_datetimes_or_times(time_request, self._extract_date_from_text(time_request) or business_today())
+            except (ValueError, OverflowError) as error:
+                return self._execution_reply(executor, str(error))
+        deletion = await plan_deletion(executor, last_user_msg, messages)
+        if deletion is not None:
+            return self._execution_reply(executor, deletion if isinstance(deletion, str) else None)
 
         # 3. If external LLM API Key is configured, use multi-turn LLM + Tools loop
         if self.api_key:
@@ -113,7 +148,8 @@ class PlanifyAgent:
                 status = e.response.status_code if isinstance(e, httpx.HTTPStatusError) else None
                 logger.warning("LLM request failed (%s, HTTP status=%s).", type(e).__name__, status)
                 if executor.executions:
-                    return self._execution_reply(executor)
+                    read_only = all(name.startswith(('list_', 'get_', 'search_', 'find_', 'check_')) for name, _, _ in executor.executions)
+                    return self._execution_reply(executor, 'Dịch vụ AI đang bận. Mình mới tra cứu kết quả trên, chưa thực hiện thay đổi dữ liệu theo yêu cầu.' if read_only else None)
 
         # 4. Built-in Smart Hybrid NLP Agent Engine (works 100% offline/without external API key)
         try:
@@ -141,6 +177,10 @@ class PlanifyAgent:
         # Writes are summarized from committed results, not from provider claims.
         if not executor.executions or (not writes and content and not raw_json):
             reply["content"] = content if content and not raw_json else "Bạn muốn mình hỗ trợ công việc hay lịch trình nào?"
+        if request_action(executor.request_text) in {'create', 'update', 'delete', 'complete', 'plan'} and not writes:
+            reply['content'] = 'Mình chưa thực hiện thay đổi dữ liệu theo yêu cầu.'
+            if content and not raw_json and not re.search(r'\bđã\s+(?:tạo|thêm|xóa|xoá|sửa|cập nhật|hoàn thành|dời|chuyển|xếp)', content.lower()):
+                reply['content'] += '\n' + content
         reply["tool_results"] = tool_results or None
         return reply
 
@@ -159,13 +199,16 @@ class PlanifyAgent:
             )
         }
         truncated_history = messages[-20:] if len(messages) > 20 else messages
-        llm_messages = [system_msg] + truncated_history
+        # Persisted metadata is internal, not an OpenAI/Groq request-message field.
+        llm_messages = [system_msg] + [{"role": m['role'], "content": m.get('content') or ''} for m in truncated_history]
+        if executor.recent_items and refers_to_recent(last_user_msg):
+            system_msg['content'] += '\nKết quả tạo thành công gần nhất (ID có kiểu, không được nhầm task_id/event_id): ' + json.dumps(executor.recent_items, ensure_ascii=False)
 
         all_tool_results = []
 
         # Up to 3 reasoning/tool iterations
         for _ in range(3):
-            response_msg = await self._call_groq(llm_messages)
+            response_msg = await self._call_groq(llm_messages, selected_tools=relevant_tools(last_user_msg, TOOLS))
             tool_calls = response_msg.get("tool_calls")
 
             if not tool_calls:
@@ -188,7 +231,7 @@ class PlanifyAgent:
                     return self._execution_reply(executor, "Đã xử lý thao tác này trong lượt chat; không thực hiện lặp.")
                 result = await executor.execute(tool_name, tool_args)
                 if result.get("requires_confirmation") or not result.get("success"):
-                    return self._execution_reply(executor, result.get("error", "Cần làm rõ yêu cầu."))
+                    return self._execution_reply(executor, None if result.get("code") == "SCHEDULE_CONFLICT" else result.get("error", "Cần làm rõ yêu cầu."))
                 tool_msg = {
                     "role": "tool",
                     "tool_call_id": tc["id"],
@@ -197,10 +240,15 @@ class PlanifyAgent:
                 all_tool_results.append(tool_msg)
                 llm_messages.append(tool_msg)
 
+            # Committed tool results already have a natural-language renderer. A
+            # second provider call only to phrase them wastes TPM and risks replay.
+            if request_action(last_user_msg) == 'read' or any(not name.startswith(('list_', 'get_', 'search_', 'find_', 'check_')) for name, _, _ in executor.executions):
+                return self._execution_reply(executor)
+
         final_response = await self._call_groq(llm_messages, allow_tools=False)
         return self._llm_reply(executor, final_response, all_tool_results)
 
-    async def _call_groq(self, messages: List[Dict[str, Any]], allow_tools: bool = True) -> Dict[str, Any]:
+    async def _call_groq(self, messages: List[Dict[str, Any]], allow_tools: bool = True, selected_tools=None) -> Dict[str, Any]:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -212,14 +260,18 @@ class PlanifyAgent:
             "max_tokens": 1024
         }
         if allow_tools:
-            payload["tools"] = TOOLS
+            payload["tools"] = TOOLS if selected_tools is None else selected_tools
             payload["tool_choice"] = "auto"
 
         for attempt in range(2):
             async with httpx.AsyncClient(timeout=20.0) as client:
                 resp = await client.post(f"{self.base_url}/chat/completions", headers=headers, json=payload)
                 if resp.status_code == 429 and attempt == 0:
-                    await asyncio.sleep(1.5)
+                    try:
+                        delay = float(resp.headers.get('retry-after', '1.5'))
+                    except ValueError:
+                        delay = 1.5
+                    await asyncio.sleep(min(15, max(1.5, delay)))
                     continue
                 resp.raise_for_status()
                 data = resp.json()
@@ -381,6 +433,27 @@ class PlanifyAgent:
             })
             return res
 
+        # Common edits remain usable when the provider is rate-limited/offline.
+        if request_action(text) == 'update' and refers_to_recent(text):
+            if len(executor.recent_items) != 1:
+                return {'content': 'Bạn hãy chọn tên hoặc ID: có nhiều mục vừa tạo hoặc chưa có kết quả tạo thành công.', 'tool_calls': None, 'tool_results': None}
+            target = executor.recent_items[0]
+            rename = re.search(r'(?:thành|thanh|tên là|ten la)\s+(.+)$', text, re.I)
+            if re.match(r'^(?:doi ten|sua ten)', command(text)) and rename:
+                quoted = re.search(QUOTED, rename[1])
+                title = quoted[1] if quoted else re.sub(r'\s+(?:giúp tôi|giúp mình|nhé|đi|với)[.!]*$', '', rename[1], flags=re.I).strip()
+                name = 'update_task' if target['item_type'] == 'task' else 'update_event'
+                await call_tool(name, {target['item_type'] + '_id': target['id'], 'title': title})
+                return self._execution_reply(executor)
+            day = self._extract_date_from_text(text)
+            start, end = self._extract_datetimes_or_times(re.sub(QUOTED, '', text), day or business_today())
+            if day and start and end:
+                if target['item_type'] == 'task':
+                    await call_tool('update_task', {'task_id': target['id'], 'due_date': day.isoformat(), 'start_time': start.strftime('%H:%M'), 'end_time': end.strftime('%H:%M'), 'is_all_day': False})
+                else:
+                    await call_tool('reschedule_event', {'event_id': target['id'], 'new_start_at': start.isoformat(), 'new_end_at': end.isoformat()})
+                return self._execution_reply(executor)
+
         # --- CASE 1: Auto-plan My Day / Lập kế hoạch thông minh ---
         if not create_requested and re.match(r'^(?:(?:hãy|giúp tôi|vui lòng)\s+)*(?:tự động lập kế hoạch|sắp xếp ngày của tôi|auto plan|lên kế hoạch hôm nay|tối ưu lịch hôm nay)', lower):
             res = await call_tool("auto_plan_my_day", {"max_tasks": 5, "assign_time_blocks": True})
@@ -451,7 +524,7 @@ class PlanifyAgent:
                 "tool_results": tool_results
             }
 
-        if create_requested and any(k in lower for k in ["tạo nhóm lịch", "tạo lịch mới", "thêm lịch mới"]):
+        if create_requested and any(k in lower for k in ["tạo nhóm lịch", "thêm nhóm lịch"]):
             name = self._extract_quoted_or_title(text, r"^.*?(?:tạo|thêm)\s+(?:nhóm\s+)?lịch\s*(?:mới)?\s*(?:tên là)?\s*")
             res = await call_tool("create_calendar", {"name": name, "color": "#10B981"})
             d = res.get("data") or {}

@@ -28,6 +28,14 @@ export class ThemeManager {
     document.documentElement.setAttribute('data-theme', effectiveTheme);
     store.set('theme', effectiveTheme);
 
+    const toggleBtn = document.getElementById('theme-toggle');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-pressed', String(effectiveTheme === 'dark'));
+      toggleBtn.title = effectiveTheme === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối';
+      const label = toggleBtn.querySelector('.header-theme-label');
+      if (label) label.textContent = effectiveTheme === 'dark' ? 'Tối' : 'Sáng';
+    }
+
     if (persistToServer && api.getToken()) {
       const token = api.getToken();
       this.saveQueue = (this.saveQueue || Promise.resolve()).then(() => {

@@ -115,10 +115,6 @@
       </nav>
 
       <div class="sidebar-footer">
-        <button id="theme-toggle" class="theme-toggle-btn" title="Đổi giao diện Sáng / Tối">
-          <span class="theme-icon-light">☀</span>
-          <span class="theme-icon-dark">☾</span>
-        </button>
         <a class="nav-item sidebar-settings-link" data-page="settings" href="#settings" title="Cài đặt tài khoản, thông báo & giao diện">
           <span class="nav-icon">⚙️</span>
           <span class="nav-text">Cài đặt</span>
@@ -147,13 +143,10 @@
         </div>
 
         <div class="header-right">
-          <button class="btn btn-primary btn-sm header-quick-create-btn" id="btn-header-quick-create" title="Tạo nhanh Công việc">
-            <span>＋</span>
-            <span class="hide-on-mobile">Tạo mới</span>
-          </button>
-          <button class="btn btn-secondary btn-sm header-ai-drawer-btn" id="btn-toggle-ai-drawer" title="Mở nhanh cửa sổ chat AI bên phải">
-            <span>🤖</span>
-            <span class="hide-on-mobile">Chat AI</span>
+          <button type="button" class="header-theme-toggle" id="theme-toggle" aria-label="Chế độ tối" aria-pressed="false" title="Chuyển sang giao diện tối">
+            <span class="theme-icon-light" aria-hidden="true">☀</span>
+            <span class="theme-icon-dark" aria-hidden="true">☾</span>
+            <span class="header-theme-label hide-on-mobile">Sáng</span>
           </button>
           <div class="user-profile-badge" id="user-profile-badge" title="Cài đặt tài khoản">
             <div class="user-avatar" id="user-avatar-initial">U</div>

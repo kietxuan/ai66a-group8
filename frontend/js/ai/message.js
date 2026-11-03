@@ -29,6 +29,10 @@ export class ChatMessage {
 
   static create({ role, content, toolCalls = [], createdAt = new Date() }) {
     const isUser = role === 'user';
+    // Older saved conversations may contain the raw Python representation of a conflict.
+    const displayContent = /['"]code['"]\s*:\s*['"]SCHEDULE_CONFLICT['"]/.test(String(content || ''))
+      ? '⚠️ Khung giờ này trùng lịch. Vui lòng gửi lại yêu cầu để chọn cách xử lý.'
+      : content;
 
     const msgEl = createElement('div', {
       className: `ai-message ${isUser ? 'user' : 'assistant'}`
@@ -43,7 +47,7 @@ export class ChatMessage {
 
     const bubble = createElement('div', {
       className: 'ai-bubble',
-      innerHTML: ChatMessage.parseMarkdown(content)
+      innerHTML: ChatMessage.parseMarkdown(displayContent)
     });
 
     bubbleWrapper.appendChild(bubble);
@@ -59,8 +63,9 @@ export class ChatMessage {
         const toolName = tc.name || tc.tool || 'Công cụ';
         const badge = createElement('div', {
           className: 'ai-tool-badge cursor-pointer',
-          title: tc.result?.success === false ? (tc.result.error || 'Công cụ chưa thực thi') : 'Kết quả công cụ',
-          textContent: `⚙️ ${tc.result?.requires_confirmation ? 'Chờ xác nhận' : tc.result?.success === false ? 'Chưa thực hiện' : 'Đã gọi'}: ${toolName}`
+          title: tc.result?.code === 'SCHEDULE_CONFLICT' || /SCHEDULE_CONFLICT/.test(String(tc.result?.error || ''))
+            ? 'Khung giờ này trùng lịch' : tc.result?.success === false ? (tc.result.error || 'Công cụ chưa thực thi') : 'Kết quả công cụ',
+          textContent: `⚙️ ${tc.result?.code === 'SCHEDULE_CONFLICT' || /SCHEDULE_CONFLICT/.test(String(tc.result?.error || '')) ? 'Trùng lịch' : tc.result?.requires_confirmation ? 'Chờ xác nhận' : tc.result?.success === false ? 'Chưa thực hiện' : 'Đã gọi'}: ${toolName}`
         });
         toolBadgesContainer.appendChild(badge);
       });

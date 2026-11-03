@@ -398,8 +398,12 @@ export class EventForm {
     scheduleFieldsGrid.appendChild(endTimeGroup);
     scheduleFieldsGrid.appendChild(allDayLabel);
 
+    let lastTimedStart = initialStartTime;
+    let lastTimedEnd = initialEndTime;
     const refreshScheduleUI = () => {
       if (isAllDay) {
+        if (startTimeInput.type === 'time') lastTimedStart = startTimeInput.value || lastTimedStart;
+        if (endTimeInput.type === 'time') lastTimedEnd = endTimeInput.value || lastTimedEnd;
         startTimeInput.type = 'text';
         startTimeInput.value = '--:--';
         startTimeInput.disabled = true;
@@ -414,15 +418,17 @@ export class EventForm {
         endTimeInput.style.cursor = 'not-allowed';
         endTimeInput.style.textAlign = 'center';
       } else {
+        const restoreStart = startTimeInput.type !== 'time';
+        const restoreEnd = endTimeInput.type !== 'time';
         startTimeInput.type = 'time';
-        startTimeInput.value = initialStartTime;
+        if (restoreStart) startTimeInput.value = lastTimedStart;
         startTimeInput.disabled = false;
         startTimeInput.style.opacity = '1';
         startTimeInput.style.cursor = '';
         startTimeInput.style.textAlign = '';
 
         endTimeInput.type = 'time';
-        endTimeInput.value = initialEndTime;
+        if (restoreEnd) endTimeInput.value = lastTimedEnd;
         endTimeInput.disabled = false;
         endTimeInput.style.opacity = '1';
         endTimeInput.style.cursor = '';

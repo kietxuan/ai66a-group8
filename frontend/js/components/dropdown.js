@@ -1,9 +1,28 @@
 import { createElement } from '../utils/dom.js';
+import { Toast } from './toast.js';
 
 export class Dropdown {
   static activeMenu = null;
   static activeSubmenu = null;
   static outsideHandler = null;
+  static keyHandler = null;
+  static submenuParent = null;
+
+  static invoke(callback) {
+    if (typeof callback !== 'function') return;
+    Promise.resolve().then(callback).catch(error => {
+      if (!['SCHEDULE_CANCEL', 'SCHEDULE_CHANGE'].includes(error?.code)) Toast.error(error?.message || 'Không thể thực hiện thao tác.');
+    });
+  }
+
+  static fit(menu, left, top) {
+    const rect = menu.getBoundingClientRect();
+    menu.style.left = `${Math.max(8, Math.min(left, window.innerWidth - rect.width - 8))}px`;
+    menu.style.top = `${Math.max(8, Math.min(top, window.innerHeight - rect.height - 8))}px`;
+    menu.style.maxHeight = `${Math.max(80, window.innerHeight - 16)}px`;
+    menu.style.overflowY = 'auto';
+    menu.style.maxWidth = 'calc(100vw - 16px)';
+  }
 
   static show(optionsOrTrigger, maybeItems = []) {
     this.close();
@@ -21,8 +40,8 @@ export class Dropdown {
     const menu = createElement('div', {
       className: 'dropdown-menu',
       style: {
-        top: `${rect.bottom + window.scrollY + 4}px`,
-        left: `${Math.min(rect.left + window.scrollX, window.innerWidth - 225)}px`
+        top: `${rect.bottom + 4}px`,
+        left: `${rect.left}px`
       }
     });
 
@@ -31,6 +50,7 @@ export class Dropdown {
         this.activeSubmenu.parentNode.removeChild(this.activeSubmenu);
         this.activeSubmenu = null;
       }
+      this.submenuParent = null;
     };
 
     const openSubmenu = (submenuItems, parentEl) => {
@@ -63,7 +83,7 @@ export class Dropdown {
             if (isDis) return;
             Dropdown.close();
             const cb = subItem.onClick || subItem.action;
-            if (typeof cb === 'function') cb();
+            Dropdown.invoke(cb);
           }
         }, [
           subItem.icon ? createElement('span', {
@@ -79,6 +99,9 @@ export class Dropdown {
 
       document.body.appendChild(sub);
       this.activeSubmenu = sub;
+      this.submenuParent = parentEl;
+      const width = sub.getBoundingClientRect().width;
+      this.fit(sub, pRect.right + width + 8 > window.innerWidth ? pRect.left - width - 4 : pRect.right + 4, pRect.top);
     };
 
     items.forEach(item => {
@@ -133,8 +156,10 @@ export class Dropdown {
       }
 
       const itemEl = createElement('div', {
-        className: `dropdown-item ${item.active ? 'active' : ''} ${item.danger ? 'danger' : ''} ${hasSubmenu ? 'has-submenu' : ''}`,
+        className: `dropdown-item ${item.active ? 'active' : ''} ${item.danger ? 'danger' : ''} ${hasSubmenu ? 'has-submenu' : ''} ${item.disabled ? 'disabled' : ''}`,
+        'aria-disabled': item.disabled ? 'true' : 'false',
         onmouseenter: () => {
+          if (item.disabled) return;
           if (hasSubmenu) {
             openSubmenu(item.submenu, itemEl);
           } else {
@@ -143,17 +168,16 @@ export class Dropdown {
         },
         onclick: (e) => {
           e.stopPropagation();
+          if (item.disabled) return;
           if (hasSubmenu) {
-            if (this.activeSubmenu) {
-              closeSubmenu();
-            } else {
+            if (this.submenuParent !== itemEl) {
               openSubmenu(item.submenu, itemEl);
             }
             return;
           }
           Dropdown.close();
           const callback = item.onClick || item.action;
-          if (typeof callback === 'function') callback();
+          Dropdown.invoke(callback);
         }
       }, children);
 
@@ -162,6 +186,11 @@ export class Dropdown {
 
     document.body.appendChild(menu);
     this.activeMenu = menu;
+    this.fit(menu, rect.left, rect.bottom + 4);
+    this.keyHandler = event => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); this.close(); }
+    };
+    document.addEventListener('keydown', this.keyHandler, true);
 
     this.outsideHandler = (e) => {
       const inMenu = menu && menu.contains(e.target);
@@ -180,6 +209,9 @@ export class Dropdown {
   }
 
   static close() {
+    if (this.keyHandler) document.removeEventListener('keydown', this.keyHandler, true);
+    this.keyHandler = null;
+    this.submenuParent = null;
     if (this.outsideHandler) {
       document.removeEventListener('click', this.outsideHandler);
       this.outsideHandler = null;

@@ -426,6 +426,7 @@
 }
 
 .todo-list-scroll {
+  container-type: inline-size;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -548,6 +549,7 @@
 /* Table Header Bar with columns matching Task Item */
 .todo-table-header-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   padding: 6px 14px;
@@ -560,7 +562,7 @@
 }
 
 .todo-th-search {
-  flex: 1;
+  flex: 1 1 160px;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -963,6 +965,7 @@
 }
 
 .kanban-column {
+  container-type: inline-size;
   background-color: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -1048,4 +1051,18 @@
   .task-col-time {
     width: 100px !important;
   }
+}
+
+/* The new fixed-width columns must not consume the task title in narrow cards. */
+@container (max-width: 600px) {
+  .task-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 32px;
+    gap: 6px 8px;
+  }
+  .task-col-main { grid-column: 1; grid-row: 1; }
+  .task-col-star { grid-column: 2; grid-row: 1; }
+  .task-col-time { grid-column: 1 / -1; grid-row: 2; width: auto !important; justify-content: flex-start; padding-left: 29px; }
+  .task-col-tag { grid-column: 1 / -1; grid-row: 3; width: auto; justify-content: flex-start; padding-left: 29px; }
+  .task-col-tag:has(.task-col-empty) { display: none; }
 }
