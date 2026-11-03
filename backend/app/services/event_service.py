@@ -74,7 +74,7 @@ class EventService:
             raise HTTPException(422, "Kết thúc phải sau bắt đầu.")
         if not event_in.is_all_day:
             from app.services.schedule_conflict import check_overlap
-            await check_overlap(db, user_id, event_in.start_at, event_in.end_at, allowed=event_in.allow_overlap, rule=event_in.recurrence_rule, recurrence_end=event_in.recurrence_end)
+            await check_overlap(db, user_id, event_in.start_at, event_in.end_at, allowed=event_in.allow_overlap)
 
         return await event_crud.create(db, user_id=user_id, obj_in=event_in)
 
@@ -114,12 +114,7 @@ class EventService:
         remains_cancelled = event_in.is_cancelled if event_in.is_cancelled is not None else event.is_cancelled
         if schedule_changed and not remains_cancelled and not (event_in.is_all_day if event_in.is_all_day is not None else event.is_all_day):
             from app.services.schedule_conflict import check_overlap
-            proposed_rule = event_in.recurrence_rule if 'recurrence_rule' in event_in.model_fields_set else event.recurrence_rule
-            # Editing one instance must not check hypothetical repeats of that exception.
-            if event.recurrence_rule and scope == 'this':
-                proposed_rule = None
-            proposed_end = event_in.recurrence_end if 'recurrence_end' in event_in.model_fields_set else event.recurrence_end
-            await check_overlap(db, user_id, start, end, exclude=("event", event.id), allowed=event_in.allow_overlap, rule=proposed_rule, recurrence_end=proposed_end)
+            await check_overlap(db, user_id, start, end, exclude=("event", event.id), allowed=event_in.allow_overlap)
         if event_in.start_at and "end_at" not in event_in.model_fields_set:
             event_in = event_in.model_copy(update={"end_at": end})
 
