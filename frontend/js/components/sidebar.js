@@ -1,28 +1,8 @@
-import { store } from '../store.js';
 import { AuthManager } from '../auth.js';
 import { Toast } from './toast.js';
-import { AiDemoAccess } from '../ai/demo-access.js';
 
 export class Sidebar {
   static init() {
-    // Header AI drawer button
-    const aiDrawerBtn = document.getElementById('btn-toggle-ai-drawer');
-    if (aiDrawerBtn) {
-      aiDrawerBtn.addEventListener('click', async () => {
-        const isOpen = store.get('isAiPanelOpen');
-        if (isOpen) {
-          store.set('isAiPanelOpen', false);
-          return;
-        }
-        const userId = store.get('user')?.id;
-        const alreadyAccepted = AiDemoAccess.isAccepted();
-        if (await AiDemoAccess.request() && AiDemoAccess.isAccepted() && userId === store.get('user')?.id && !store.get('isAiPanelOpen')) {
-          if (alreadyAccepted) store.set('isAiPanelOpen', true);
-          else window.location.hash = '#ai';
-        }
-      });
-    }
-
     // Mobile menu toggle
     const mobileMenuBtn = document.getElementById('btn-mobile-menu');
     const closeMobileBtn = document.getElementById('btn-close-sidebar-mobile');

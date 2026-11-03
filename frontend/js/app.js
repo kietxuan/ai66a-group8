@@ -8,7 +8,6 @@ import { AuthManager } from './auth.js';
 import { Sidebar } from './components/sidebar.js';
 import { ReminderNotifier } from './components/reminder-notifier.js';
 import { CommandPalette } from './components/command-palette.js';
-import { EventForm } from './calendar/event-form.js';
 import { router } from './router.js';
 import { store } from './store.js';
 import { api } from './api.js';
@@ -53,19 +52,6 @@ class App {
     // 3. Initialize Sidebar & Command Palette (Pomodoro Focus removed per user request)
     Sidebar.init();
     CommandPalette.init();
-
-    // 4. Header Quick Create button — opens Unified Form (default no date/time so it can be permanent or dragged to Calendar)
-    const quickCreateBtn = document.getElementById('btn-header-quick-create');
-    if (quickCreateBtn) {
-      quickCreateBtn.addEventListener('click', () => {
-        EventForm.showFullModal({
-          hasDate: false,
-          onCreated: () => {
-            window.dispatchEvent(new CustomEvent('planify:data-changed'));
-          }
-        });
-      });
-    }
 
     // 5. Update user badge in header & Reminder service
     store.on('user', (user) => {
