@@ -15,6 +15,7 @@ export class TaskListView {
     activeTaskId = null,
     sortBy = "time",
     onlyImportant = false,
+    filterStatus = "all",
     searchQuery = "",
     onSelectTask = null,
     onToggleComplete = null,
@@ -28,6 +29,7 @@ export class TaskListView {
     this.activeTaskId = activeTaskId;
     this.sortBy = sortBy || "time";
     this.onlyImportant = onlyImportant;
+    this.filterStatus = filterStatus || "all";
     this.searchQuery = searchQuery;
     this.onSelectTask = onSelectTask;
     this.onToggleComplete = onToggleComplete;
@@ -119,6 +121,12 @@ export class TaskListView {
       if (!isNaN(targetListId)) {
         filtered = filtered.filter((t) => t.list_id === targetListId);
       }
+    }
+
+    if (this.filterStatus === "active") {
+      filtered = filtered.filter((t) => !t.is_completed);
+    } else if (this.filterStatus === "completed") {
+      filtered = filtered.filter((t) => Boolean(t.is_completed));
     }
 
     if (this.onlyImportant) {

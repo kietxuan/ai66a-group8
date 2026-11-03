@@ -250,6 +250,36 @@
   flex-shrink: 0;
 }
 
+.todo-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.todo-header-actions .btn {
+  border: 1px solid var(--color-border);
+  padding: 6px 12px;
+  font-size: 13px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-primary);
+}
+
+.todo-header-actions .btn:hover {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
+}
+
+.todo-header-actions .btn.active {
+  border-color: var(--color-accent);
+  background-color: var(--color-bg-selected);
+  color: var(--color-accent);
+}
+
 .todo-title-row {
   display: flex;
   align-items: center;
@@ -271,12 +301,20 @@
 }
 
 .todo-search-input {
-  width: 170px;
+  width: 180px;
+  height: 32px;
   padding: 6px 12px;
   font-size: 12px;
   border-radius: var(--radius-full);
   background-color: var(--color-bg-card);
   border: 1px solid var(--color-border);
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.todo-search-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-subtle);
 }
 
 .todo-input-bar-container {

@@ -9,9 +9,6 @@ export class TaskForm {
     this.listId = listId;
     this.onCreated = onCreated;
 
-    this.isImportant = false;
-    this.autoComplete = false;
-
     this.render();
   }
 
@@ -25,12 +22,23 @@ export class TaskForm {
     const form = createElement('div', { className: 'todo-input-bar-container' });
 
     const inputRow = createElement('div', { className: 'todo-input-bar' });
-    const addIcon = createElement('span', { style: { color: 'var(--color-primary)', fontWeight: 'bold' }, textContent: '➕' });
+    const addIcon = createElement('span', {
+      style: {
+        fontSize: '18px',
+        fontWeight: 'bold',
+        color: 'var(--color-text-secondary)',
+        display: 'flex',
+        alignItems: 'center',
+        userSelect: 'none',
+        lineHeight: '1'
+      },
+      textContent: '＋'
+    });
 
     const input = createElement('input', {
       type: 'text',
       className: 'todo-input',
-      placeholder: 'Nhập tên việc cần làm (Mặc định vĩnh viễn ở cột Cần làm, kéo thả được vào Lịch)... Nhấn Enter để lưu',
+      placeholder: 'Nhập việc cần làm... (nhấn Enter để thêm)',
       onkeydown: (e) => {
         if (e.key === 'Enter') {
           this.submit(input);
@@ -38,55 +46,20 @@ export class TaskForm {
       }
     });
 
-    const submitBtn = createElement('button', {
-      type: 'button',
-      className: 'btn btn-primary btn-sm',
-      textContent: 'Thêm nhanh',
-      onclick: () => this.submit(input)
-    });
-
-    inputRow.appendChild(addIcon);
-    inputRow.appendChild(input);
-    inputRow.appendChild(submitBtn);
-
-    // Quick toggles bar
-    const toolbar = createElement('div', {
-      className: 'flex items-center justify-between gap-sm flex-wrap',
-      style: { padding: '4px 8px 8px 8px', fontSize: '12px' }
-    });
-
-    const leftToggles = createElement('div', { className: 'flex items-center gap-xs flex-wrap' });
-
-    const autoCompleteBtn = createElement('button', {
-      type: 'button',
-      className: `btn btn-secondary btn-sm ${this.autoComplete ? 'active' : ''}`,
-      title: 'Tự động hoàn thành khi hết giờ',
-      textContent: this.autoComplete ? 'Tự động hoàn thành (Bật)' : 'Tự động hoàn thành',
-      onclick: () => {
-        this.autoComplete = !this.autoComplete;
-        this.render();
-      }
-    });
-
-    const starBtn = createElement('button', {
-      type: 'button',
-      className: `btn btn-secondary btn-sm ${this.isImportant ? 'active' : ''}`,
-      title: 'Đánh dấu công việc quan trọng',
-      textContent: this.isImportant ? '⭐ Quan trọng' : '☆ Quan trọng',
-      onclick: () => {
-        this.isImportant = !this.isImportant;
-        this.render();
-      }
-    });
-
-    const openFullModalBtn = createElement('button', {
+    const detailBtn = createElement('button', {
       type: 'button',
       className: 'btn btn-secondary btn-sm',
-      textContent: 'Cài đặt thời gian & chi tiết...',
+      textContent: 'Chi tiết',
+      title: 'Mở biểu mẫu chi tiết đầy đủ',
+      style: {
+        border: '1px solid var(--color-border)',
+        flexShrink: '0',
+        height: '32px'
+      },
       onclick: () => {
         const draftTitle = input.value.trim();
         EventForm.showFullModal({
-          task: draftTitle ? { title: draftTitle, is_important: this.isImportant, auto_complete: this.autoComplete } : null,
+          task: draftTitle ? { title: draftTitle } : null,
           hasDate: false,
           defaultListId: this.listId,
           onCreated: (created) => {
@@ -97,13 +70,11 @@ export class TaskForm {
       }
     });
 
-    leftToggles.appendChild(autoCompleteBtn);
-    leftToggles.appendChild(starBtn);
-    toolbar.appendChild(leftToggles);
-    toolbar.appendChild(openFullModalBtn);
+    inputRow.appendChild(addIcon);
+    inputRow.appendChild(input);
+    inputRow.appendChild(detailBtn);
 
     form.appendChild(inputRow);
-    form.appendChild(toolbar);
 
     this.container.appendChild(form);
     this.input = input;
@@ -120,15 +91,12 @@ export class TaskForm {
         list_id: this.listId || undefined,
         due_date: null,
         is_all_day: true,
-        is_important: this.isImportant,
-        auto_complete: this.autoComplete
+        is_important: false,
+        auto_complete: false
       };
 
       const newTask = await api.post('/tasks', payload);
       inputEl.value = '';
-      this.isImportant = false;
-      this.autoComplete = false;
-      this.render();
 
       window.dispatchEvent(new CustomEvent('planify:data-changed', {
         detail: { source: 'todo-form', action: 'create', type: 'task', id: newTask?.id }
@@ -137,7 +105,7 @@ export class TaskForm {
         detail: { action: 'create', task: newTask }
       }));
 
-      Toast.success('Đã thêm vào cột Cần làm (Vĩnh viễn)!');
+      Toast.success('Đã thêm việc cần làm!');
       if (this.onCreated) this.onCreated(newTask);
     } catch (err) {
       Toast.error(err.message || 'Lỗi khi thêm công việc');

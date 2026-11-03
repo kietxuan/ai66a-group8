@@ -20,6 +20,7 @@ export const todoPage = {
   activeTask: null,
   sortBy: "time",
   onlyImportant: false,
+  filterStatus: "all",
   searchQuery: "",
 
   sidebarComponent: null,
@@ -131,13 +132,14 @@ export const todoPage = {
 
     const headerActions = createElement("div", {
       className: "todo-header-actions flex items-center gap-xs flex-wrap",
+      style: { marginLeft: "auto" },
     });
 
-    // Search Input
+    // Search Input (nằm bên trái Filter & Sắp xếp, cùng một dòng)
     const searchInput = createElement("input", {
       type: "text",
       className: "todo-search-input",
-      placeholder: "🔍 Tìm nhanh công việc...",
+      placeholder: "🔍 Tìm kiếm công việc...",
       value: this.searchQuery,
       oninput: (e) => {
         this.searchQuery = e.target.value;
@@ -145,52 +147,33 @@ export const todoPage = {
       },
     });
 
-    // Filter Important (⭐) toggle button
-    const filterImpBtn = createElement("button", {
+    // Filter button (icon viền đen đơn giản)
+    const filterBtn = createElement("button", {
       type: "button",
-      className: `btn btn-secondary btn-sm ${this.onlyImportant ? "active" : ""}`,
-      textContent: this.onlyImportant
-        ? "⭐ Đang lọc Quan trọng"
-        : "☆ Lọc Quan trọng",
-      title: "Chỉ hiển thị các mục có đánh dấu sao Quan trọng",
-      onclick: () => {
-        this.onlyImportant = !this.onlyImportant;
-        filterImpBtn.classList.toggle("active", this.onlyImportant);
-        filterImpBtn.textContent = this.onlyImportant
-          ? "⭐ Đang lọc Quan trọng"
-          : "☆ Lọc Quan trọng";
-        this.updateComponents();
-      },
+      className: `btn btn-secondary btn-sm ${this.onlyImportant || (this.filterStatus && this.filterStatus !== "all") ? "active" : ""}`,
+      id: "btn-filter-tasks",
+      title: "Lọc công việc",
+      onclick: (e) => this.showFilterDropdown(e, filterBtn),
     });
+    filterBtn.innerHTML = `
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-1px; margin-right:4px;">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+      </svg>Filter
+    `.trim();
 
-    // Sort Dropdown button
+    // Sắp xếp button (icon viền đen đơn giản)
     const sortBtn = createElement("button", {
       type: "button",
       className: "btn btn-secondary btn-sm",
       id: "btn-sort-tasks",
-      textContent: "⇅ Theo thời gian",
+      title: "Sắp xếp danh sách",
       onclick: (e) => this.showSortDropdown(e, sortBtn),
     });
-
-    // Open Full Unified Form button
-    const fullFormBtn = createElement("button", {
-      type: "button",
-      className: "btn btn-primary btn-sm",
-      textContent: "＋ Tạo Công việc",
-      onclick: () => {
-        EventForm.showFullModal({
-          hasDate: false,
-          defaultListId:
-            typeof this.activeListId === "number" ? this.activeListId : null,
-          onCreated: () => this.fetchTasks(),
-        });
-      },
-    });
+    sortBtn.innerHTML = `<span style="font-size:14px; margin-right:4px; font-weight:bold; line-height:1;">⇅</span>Sắp xếp`;
 
     headerActions.appendChild(searchInput);
-    headerActions.appendChild(filterImpBtn);
+    headerActions.appendChild(filterBtn);
     headerActions.appendChild(sortBtn);
-    headerActions.appendChild(fullFormBtn);
 
     headerEl.appendChild(titleRow);
     headerEl.appendChild(headerActions);
@@ -349,6 +332,7 @@ export const todoPage = {
       activeTaskId: this.activeTask?.id || null,
       sortBy: this.sortBy,
       onlyImportant: this.onlyImportant,
+      filterStatus: this.filterStatus || "all",
       searchQuery: this.searchQuery,
     });
 
@@ -494,26 +478,80 @@ export const todoPage = {
   showSortDropdown(e, sortBtn) {
     const items = [
       {
-        label: "🕒 Theo thời gian (Mặc định)",
+        label: this.sortBy === "time" ? "✓ Theo thời gian (Mặc định)" : "Theo thời gian (Mặc định)",
+        icon: "🕒",
         onClick: () => {
           this.sortBy = "time";
-          if (sortBtn) sortBtn.textContent = "⇅ Theo thời gian";
           this.updateComponents();
         },
       },
       {
-        label: "⭐ Quan trọng lên đầu",
+        label: this.sortBy === "important" ? "✓ Quan trọng lên đầu" : "Quan trọng lên đầu",
+        icon: "⭐",
         onClick: () => {
           this.sortBy = "important";
-          if (sortBtn) sortBtn.textContent = "⇅ Quan trọng";
           this.updateComponents();
         },
       },
       {
-        label: "🔤 Theo tên (A-Z)",
+        label: this.sortBy === "title" ? "✓ Theo tên (A-Z)" : "Theo tên (A-Z)",
+        icon: "🔤",
         onClick: () => {
           this.sortBy = "title";
-          if (sortBtn) sortBtn.textContent = "⇅ Tên A-Z";
+          this.updateComponents();
+        },
+      },
+    ];
+
+    Dropdown.show({
+      triggerEl: e.currentTarget,
+      anchorEl: e.currentTarget,
+      items,
+    });
+  },
+
+  showFilterDropdown(e, filterBtn) {
+    const isFiltered = this.onlyImportant || (this.filterStatus && this.filterStatus !== "all");
+    const items = [
+      {
+        label: !isFiltered ? "✓ Tất cả công việc (Bỏ lọc)" : "Tất cả công việc (Bỏ lọc)",
+        onClick: () => {
+          this.onlyImportant = false;
+          this.filterStatus = "all";
+          if (filterBtn) filterBtn.classList.remove("active");
+          this.updateComponents();
+        },
+      },
+      {
+        label: this.onlyImportant ? "✓ Chỉ mục quan trọng" : "Chỉ mục quan trọng",
+        icon: "⭐",
+        onClick: () => {
+          this.onlyImportant = !this.onlyImportant;
+          if (filterBtn) {
+            filterBtn.classList.toggle("active", this.onlyImportant || (this.filterStatus && this.filterStatus !== "all"));
+          }
+          this.updateComponents();
+        },
+      },
+      {
+        label: this.filterStatus === "active" ? "✓ Chỉ việc chưa hoàn thành" : "Chỉ việc chưa hoàn thành",
+        icon: "⏳",
+        onClick: () => {
+          this.filterStatus = this.filterStatus === "active" ? "all" : "active";
+          if (filterBtn) {
+            filterBtn.classList.toggle("active", this.onlyImportant || (this.filterStatus && this.filterStatus !== "all"));
+          }
+          this.updateComponents();
+        },
+      },
+      {
+        label: this.filterStatus === "completed" ? "✓ Chỉ việc đã hoàn thành" : "Chỉ việc đã hoàn thành",
+        icon: "✅",
+        onClick: () => {
+          this.filterStatus = this.filterStatus === "completed" ? "all" : "completed";
+          if (filterBtn) {
+            filterBtn.classList.toggle("active", this.onlyImportant || (this.filterStatus && this.filterStatus !== "all"));
+          }
           this.updateComponents();
         },
       },
