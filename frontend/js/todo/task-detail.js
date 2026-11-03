@@ -302,7 +302,7 @@ export class TaskDetail {
       }
     });
     const dueHeaderRow = createElement('div', { className: 'flex items-center justify-between' }, [
-      createElement('label', { className: 'form-label', style: { marginBottom: 0 }, textContent: '📅 Ngày thực hiện (Trống = Vĩnh viễn)' }),
+      createElement('label', { className: 'form-label', style: { marginBottom: 0 }, textContent: 'Ngày thực hiện (Trống = Vĩnh viễn)' }),
       clearDueDateButton
     ]);
 
@@ -453,7 +453,7 @@ export class TaskDetail {
     actionsGroup.appendChild(timeBlockSection);
 
     const listRow = createElement('div', { className: 'form-group' }, [
-      createElement('label', { className: 'form-label', textContent: '📁 Thuộc danh sách' }),
+      createElement('label', { className: 'form-label', textContent: 'Thuộc danh sách' }),
       createElement('select', {
         className: 'select',
         onchange: async (e) => {

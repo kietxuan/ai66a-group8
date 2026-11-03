@@ -356,7 +356,7 @@ export const settingsPage = {
     const categorySection = createElement("div", { className: "settings-section" }, [
       createElement("h2", {
         className: "settings-section-title",
-        textContent: "🏷️ Cài đặt màu thẻ & Phân loại công việc",
+        textContent: "Màu thẻ & phân loại công việc",
       }),
       createElement("p", {
         style: {
@@ -380,7 +380,7 @@ export const settingsPage = {
       [
         createElement("h2", {
           className: "settings-section-title",
-          textContent: "🎨 Giao diện & Chủ đề",
+          textContent: "Giao diện & chủ đề",
         }),
         createElement("div", { className: "theme-options-grid" }, [
           createElement(
@@ -572,7 +572,7 @@ export const settingsPage = {
       [
         createElement("h2", {
           className: "settings-section-title",
-          textContent: "🔔 Cài đặt Thông báo Lịch hẹn",
+          textContent: "Thông báo lịch hẹn",
         }),
         createElement(
           "label",
@@ -879,7 +879,7 @@ export const settingsPage = {
       [
         createElement("h2", {
           className: "settings-section-title",
-          textContent: "👤 Thông tin cá nhân",
+          textContent: "Thông tin cá nhân",
         }),
         createElement("div", { className: "form-group" }, [
           createElement("label", {
@@ -917,13 +917,13 @@ export const settingsPage = {
       [
         createElement("h2", {
           className: "settings-section-title",
-          textContent: "📦 Sao lưu & Xuất dữ liệu (Google/Outlook .ICS & JSON)",
+          textContent: "Sao lưu & xuất dữ liệu (Google/Outlook .ICS & JSON)",
         }),
         createElement("div", { className: "flex gap-sm flex-wrap" }, [
           createElement("button", {
             type: "button",
             className: "btn btn-secondary",
-            textContent: "📅 Xuất Lịch chuẩn .ICS (iCalendar)",
+            textContent: "Xuất lịch .ICS (iCalendar)",
             onclick: async () => {
               try {
                 const [tasks, events] = await Promise.all([
@@ -950,7 +950,7 @@ export const settingsPage = {
           createElement("button", {
             type: "button",
             className: "btn btn-secondary",
-            textContent: "📋 Xuất Toàn bộ Công việc (.JSON)",
+            textContent: "Xuất toàn bộ công việc (.JSON)",
             onclick: async () => {
               try {
                 const [tasks, events] = await Promise.all([
@@ -1039,7 +1039,7 @@ export const settingsPage = {
       [
         createElement("h2", {
           className: "settings-section-title",
-          textContent: "🔒 Bảo mật & Mật khẩu",
+          textContent: "Bảo mật & mật khẩu",
         }),
         createElement("div", { className: "form-group" }, [
           createElement("label", {
@@ -1068,7 +1068,7 @@ export const settingsPage = {
       [
         createElement("h2", {
           className: "settings-section-title",
-          textContent: "🚪 Phiên làm việc",
+          textContent: "Phiên làm việc",
         }),
         createElement("div", {}, [
           createElement("button", {

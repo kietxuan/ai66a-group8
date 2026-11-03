@@ -136,7 +136,7 @@ export const calendarPage = {
         },
         [
           createElement("span", {
-            textContent: "📌 Việc chưa xếp lịch",
+            textContent: "Việc chưa xếp lịch",
           }),
           createElement("span", {
             className: "todo-list-badge",
@@ -218,9 +218,7 @@ export const calendarPage = {
           },
         },
         [
-          createElement("span", {
-            textContent: t.is_important ? "⭐" : t.auto_complete ? "⚡" : "📌",
-          }),
+          t.is_important ? createElement("span", { textContent: "⭐", title: 'Quan trọng' }) : null,
           createElement("span", {
             className: "truncate flex-1",
             style: { fontWeight: "600" },
