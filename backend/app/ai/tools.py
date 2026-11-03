@@ -4,7 +4,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "create_event",
-            "description": "Tạo sự kiện mới trên lịch của người dùng (hỗ trợ sự kiện đơn lẻ, cả ngày hoặc lặp lại theo RFC 5545 RRULE).",
+            "description": "Tạo sự kiện. Mục trong một ngày không chỉ định nhóm lịch sẽ được lưu thành Task thống nhất và trả item_type=task; dùng task_id và các tool Task để sửa/xóa sau đó. Chỉ sự kiện qua nhiều ngày hoặc chỉ định nhóm lịch dùng Event cũ.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -33,6 +33,7 @@ TOOLS = [
                 "type": "object",
                 "properties": {
                     "event_id": {"type": "integer", "description": "ID sự kiện cần cập nhật"},
+                    "task_id": {"type": "integer", "description": "ID nếu kết quả tạo là item_type=task; không truyền nhầm sang event_id"},
                     "title_query": {"type": "string", "description": "Tên sự kiện cần tìm để cập nhật (nếu không có event_id)"},
                     "title": {"type": "string", "description": "Tiêu đề mới"},
                     "start_at": {"type": "string", "description": "Thời gian bắt đầu mới (ISO 8601)"},
@@ -58,6 +59,7 @@ TOOLS = [
                 "type": "object",
                 "properties": {
                     "event_id": {"type": "integer"},
+                    "task_id": {"type": "integer", "description": "ID mục To Do có lịch (item_type=task)"},
                     "title_query": {"type": "string", "description": "Từ khóa tiêu đề sự kiện"},
                     "new_start_at": {"type": "string", "description": "Thời gian bắt đầu mới (ISO 8601)"},
                     "new_end_at": {"type": "string", "description": "Thời gian kết thúc mới (ISO 8601)"},
@@ -78,6 +80,7 @@ TOOLS = [
                 "type": "object",
                 "properties": {
                     "event_id": {"type": "integer", "description": "ID sự kiện cần xóa"},
+                    "task_id": {"type": "integer", "description": "ID mục To Do có lịch (item_type=task)"},
                     "title_query": {"type": "string", "description": "Tiêu đề sự kiện cần xóa (nếu không có event_id)"},
                     "occurrence_date": {"type": "string", "description": "Giờ bắt đầu gốc của lần lặp cần xóa (ISO8601); bắt buộc cho this/following."},
                     "scope": {"type": "string", "enum": ["this", "following", "all"], "description": "Phạm vi xóa với sự kiện lặp"}
@@ -213,12 +216,15 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "create_task",
-            "description": "Tạo một công việc (task) mới vào danh sách việc cần làm, hỗ trợ đặt hạn chót, khung giờ Time-Blocking, đánh dấu quan trọng, My Day và các bước con (steps).",
+            "description": "Tạo mục thống nhất như form giao diện, hiển thị ở To Do, Dashboard và Calendar nếu có ngày. Dùng cho cả công việc và lịch học/lịch họp/sự kiện trong ngày. auto_complete=false cho việc tự tích hoàn thành; true cho sự kiện tự hoàn thành khi hết giờ.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "title": {"type": "string", "description": "Tiêu đề công việc"},
                     "note": {"type": "string", "description": "Ghi chú chi tiết"},
+                    "location": {"type": "string", "description": "Địa điểm hoặc liên kết họp"},
+                    "auto_complete": {"type": "boolean", "description": "True cho sự kiện tự hoàn thành khi hết giờ, false cho công việc cần tích hoàn thành"},
+                    "reminder_minutes": {"type": "integer", "description": "Số phút nhắc trước giờ bắt đầu"},
                     "list_id": {"type": "integer", "description": "ID danh sách chứa task"},
                     "list_name": {"type": "string", "description": "Tên danh sách chứa task (nếu không biết list_id)"},
                     "due_date": {"type": "string", "description": "Hạn chót ngày làm (YYYY-MM-DD)"},
@@ -253,6 +259,9 @@ TOOLS = [
                     "title_query": {"type": "string", "description": "Tên công việc cần tìm để sửa (nếu không có task_id)"},
                     "title": {"type": "string"},
                     "note": {"type": "string"},
+                    "location": {"type": "string"},
+                    "auto_complete": {"type": "boolean"},
+                    "reminder_minutes": {"type": "integer"},
                     "due_date": {"type": "string"},
                     "due_time": {"type": "string"},
                     "start_time": {"type": "string"},

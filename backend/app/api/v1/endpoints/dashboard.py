@@ -19,7 +19,7 @@ from app.schemas.dashboard_schema import (
 from app.services.event_service import event_service
 from app.services.task_service import task_service
 from app.services.task_list_service import task_list_service
-from app.services.recurrence import expand_event_rows
+from app.services.recurrence import expand_event_rows, is_task_overdue
 
 router = APIRouter()
 
@@ -43,12 +43,8 @@ async def get_today_dashboard(
         db, user_id=current_user.id, view="my_day"
     )
 
-    overdue_stmt = select(func.count(Task.id)).where(
-        Task.user_id == current_user.id,
-        Task.is_completed == False,
-        Task.due_date < today
-    )
-    overdue_count = (await db.execute(overdue_stmt)).scalar() or 0
+    overdue_tasks = await task_service.get_tasks(db, user_id=current_user.id, view="overdue")
+    overdue_count = len(overdue_tasks)
 
     due_today_stmt = select(func.count(Task.id)).where(
         Task.user_id == current_user.id,
@@ -96,8 +92,10 @@ async def get_dashboard_stats(
     important_tasks = [t for t in all_tasks if t.is_important and not t.is_completed]
     my_day_all = [t for t in all_tasks if t.is_in_my_day]
     my_day_completed = sum(1 for t in my_day_all if t.is_completed)
-    overdue_tasks = [t for t in all_tasks if not t.is_completed and t.due_date and t.due_date < today]
+    now = local_now()
+    overdue_tasks = [t for t in all_tasks if is_task_overdue(t, now)]
     due_today_tasks = [t for t in all_tasks if not t.is_completed and t.due_date == today]
+    today_pending = [t for t in due_today_tasks if not is_task_overdue(t, now)]
     time_blocked_tasks = [t for t in all_tasks if not t.is_completed and not t.is_all_day and t.start_time]
 
     completed_today_count = 0
@@ -110,13 +108,13 @@ async def get_dashboard_stats(
     # Status breakdown for Donut Chart
     scheduled_pending = sum(
         1 for t in all_tasks
-        if not t.is_completed and not t.is_in_my_day and t.due_date and t.due_date >= today
+        if not t.is_completed and t.due_date and t.due_date != today and not is_task_overdue(t, now)
     )
     unscheduled_pending = sum(
         1 for t in all_tasks
-        if not t.is_completed and not t.is_in_my_day and not t.due_date
+        if not t.is_completed and not t.due_date
     )
-    in_my_day_pending = sum(1 for t in my_day_all if not t.is_completed)
+    in_my_day_pending = len(today_pending)
 
     status_breakdown = {
         "completed": completed_tasks,
@@ -243,7 +241,8 @@ async def get_dashboard_stats(
         list_breakdown=list_breakdown,
         events_today=events_today,
         upcoming_events=upcoming_events,
-        tasks_my_day=my_day_all[:10],
+        tasks_my_day=today_pending[:10],
         tasks_important=important_tasks[:10],
-        tasks_overdue=overdue_tasks[:10]
+        tasks_overdue=overdue_tasks[:10],
+        tasks_todo=[t for t in all_tasks if not t.is_completed and t.due_date != today and not is_task_overdue(t, now)][:10]
     )

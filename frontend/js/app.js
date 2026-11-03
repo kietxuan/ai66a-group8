@@ -23,6 +23,7 @@ import { aiPage } from './pages/ai.js';
 import { guidePage } from './pages/guide.js';
 import { settingsPage } from './pages/settings.js';
 import { ChatPanel } from './ai/chat-panel.js';
+import { AiDemoAccess } from './ai/demo-access.js';
 import { Modal } from './components/modal.js';
 import { ContextMenu } from './components/contextmenu.js';
 
@@ -95,6 +96,7 @@ class App {
     }
 
     // 7. Initialize Slide-Over AI Chat Panel
+    if (!AiDemoAccess.isAccepted()) store.set('isAiPanelOpen', false);
     ChatPanel.init();
 
     const aiPanel = document.getElementById('ai-chat-panel');

@@ -443,15 +443,20 @@ export class EventForm {
       return opt;
     }));
 
-    const rruleSelect = createElement('select', { className: 'input', 'aria-label': 'Chu kỳ lặp lại' }, [
+    const currentRule = existingItem?.recurrence_rule || '';
+    const recurrenceOptions = [
       { val: '', label: 'Không lặp lại' },
       { val: 'FREQ=DAILY', label: 'Hàng ngày' },
       { val: 'FREQ=WEEKLY', label: 'Hàng tuần' },
       { val: 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR', label: 'Thứ 2 - Thứ 6 (Ngày làm việc)' },
       { val: 'FREQ=MONTHLY', label: 'Hàng tháng' }
-    ].map(o => {
+    ];
+    if (currentRule && !recurrenceOptions.some(o => o.val === currentRule)) {
+      recurrenceOptions.push({ val: currentRule, label: 'Chu kỳ hiện tại (giữ nguyên)' });
+    }
+    const rruleSelect = createElement('select', { className: 'input', 'aria-label': 'Chu kỳ lặp lại' }, recurrenceOptions.map(o => {
       const opt = createElement('option', { value: o.val, textContent: o.label });
-      if ((existingItem?.recurrence_rule || '') === o.val) opt.selected = true;
+      if (currentRule === o.val) opt.selected = true;
       return opt;
     }));
 
@@ -588,7 +593,7 @@ export class EventForm {
         is_all_day: scheduleEnabled ? isAllDay : true,
         color: selectedColor,
         reminder_minutes: Number(reminderSelect.value || 15),
-        recurrence_rule: scheduleEnabled ? (rruleSelect.value || null) : null
+        recurrence_rule: (isEdit || scheduleEnabled) ? (rruleSelect.value || null) : null
       };
 
       try {
@@ -622,7 +627,7 @@ export class EventForm {
           const modeLabel = isAutoComplete ? 'Sự kiện (tự động hoàn thành)' : 'Việc cần làm';
           const placeLabel = !dueDateVal
             ? 'vào cột Cần làm (Vĩnh viễn)'
-            : (dueDateVal === todayStr ? 'vào cột Hôm nay & Lịch biểu' : `vào ngày ${dueDateVal}`);
+            : `vào ngày ${dueDateVal} & Lịch biểu`;
           Toast.success(`Đã thêm ${modeLabel} "${title}" ${placeLabel}!`);
           modalRef.close();
           window.dispatchEvent(new CustomEvent('planify:data-changed'));

@@ -215,20 +215,40 @@ export const todoPage = {
 
     this.setupShortcuts();
     this.dataChangedListener = (event) => {
-      if (event.detail?.source !== 'task-detail') this.fetchTasks();
+      if (event.detail?.source === 'task-detail') return;
+      const calls = event.detail?.toolCalls;
+      const refreshLists = event.detail?.source === 'ai' && Array.isArray(calls) && calls.some(call =>
+        call?.result?.success === true && /^(create|update|delete)_task_list$/.test(call.name || call.tool || '')
+      );
+      this.fetchTasks({ refreshLists });
     };
     window.addEventListener('planify:data-changed', this.dataChangedListener);
     document.addEventListener('task-changed', this.dataChangedListener);
 
-    await this.fetchTasks();
+    await this.fetchTasks({ refreshLists: true });
   },
 
-  async fetchTasks({ preserveDetail = false } = {}) {
+  async fetchTasks({ preserveDetail = false, refreshLists = false } = {}) {
+    if (refreshLists) this.listsNeedRefresh = true;
+    // Keep invalidation pending across overlapping task refreshes and failed requests.
+    const reloadLists = this.listsNeedRefresh;
     const generation = this.requestGeneration = (this.requestGeneration || 0) + 1;
     try {
-      const tasks = await api.get('/tasks') || [];
+      const [tasks, refreshedLists] = await Promise.all([
+        api.get('/tasks'),
+        reloadLists ? api.get('/task-lists') : Promise.resolve(null)
+      ]);
       if (generation !== this.requestGeneration || !this.container) return;
-      this.tasks = tasks;
+      this.tasks = tasks || [];
+      if (reloadLists) {
+        const lists = refreshedLists || [];
+        store.set('taskLists', lists);
+        this.sidebarComponent.taskLists = lists;
+        this.listsNeedRefresh = false;
+        if (typeof this.activeListId === 'number' && !lists.some(l => l.id === this.activeListId)) {
+          this.switchList('board', 'Bảng quản lý chung', '📋');
+        }
+      }
       // Update header title if custom list was restored from localStorage
       if (typeof this.activeListId === 'number') {
         const lists = store.get('taskLists') || [];
@@ -286,6 +306,7 @@ export const todoPage = {
   },
 
   switchList(id, name, icon) {
+    if (this.activeTask && String(this.activeListId) !== String(id)) this.closeDetail();
     this.activeListId = id;
     this.activeListName = name;
     this.activeListIcon = icon;

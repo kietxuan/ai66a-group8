@@ -261,7 +261,7 @@ export class DayView {
         id: el.item.id,
         is_task: !!el.item.is_task,
               ...recurrenceContext(el.item),
-        durationMinutes: el.durMin,
+        durationMinutes: (new Date(el.item.end_at) - new Date(el.item.start_at)) / 60000,
         title: el.item.title,
         start_at: el.item.start_at,
         end_at: el.item.end_at,
