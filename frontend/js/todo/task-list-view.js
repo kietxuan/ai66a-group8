@@ -988,7 +988,7 @@ export class TaskListView {
     const createItemEl = (task) =>
       TaskItem.create({
         task,
-        listName: isTasks ? (listMap[task.list_id] || null) : null,
+        listName: null,
         isActiveDetail: this.activeTaskId === task.id,
         isOverdue: this.isTaskOverdue(task, todayStr, nowTimeStr),
         onToggleComplete: this.onToggleComplete,
