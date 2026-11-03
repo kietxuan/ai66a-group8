@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Planify Pro API"
     API_V1_STR: str = "/api/v1"
 
-    # 2. Tài khoản Admin
+    # 2. Tài khoản Admin (Dùng đăng nhập Admin và gửi email xác thực/thông báo)
     ADMIN_USERNAME: str = "Admin"
     ADMIN_EMAIL: str = "admin@planify.local"
     ADMIN_PASSWORD: str = ""
@@ -31,12 +31,7 @@ class Settings(BaseSettings):
     # 6. Cấu hình AI Agent (Groq / OpenAI compatible)
     AI_API_KEY: Optional[str] = None
     API_KEY: Optional[str] = None
-    AI_MODEL: str = "openai/gpt-oss-120b"
-    SMTP_HOST: str = "smtp.gmail.com"
-    SMTP_PORT: int = 587
-    SMTP_USERNAME: str = ""
-    SMTP_PASSWORD: str = ""
-    SMTP_FROM_EMAIL: str = ""
+    AI_MODEL: str = "openai/gpt-oss-20b"
     SCHEDULER_ENABLED: bool = True
 
     def validate_security(self) -> None:
@@ -71,7 +66,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         case_sensitive=True,
-        env_file=".env",
+        env_file=(".env", "/workspace/.env", "../.env"),
         env_file_encoding="utf-8",
         extra="ignore"
     )

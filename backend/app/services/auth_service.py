@@ -69,7 +69,7 @@ class AuthService:
         await redis.set(f"otp:{norm_reason}:{email}", payload, ex=300)
         if not await send_email(email=email, otp=code, reason=norm_reason):
             await redis.delete(f"otp:{norm_reason}:{email}")
-            raise HTTPException(503, "Không gửi được email. Vui lòng kiểm tra cấu hình SMTP.")
+            raise HTTPException(503, "Không gửi được email. Vui lòng kiểm tra tài khoản ADMIN trong file .env.")
         return code
 
     async def verify_otp_email(self, email: str, reason: str, otp: str, redis: Redis) -> str:

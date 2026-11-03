@@ -133,10 +133,15 @@ export class TaskDetail {
           titleInput.style.textDecoration = nextState ? 'line-through' : 'none';
           completeCheckbox.style.borderColor = nextState ? 'var(--color-success, #10B981)' : 'var(--color-text-secondary)';
           completeCheckbox.style.backgroundColor = nextState ? 'var(--color-success, #10B981)' : 'transparent';
-          completeCheckbox.replaceChildren(
-            nextState ? createElement('span', { style: { color: '#ffffff', fontSize: '12px', fontWeight: 'bold', lineHeight: '1' }, textContent: '✓' }) : null
-          );
+          if (nextState) {
+            completeCheckbox.replaceChildren(
+              createElement('span', { style: { color: '#ffffff', fontSize: '12px', fontWeight: 'bold', lineHeight: '1' }, textContent: '✓' })
+            );
+          } else {
+            completeCheckbox.replaceChildren();
+          }
           completeCheckbox.classList.toggle('checked', nextState);
+          completeCheckbox.title = nextState ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu hoàn thành';
 
           const updated = await api.patch(`/tasks/${t.id}/complete`, { is_completed: nextState }, revisionOptions(t));
           if (updated?.updated_at) t.updated_at = updated.updated_at;
@@ -145,9 +150,9 @@ export class TaskDetail {
           if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể cập nhật trạng thái.');
         }
       }
-    }, [
-      t.is_completed ? createElement('span', { style: { color: '#ffffff', fontSize: '12px', fontWeight: 'bold', lineHeight: '1' }, textContent: '✓' }) : null
-    ]);
+    }, t.is_completed ? [
+      createElement('span', { style: { color: '#ffffff', fontSize: '12px', fontWeight: 'bold', lineHeight: '1' }, textContent: '✓' })
+    ] : []);
 
     const titleInput = createElement('input', {
       'aria-label': 'Tiêu đề Công việc',
