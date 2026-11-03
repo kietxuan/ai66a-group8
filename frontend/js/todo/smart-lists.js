@@ -87,7 +87,11 @@ export class SmartListsSidebar {
     // Lắng nghe đồng bộ từ các tab/trang khác
     this.unsubscribeSync = TabSync.subscribe(async (msg) => {
       if (msg.type === 'folders_updated') {
-        this.folders = this.loadFolders();
+        if (Array.isArray(msg.payload?.folders)) {
+          this.folders = msg.payload.folders;
+        } else {
+          this.folders = this.loadFolders();
+        }
         this.render();
       } else if (msg.type === 'lists_updated') {
         this.folders = this.loadFolders();
@@ -105,21 +109,52 @@ export class SmartListsSidebar {
 
   loadFolders() {
     const userId = store.get('user')?.id || 'default';
-    const key = `planify_todo_folders_${userId}`;
+    const userKey = `planify_todo_folders_${userId}`;
+    const sharedKey = 'planify_todo_folders_shared';
+
     try {
-      const raw = localStorage.getItem(key);
+      const raw = localStorage.getItem(sharedKey);
       if (raw) return JSON.parse(raw);
     } catch (_) {}
+
+    try {
+      const raw = localStorage.getItem(userKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        try { localStorage.setItem(sharedKey, raw); } catch (_) {}
+        return parsed;
+      }
+    } catch (_) {}
+
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('planify_todo_folders') && k !== 'planify_todo_folders_sync') {
+          const val = localStorage.getItem(k);
+          if (val) {
+            const parsed = JSON.parse(val);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              try { localStorage.setItem(sharedKey, val); } catch (_) {}
+              return parsed;
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
     return [];
   }
 
   saveFolders() {
     const userId = store.get('user')?.id || 'default';
-    const key = `planify_todo_folders_${userId}`;
+    const userKey = `planify_todo_folders_${userId}`;
+    const sharedKey = 'planify_todo_folders_shared';
     try {
-      localStorage.setItem(key, JSON.stringify(this.folders));
+      const str = JSON.stringify(this.folders);
+      localStorage.setItem(sharedKey, str);
+      localStorage.setItem(userKey, str);
     } catch (_) {}
-    TabSync.broadcast('folders_updated');
+    TabSync.broadcast('folders_updated', { folders: this.folders });
   }
 
   update({ activeListId, tasks }) {

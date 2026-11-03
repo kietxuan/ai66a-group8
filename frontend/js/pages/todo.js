@@ -154,7 +154,7 @@ export const todoPage = {
 
     // 2. Main Content Container
     const mainEl = createElement("div", {
-      className: "todo-main flex-1 flex flex-col overflow-hidden",
+      className: "todo-main flex-1 flex flex-col",
       dataset: { view: String(this.activeListId) === 'board' ? 'board' : 'list' },
     });
 
@@ -217,7 +217,7 @@ export const todoPage = {
     const formContainer = createElement("div");
 
     // Task Items List / Kanban Container
-    const listContainer = createElement('div', { className: 'todo-list-container flex-1 overflow-hidden flex flex-col' });
+    const listContainer = createElement('div', { className: 'todo-list-container flex-1 flex flex-col' });
 
     mainEl.appendChild(headerEl);
     mainEl.appendChild(formContainer);

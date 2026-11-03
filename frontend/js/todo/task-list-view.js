@@ -177,15 +177,12 @@ export class TaskListView {
     // Lọc theo Thẻ / Phân loại
     if (this.tagFilter && this.tagFilter !== 'all') {
       if (this.tagFilter === 'none') {
-        filtered = filtered.filter(t => !t.color && !t.category);
+        filtered = filtered.filter(t => !resolveCategoryForTask(t));
       } else {
         const tagLow = this.tagFilter.toLowerCase();
         filtered = filtered.filter(t => {
           const cat = resolveCategoryForTask(t);
-          if (cat && cat.name.toLowerCase() === tagLow) return true;
-          if (t.category && String(t.category).toLowerCase() === tagLow) return true;
-          if (t.color && String(t.color).toLowerCase() === tagLow) return true;
-          return false;
+          return Boolean(cat && cat.name.toLowerCase() === tagLow);
         });
       }
     }
@@ -747,11 +744,11 @@ export class TaskListView {
   }
 
   renderCustomListView() {
-    // Đặt cả Table Header Bar và Task Items bên trong cùng 1 container cuộn
-    // để đồng bộ 100% về chiều rộng và lề thanh cuộn
+    // Đặt cả Table Header Bar và Task Items bên trong cùng 1 container
+    // để đồng bộ 100% về chiều rộng và lề với tiêu đề và ô nhập công việc
     const wrapper = createElement('div', {
       className: 'todo-list-scroll',
-      style: { paddingRight: '4px', paddingBottom: '28px', flex: '1', overflowY: 'auto' }
+      style: { paddingBottom: '28px', flex: '1', display: 'flex', flexDirection: 'column' }
     });
 
     // 1. Table Header Bar

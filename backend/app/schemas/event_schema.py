@@ -26,6 +26,7 @@ class EventBase(BaseModel):
     end_at: datetime
     is_all_day: bool = False
     color: Optional[str] = Field(None, max_length=7)
+    category: Optional[str] = Field(None, max_length=50)
     recurrence_rule: Optional[str] = Field(None, max_length=500)
     recurrence_end: Optional[datetime] = None
 
@@ -45,6 +46,7 @@ class EventUpdate(InputValidation):
     end_at: Optional[datetime] = None
     is_all_day: Optional[bool] = None
     color: Optional[str] = Field(None, max_length=7)
+    category: Optional[str] = Field(None, max_length=50)
     recurrence_rule: Optional[str] = Field(None, max_length=500)
     recurrence_end: Optional[datetime] = None
     is_cancelled: Optional[bool] = None

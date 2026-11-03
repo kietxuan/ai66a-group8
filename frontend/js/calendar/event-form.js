@@ -246,9 +246,9 @@ export class EventForm {
     categoriesList.forEach(cat => {
       const opt = createElement('option', { value: cat.name, textContent: cat.name });
       opt.dataset.color = cat.color;
-      if (existingItem?.color && String(existingItem.color).toLowerCase() === String(cat.color).toLowerCase()) {
+      if (existingItem?.category && String(existingItem.category).toLowerCase() === String(cat.name).toLowerCase()) {
         opt.selected = true;
-      } else if (existingItem?.category && String(existingItem.category).toLowerCase() === String(cat.name).toLowerCase()) {
+      } else if (!existingItem?.category && existingItem?.color && String(existingItem.color).toLowerCase() === String(cat.color).toLowerCase()) {
         opt.selected = true;
       }
       categorySelect.appendChild(opt);
@@ -399,8 +399,36 @@ export class EventForm {
     scheduleFieldsGrid.appendChild(allDayLabel);
 
     const refreshScheduleUI = () => {
-      startTimeInput.disabled = isAllDay;
-      endTimeInput.disabled = isAllDay;
+      if (isAllDay) {
+        startTimeInput.type = 'text';
+        startTimeInput.value = '--:--';
+        startTimeInput.disabled = true;
+        startTimeInput.style.opacity = '0.5';
+        startTimeInput.style.cursor = 'not-allowed';
+        startTimeInput.style.textAlign = 'center';
+
+        endTimeInput.type = 'text';
+        endTimeInput.value = '--:--';
+        endTimeInput.disabled = true;
+        endTimeInput.style.opacity = '0.5';
+        endTimeInput.style.cursor = 'not-allowed';
+        endTimeInput.style.textAlign = 'center';
+      } else {
+        startTimeInput.type = 'time';
+        startTimeInput.value = initialStartTime;
+        startTimeInput.disabled = false;
+        startTimeInput.style.opacity = '1';
+        startTimeInput.style.cursor = '';
+        startTimeInput.style.textAlign = '';
+
+        endTimeInput.type = 'time';
+        endTimeInput.value = initialEndTime;
+        endTimeInput.disabled = false;
+        endTimeInput.style.opacity = '1';
+        endTimeInput.style.cursor = '';
+        endTimeInput.style.textAlign = '';
+      }
+
       if (scheduleEnabled) {
         toggleScheduleBtn.className = 'btn btn-secondary btn-sm';
         toggleScheduleBtn.textContent = 'Bỏ cài đặt thời gian';
@@ -526,6 +554,7 @@ export class EventForm {
         duration_minutes: durationMins,
         is_all_day: scheduleEnabled ? isAllDay : true,
         color: selectedColor,
+        category: categorySelect.value || null,
         reminder_minutes: Number(existingItem?.reminder_minutes ?? store.get('user')?.notify_minutes_before ?? 15),
         recurrence_rule: (isEdit || scheduleEnabled) ? (rruleSelect.value || null) : null
       };
@@ -550,7 +579,7 @@ export class EventForm {
             const updated = await api.put(`/events/${existingItem.id}`, {
               title, description: taskPayload.note, location: taskPayload.location,
               start_at: start, end_at: `${formatDate(endDate)}T${isAllDay ? '00:00:00' : endTimeVal}`,
-              is_all_day: isAllDay, color: selectedColor, recurrence_rule: taskPayload.recurrence_rule,
+              is_all_day: isAllDay, color: selectedColor, category: categorySelect.value || null, recurrence_rule: taskPayload.recurrence_rule,
               ...recurrenceContext(existingItem)
             }, editOptions);
             Toast.success('Đã cập nhật sự kiện!');
