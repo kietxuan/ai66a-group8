@@ -222,6 +222,23 @@ export const calendarPage = {
             style: { fontWeight: "600" },
             textContent: t.title,
           }),
+          t.color
+            ? createElement("span", {
+                className: "task-tag-dot",
+                style: {
+                  width: "12px",
+                  height: "12px",
+                  borderRadius: "50%",
+                  backgroundColor: t.color,
+                  display: "inline-block",
+                  flexShrink: "0",
+                  marginLeft: "6px",
+                  marginRight: "2px",
+                  boxShadow: `0 0 0 2px var(--color-bg-secondary), 0 0 6px ${t.color}88`,
+                },
+                title: `Thẻ phân loại (${t.color})`,
+              })
+            : null,
         ],
       );
       listWrap.appendChild(itemEl);

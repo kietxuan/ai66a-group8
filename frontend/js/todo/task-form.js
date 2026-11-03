@@ -57,13 +57,22 @@ export class TaskForm {
 
     const leftToggles = createElement('div', { className: 'flex items-center gap-xs flex-wrap' });
 
-this.autoComplete = false;
+    const autoCompleteBtn = createElement('button', {
+      type: 'button',
+      className: `btn btn-secondary btn-sm ${this.autoComplete ? 'active' : ''}`,
+      title: 'Tự động hoàn thành khi hết giờ',
+      textContent: this.autoComplete ? 'Tự động hoàn thành (Bật)' : 'Tự động hoàn thành',
+      onclick: () => {
+        this.autoComplete = !this.autoComplete;
+        this.render();
+      }
+    });
 
     const starBtn = createElement('button', {
       type: 'button',
       className: `btn btn-secondary btn-sm ${this.isImportant ? 'active' : ''}`,
-      title: 'Đánh dấu sao Quan trọng trên thẻ',
-      innerHTML: this.isImportant ? '⭐ Quan trọng (Đã bật)' : '☆ Đánh dấu Quan trọng',
+      title: 'Đánh dấu công việc quan trọng',
+      textContent: this.isImportant ? '⭐ Quan trọng' : '☆ Quan trọng',
       onclick: () => {
         this.isImportant = !this.isImportant;
         this.render();
@@ -73,7 +82,7 @@ this.autoComplete = false;
     const openFullModalBtn = createElement('button', {
       type: 'button',
       className: 'btn btn-secondary btn-sm',
-      textContent: '📅 Đặt Ngày/Giờ & Tùy chọn đầy đủ...',
+      textContent: 'Cài đặt thời gian & chi tiết...',
       onclick: () => {
         const draftTitle = input.value.trim();
         EventForm.showFullModal({
@@ -88,7 +97,8 @@ this.autoComplete = false;
       }
     });
 
-        leftToggles.appendChild(starBtn);
+    leftToggles.appendChild(autoCompleteBtn);
+    leftToggles.appendChild(starBtn);
     toolbar.appendChild(leftToggles);
     toolbar.appendChild(openFullModalBtn);
 

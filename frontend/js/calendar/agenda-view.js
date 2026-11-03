@@ -266,6 +266,24 @@ export class AgendaView {
           itemCard.appendChild(contentCol);
           itemCard.appendChild(typePill);
 
+          if (item.color) {
+            itemCard.appendChild(createElement("span", {
+              className: "task-tag-dot",
+              style: {
+                width: "12px",
+                height: "12px",
+                borderRadius: "50%",
+                backgroundColor: item.color,
+                display: "inline-block",
+                flexShrink: "0",
+                marginLeft: "6px",
+                marginRight: "2px",
+                boxShadow: `0 0 0 2px var(--color-bg-secondary), 0 0 6px ${item.color}88`,
+              },
+              title: `Thẻ phân loại (${item.color})`,
+            }));
+          }
+
           itemsList.appendChild(itemCard);
         });
 

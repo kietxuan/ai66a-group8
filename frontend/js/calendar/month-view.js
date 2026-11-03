@@ -134,10 +134,12 @@ export class MonthView {
               const todayStr = formatDate(businessNow(), 'YYYY-MM-DD');
 
               if (data.is_task) {
-                await api.put(`/tasks/${data.id}`, {
+                const updatePayload = {
                   due_date: targetDateStr,
                   is_in_my_day: targetDateStr === todayStr
-                });
+                };
+                if (data.color) updatePayload.color = data.color;
+                await api.put(`/tasks/${data.id}`, updatePayload);
                 Toast.success(`Đã xếp "${data.title || 'công việc'}" vào ngày ${targetDateStr}`);
               } else {
                 const origS = data.start_at ? new Date(data.start_at) : new Date(cell.date);

@@ -9,6 +9,7 @@ import { buildCalendarIcs } from "../utils/ical.js";
 
 export const settingsPage = {
   container: null,
+  otpCountdownInterval: null,
 
   async render(container) {
     const generation = (this.generation = (this.generation || 0) + 1);
@@ -32,6 +33,340 @@ export const settingsPage = {
         return;
       user = user || {};
     }
+
+    let categories = [];
+    try {
+      const catRes = await api.get("/categories");
+      if (generation !== this.generation || this.container !== container)
+        return;
+      categories = Array.isArray(catRes)
+        ? catRes
+        : Array.isArray(catRes?.data)
+          ? catRes.data
+          : [];
+      store.set("categories", categories);
+    } catch (_) {
+      if (generation !== this.generation || !AuthManager.isAuthenticated())
+        return;
+      categories = store.get("categories") || [];
+    }
+
+    // 0. Cài đặt màu thẻ & Phân loại công việc
+    function makeTagSvg(color, size = 16) {
+      return createElement("span", {
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: color || "#4F46E5",
+          flexShrink: "0",
+          lineHeight: "1",
+        },
+        innerHTML: `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" fill="currentColor" fill-opacity="0.22"></path><circle cx="7" cy="7" r="1.5" fill="currentColor"></circle></svg>`,
+      });
+    }
+
+    let editingCategoryId = null;
+
+    const categoryTagsContainer = createElement("div", {
+      className: "category-tags-list",
+      style: {
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "8px",
+        alignItems: "center",
+        marginBottom: "12px",
+      },
+    });
+
+    const newTagNameInput = createElement("input", {
+      id: "settings-new-tag-name",
+      type: "text",
+      className: "input",
+      placeholder: "Tên thẻ (ví dụ: Khẩn cấp, Cá nhân...)",
+      maxLength: 50,
+      style: { flex: "1", minWidth: "180px" },
+    });
+
+    const newTagColorInput = createElement("input", {
+      id: "settings-new-tag-color",
+      type: "color",
+      className: "input",
+      value: "#4F46E5",
+      style: {
+        width: "44px",
+        height: "38px",
+        padding: "2px",
+        cursor: "pointer",
+        borderRadius: "8px",
+      },
+    });
+
+    const formTagIconPreview = makeTagSvg(newTagColorInput.value, 20);
+
+    const presetColors = [
+      "#EF4444", "#F97316", "#F59E0B", "#10B981", "#06B6D4",
+      "#3B82F6", "#6366F1", "#8B5CF6", "#EC4899", "#64748B",
+    ];
+
+    const swatchesContainer = createElement("div", {
+      style: { display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" },
+    });
+
+    const updateColorState = (hex) => {
+      newTagColorInput.value = hex;
+      formTagIconPreview.style.color = hex;
+      swatchesContainer.querySelectorAll("button").forEach((btn) => {
+        const btnTitle = btn.getAttribute("title") || btn.title || "";
+        btn.style.border = btnTitle.toLowerCase() === (hex || "").toLowerCase()
+          ? "2px solid var(--color-text-primary)"
+          : "2px solid transparent";
+      });
+    };
+
+    presetColors.forEach((hex) => {
+      const swatch = createElement("button", {
+        type: "button",
+        style: {
+          width: "24px",
+          height: "24px",
+          borderRadius: "50%",
+          backgroundColor: hex,
+          border: newTagColorInput.value.toLowerCase() === hex.toLowerCase() ? "2px solid var(--color-text-primary)" : "2px solid transparent",
+          cursor: "pointer",
+          padding: "0",
+          outline: "none",
+        },
+        title: hex,
+        onclick: () => updateColorState(hex),
+      });
+      swatchesContainer.appendChild(swatch);
+    });
+
+    newTagColorInput.addEventListener("input", () => {
+      updateColorState(newTagColorInput.value);
+    });
+
+    const formHeading = createElement("div", {
+      style: {
+        fontSize: "13px",
+        fontWeight: "700",
+        marginBottom: "10px",
+        color: "var(--color-text-primary)",
+      },
+      textContent: "+ Tạo thẻ phân loại mới",
+    });
+
+    const addTagForm = createElement("div", {
+      style: {
+        display: "none",
+        padding: "14px",
+        borderRadius: "12px",
+        backgroundColor: "var(--color-bg-secondary)",
+        border: "1px solid var(--color-border-light)",
+        marginTop: "10px",
+      },
+    });
+
+    const showAddTagBtn = createElement("button", {
+      type: "button",
+      className: "btn btn-secondary",
+      textContent: "+ Thêm tag",
+      style: {
+        padding: "6px 14px",
+        fontSize: "13px",
+        border: "1px dashed var(--color-border)",
+      },
+      onclick: () => {
+        editingCategoryId = null;
+        formHeading.textContent = "+ Tạo thẻ phân loại mới";
+        newTagNameInput.value = "";
+        updateColorState("#4F46E5");
+        saveTagBtn.textContent = "Lưu thẻ";
+        addTagForm.style.display = "block";
+        newTagNameInput.focus();
+      },
+    });
+
+    const cancelTagBtn = createElement("button", {
+      type: "button",
+      className: "btn btn-secondary",
+      textContent: "Hủy",
+      style: { padding: "6px 14px", fontSize: "13px" },
+      onclick: () => {
+        addTagForm.style.display = "none";
+        newTagNameInput.value = "";
+        editingCategoryId = null;
+      },
+    });
+
+    const saveTagBtn = createElement("button", {
+      type: "button",
+      className: "btn btn-primary",
+      textContent: "Lưu thẻ",
+      style: { padding: "6px 14px", fontSize: "13px" },
+      onclick: async () => {
+        if (saveTagBtn.disabled) return;
+        const name = newTagNameInput.value.trim();
+        const color = newTagColorInput.value;
+        if (!name) {
+          Toast.error("Vui lòng nhập tên thẻ.");
+          newTagNameInput.focus();
+          return;
+        }
+        saveTagBtn.disabled = true;
+        saveTagBtn.textContent = editingCategoryId ? "Đang cập nhật..." : "Đang lưu...";
+        try {
+          if (editingCategoryId) {
+            const res = await api.put(`/categories/${editingCategoryId}`, { name, color });
+            const updatedCat = res?.data || res;
+            const idx = categories.findIndex((c) => c.id === editingCategoryId);
+            if (idx !== -1) {
+              categories[idx] = { ...categories[idx], ...updatedCat, name, color };
+            }
+            store.set("categories", [...categories]);
+            Toast.success(`Đã cập nhật thẻ "${name}" thành công!`);
+          } else {
+            const res = await api.post("/categories", { name, color });
+            const createdCat = res?.data || res;
+            categories.push(createdCat);
+            store.set("categories", [...categories]);
+            Toast.success(`Đã tạo thẻ phân loại "${name}" thành công!`);
+          }
+          renderTagsList();
+          addTagForm.style.display = "none";
+          newTagNameInput.value = "";
+          editingCategoryId = null;
+          window.dispatchEvent(new CustomEvent("planify:data-changed"));
+        } catch (err) {
+          Toast.error(err.message || "Không thể lưu thẻ phân loại.");
+        } finally {
+          saveTagBtn.disabled = false;
+          saveTagBtn.textContent = editingCategoryId ? "Cập nhật thẻ" : "Lưu thẻ";
+        }
+      },
+    });
+
+    const startEditTag = (cat) => {
+      editingCategoryId = cat.id;
+      formHeading.textContent = `✏️ Chỉnh sửa thẻ: ${cat.name}`;
+      newTagNameInput.value = cat.name;
+      updateColorState(cat.color || "#4F46E5");
+      saveTagBtn.textContent = "Cập nhật thẻ";
+      addTagForm.style.display = "block";
+      newTagNameInput.focus();
+    };
+
+    const renderTagsList = () => {
+      categoryTagsContainer.innerHTML = "";
+      if (categories.length === 0) {
+        categoryTagsContainer.appendChild(
+          createElement("span", {
+            style: {
+              fontSize: "13px",
+              color: "var(--color-text-secondary)",
+              fontStyle: "italic",
+            },
+            textContent: "Chưa có thẻ phân loại nào. Bấm \"+ Thêm tag\" để bắt đầu.",
+          }),
+        );
+      } else {
+        categories.forEach((cat) => {
+          const pill = createElement("div", {
+            style: {
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px 10px",
+              borderRadius: "16px",
+              backgroundColor: "var(--color-bg-secondary)",
+              border: "1px solid var(--color-border-light)",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "transform 0.1s ease, border-color 0.15s ease",
+            },
+            title: "Bấm để đổi tên hoặc sửa màu thẻ này",
+            onclick: () => startEditTag(cat),
+          }, [
+            makeTagSvg(cat.color || "#4F46E5", 15),
+            createElement("span", { textContent: cat.name }),
+            createElement("button", {
+              type: "button",
+              style: {
+                border: "none",
+                background: "transparent",
+                color: "var(--color-text-muted)",
+                cursor: "pointer",
+                padding: "0 2px",
+                marginLeft: "2px",
+                fontSize: "14px",
+                lineHeight: "1",
+              },
+              title: "Xóa thẻ này",
+              textContent: "×",
+              onclick: async (e) => {
+                e.stopPropagation();
+                if (!confirm(`Bạn có chắc chắn muốn xóa thẻ \"${cat.name}\" không?`)) return;
+                try {
+                  await api.delete(`/categories/${cat.id}`);
+                  categories = categories.filter((c) => c.id !== cat.id);
+                  store.set("categories", [...categories]);
+                  if (editingCategoryId === cat.id) {
+                    addTagForm.style.display = "none";
+                    editingCategoryId = null;
+                  }
+                  renderTagsList();
+                  window.dispatchEvent(new CustomEvent("planify:data-changed"));
+                  Toast.success(`Đã xóa thẻ \"${cat.name}\".`);
+                } catch (err) {
+                  Toast.error(err.message || "Không thể xóa thẻ.");
+                }
+              },
+            }),
+          ]);
+          categoryTagsContainer.appendChild(pill);
+        });
+      }
+    };
+
+    addTagForm.appendChild(
+      createElement("div", { style: { display: "flex", flexDirection: "column", gap: "10px" } }, [
+        formHeading,
+        createElement("div", { style: { display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" } }, [
+          formTagIconPreview,
+          newTagNameInput,
+          newTagColorInput,
+          swatchesContainer,
+        ]),
+        createElement("div", { style: { display: "flex", gap: "8px" } }, [
+          saveTagBtn,
+          cancelTagBtn,
+        ]),
+      ]),
+    );
+
+    renderTagsList();
+
+    const categorySection = createElement("div", { className: "settings-section" }, [
+      createElement("h2", {
+        className: "settings-section-title",
+        textContent: "🏷️ Cài đặt màu thẻ & Phân loại công việc",
+      }),
+      createElement("p", {
+        style: {
+          fontSize: "13px",
+          color: "var(--color-text-secondary)",
+          margin: "-6px 0 12px 0",
+        },
+        textContent: "Tạo các nhãn thẻ màu sắc để phân loại và nhận diện công việc trên lịch biểu dễ dàng hơn.",
+      }),
+      categoryTagsContainer,
+      createElement("div", { style: { display: "flex", alignItems: "center", gap: "8px" } }, [
+        showAddTagBtn,
+      ]),
+      addTagForm,
+    ]);
 
     // 1. Appearance Section (2 opciones: Light & Dark — đã bỏ Tự động theo hệ thống)
     const themeSection = createElement(
@@ -217,6 +552,14 @@ export const settingsPage = {
       },
     });
 
+    const notifySubtext = createElement("span", {
+      style: {
+        fontSize: "12px",
+        color: "var(--color-text-secondary)",
+      },
+      textContent: `Tự động gửi Email tới ${user.email || "hộp thư của bạn"} và phát chuông báo trên trình duyệt`,
+    });
+
     const notificationSection = createElement(
       "div",
       { className: "settings-section" },
@@ -254,13 +597,7 @@ export const settingsPage = {
                   },
                   textContent: "Bật nhận thông báo nhắc lịch khi tới giờ",
                 }),
-                createElement("span", {
-                  style: {
-                    fontSize: "12px",
-                    color: "var(--color-text-secondary)",
-                  },
-                  textContent: `Tự động gửi Email tới ${user.email || "hộp thư của bạn"} và phát chuông báo trên trình duyệt`,
-                }),
+                notifySubtext,
               ],
             ),
             notifyToggleCheck,
@@ -327,6 +664,119 @@ export const settingsPage = {
       value: user.nickname || "",
     });
 
+    let currentSavedEmail = (user.email || "").trim().toLowerCase();
+
+    // OTP block for email change
+    const otpSection = createElement("div", {
+      id: "settings-email-otp-group",
+      style: {
+        display: "none",
+        marginTop: "10px",
+        padding: "12px",
+        borderRadius: "10px",
+        backgroundColor: "var(--color-bg-secondary)",
+        border: "1px solid var(--color-border-light)",
+      },
+    });
+
+    const emailInput = createElement("input", {
+      id: "settings-email",
+      type: "email",
+      className: "input",
+      value: user.email || "",
+      oninput: () => {
+        const emailVal = emailInput.value.trim().toLowerCase();
+        const changed = emailVal !== currentSavedEmail && emailVal.length > 0;
+        otpSection.style.display = changed ? "block" : "none";
+      },
+    });
+    emailInput.addEventListener("input", () => {
+      const emailVal = emailInput.value.trim().toLowerCase();
+      const changed = emailVal !== currentSavedEmail && emailVal.length > 0;
+      otpSection.style.display = changed ? "block" : "none";
+    });
+
+    const otpInput = createElement("input", {
+      id: "settings-email-otp",
+      type: "text",
+      className: "input",
+      placeholder: "Mã OTP 6 số",
+      maxLength: 6,
+      style: {
+        width: "140px",
+        letterSpacing: "3px",
+        fontWeight: "700",
+        textAlign: "center",
+      },
+    });
+
+    const sendOtpBtn = createElement("button", {
+      type: "button",
+      className: "btn btn-secondary",
+      textContent: "Gửi mã OTP",
+      style: { minWidth: "110px", padding: "7px 14px", fontWeight: "600" },
+      onclick: async () => {
+        if (sendOtpBtn.disabled) return;
+        const targetEmail = emailInput.value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!targetEmail || !emailRegex.test(targetEmail)) {
+          Toast.error("Vui lòng nhập địa chỉ email mới hợp lệ.");
+          emailInput.focus();
+          return;
+        }
+        if (targetEmail.toLowerCase() === currentSavedEmail) {
+          Toast.info("Địa chỉ email chưa thay đổi so với email hiện tại.");
+          return;
+        }
+
+        sendOtpBtn.disabled = true;
+        sendOtpBtn.textContent = "Đang gửi...";
+        try {
+          await api.post("/otp/send", {
+            email: targetEmail,
+            reason: "verify-email",
+          });
+          Toast.success(`Mã OTP đã được gửi đến ${targetEmail}!`);
+          let cd = 60;
+          sendOtpBtn.textContent = `Gửi lại (${cd}s)`;
+          if (this.otpCountdownInterval) clearInterval(this.otpCountdownInterval);
+          this.otpCountdownInterval = setInterval(() => {
+            cd--;
+            if (cd <= 0) {
+              clearInterval(this.otpCountdownInterval);
+              this.otpCountdownInterval = null;
+              sendOtpBtn.disabled = false;
+              sendOtpBtn.textContent = "Gửi mã OTP";
+            } else {
+              sendOtpBtn.textContent = `Gửi lại (${cd}s)`;
+            }
+          }, 1000);
+          otpInput.focus();
+        } catch (err) {
+          Toast.error(err.message || "Lỗi khi gửi mã OTP.");
+          sendOtpBtn.disabled = false;
+          sendOtpBtn.textContent = "Gửi mã OTP";
+        }
+      },
+    });
+
+    otpSection.appendChild(
+      createElement("div", { style: { display: "flex", flexDirection: "column", gap: "8px" } }, [
+        createElement("span", {
+          style: {
+            fontSize: "12px",
+            color: "var(--color-text-secondary)",
+            lineHeight: "1.4",
+          },
+          textContent: "ℹ️ Bạn đang thay đổi email. Vui lòng bấm \"Gửi mã OTP\" và nhập mã xác thực 6 chữ số gửi về hộp thư mới để xác nhận.",
+        }),
+        createElement("div", { style: { display: "flex", alignItems: "center", gap: "10px" } }, [
+          otpInput,
+          sendOtpBtn,
+        ]),
+      ]),
+    );
+
     const currentTimezone = user.timezone || "Asia/Ho_Chi_Minh";
     const timezoneSelect = createElement(
       "select",
@@ -357,16 +807,54 @@ export const settingsPage = {
       textContent: "Lưu thay đổi",
       onclick: async () => {
         if (saveProfileBtn.disabled) return;
+        const newEmail = emailInput.value.trim();
+        const emailChanged = newEmail.toLowerCase() !== currentSavedEmail;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (emailChanged) {
+          if (!newEmail || !emailRegex.test(newEmail)) {
+            Toast.error("Vui lòng nhập địa chỉ email mới hợp lệ.");
+            emailInput.focus();
+            return;
+          }
+          const otpVal = otpInput.value.trim();
+          if (!otpVal || !/^\d{6}$/.test(otpVal)) {
+            Toast.error("Vui lòng nhập mã OTP gồm 6 chữ số để xác thực thay đổi email.");
+            otpInput.focus();
+            return;
+          }
+        }
+
         try {
           saveProfileBtn.disabled = true;
-          const updated = await api.put("/users/me", {
+          const payload = {
             nickname: nicknameInput.value.trim(),
             timezone: timezoneSelect.value,
-          });
+          };
+          if (emailChanged) {
+            payload.email = newEmail;
+            payload.otp = otpInput.value.trim();
+          }
+
+          const updated = await api.put("/users/me", payload);
           const updatedUser = updated?.data || updated;
-          store.set("user", updatedUser);
+          user = { ...user, ...updatedUser };
+          store.set("user", user);
+          currentSavedEmail = (user.email || newEmail).trim().toLowerCase();
+          emailInput.value = user.email || newEmail;
+          otpInput.value = "";
+          otpSection.style.display = "none";
+          if (this.otpCountdownInterval) {
+            clearInterval(this.otpCountdownInterval);
+            this.otpCountdownInterval = null;
+            sendOtpBtn.disabled = false;
+            sendOtpBtn.textContent = "Gửi mã OTP";
+          }
           if (updatedUser?.timezone) {
             timezoneSelect.value = updatedUser.timezone;
+          }
+          if (notifySubtext && user.email) {
+            notifySubtext.textContent = `Tự động gửi Email tới ${user.email} và phát chuông báo trên trình duyệt`;
           }
           Toast.success("Cập nhật thông tin thành công!");
         } catch (err) {
@@ -391,13 +879,8 @@ export const settingsPage = {
             className: "form-label",
             textContent: "Email",
           }),
-          createElement("input", {
-            id: "settings-email",
-            type: "text",
-            className: "input",
-            value: user.email || "",
-            disabled: true,
-          }),
+          emailInput,
+          otpSection,
         ]),
         createElement("div", { className: "form-group" }, [
           createElement("label", {
@@ -597,6 +1080,7 @@ export const settingsPage = {
       ],
     );
 
+    inner.appendChild(categorySection);
     inner.appendChild(themeSection);
     inner.appendChild(notificationSection);
     inner.appendChild(accountSection);
@@ -609,6 +1093,10 @@ export const settingsPage = {
 
   destroy() {
     this.generation = (this.generation || 0) + 1;
+    if (this.otpCountdownInterval) {
+      clearInterval(this.otpCountdownInterval);
+      this.otpCountdownInterval = null;
+    }
     if (this.container) {
       this.container.innerHTML = "";
       this.container = null;

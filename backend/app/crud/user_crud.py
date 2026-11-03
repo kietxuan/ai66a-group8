@@ -40,6 +40,8 @@ class CRUDUser(CRUDBase[User]):
 
     async def update_profile(self, db: AsyncSession, user: User, obj_in: UserUpdate) -> User:
         update_data = obj_in.model_dump(exclude_unset=True)
+        update_data.pop("otp", None)
+        update_data.pop("verified_token", None)
         for field, value in update_data.items():
             setattr(user, field, value)
         await db.commit()

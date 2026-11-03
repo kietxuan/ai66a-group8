@@ -60,10 +60,11 @@ async def read_user_me(
 async def update_user_me(
     user_in: UserUpdate,
     db: AsyncSession = Depends(get_db),
+    redis = Depends(get_redis),
     current_user: User = Depends(get_current_user)
 ):
-    """Cập nhật thông tin cá nhân (nickname, theme_preference, timezone, notify_enabled, notify_minutes_before)"""
-    updated_user = await user_service.update_profile(db, current_user=current_user, user_in=user_in)
+    """Cập nhật thông tin cá nhân (nickname, theme_preference, timezone, notify_enabled, notify_minutes_before, email)"""
+    updated_user = await user_service.update_profile(db, current_user=current_user, user_in=user_in, redis=redis)
     return ApiResponse(
         message="Cập nhật thông tin thành công",
         data=updated_user

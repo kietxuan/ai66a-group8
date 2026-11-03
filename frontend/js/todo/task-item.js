@@ -239,6 +239,25 @@ export class TaskItem {
     item.appendChild(starBtn);
     item.appendChild(menuBtn);
 
+    if (task.color) {
+      const tagDot = createElement('span', {
+        className: 'task-tag-dot',
+        style: {
+          width: '12px',
+          height: '12px',
+          borderRadius: '50%',
+          backgroundColor: task.color,
+          display: 'inline-block',
+          flexShrink: '0',
+          marginLeft: '6px',
+          marginRight: '2px',
+          boxShadow: `0 0 0 2px var(--color-bg-secondary), 0 0 6px ${task.color}88`,
+        },
+        title: `Thẻ phân loại (${task.color})`
+      });
+      item.appendChild(tagDot);
+    }
+
     return item;
   }
 

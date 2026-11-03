@@ -107,7 +107,7 @@ async function setup(hash = '#login') {
     modules.set(file, module);
     return module;
   }
-  const entry = new vm.SourceTextModule("export { authPage } from './pages/auth-page.js'; export { settingsPage } from './pages/settings.js'; export { AgendaView } from './calendar/agenda-view.js'; export { api } from './api.js'; export { router } from './router.js'; export { store } from './store.js'; export { ThemeManager } from './theme.js';", { context, identifier: path.join(sourceRoot, '__test__.js') });
+  const entry = new vm.SourceTextModule("export { authPage } from './pages/auth-page.js'; export { settingsPage } from './pages/settings.js'; export { AgendaView } from './calendar/agenda-view.js'; export { TaskItem } from './todo/task-item.js'; export { api } from './api.js'; export { router } from './router.js'; export { store } from './store.js'; export { ThemeManager } from './theme.js';", { context, identifier: path.join(sourceRoot, '__test__.js') });
   await entry.link((specifier, importer) => load(path.resolve(path.dirname(importer.identifier), specifier)));
   await entry.evaluate();
   const { authPage, router, store, ThemeManager } = entry.namespace;
@@ -379,4 +379,122 @@ test('agenda edits the correct raw task or event and refreshes after update/dele
     assert.equal(options.onDeleted, refresh);
   }
   assert.equal(app.window.location.hash, '#login');
+});
+test('email modification requires OTP verification before saving profile', async () => {
+  const app = await settingsApp();
+  const emailInput = app.get('settings-email');
+  const otpGroup = app.get('settings-email-otp-group');
+  const otpInput = app.get('settings-email-otp');
+  const saveBtn = app.button('Lưu thay đổi');
+
+  assert.equal(emailInput.value, 'test@example.com');
+  assert.equal(otpGroup.style.display, 'none');
+
+  // Changing email reveals the OTP input
+  emailInput.value = 'newemail@example.com';
+  await emailInput.fire('input');
+  assert.equal(otpGroup.style.display, 'block');
+
+  // Clicking send OTP triggers /otp/send
+  let otpRequests = [];
+  app.api.post = async (path, body) => {
+    otpRequests.push({ path, body });
+    return { message: 'Mã OTP đã được gửi.' };
+  };
+  const sendOtpBtn = otpGroup.querySelector('button');
+  await sendOtpBtn.fire('click');
+  assert.equal(otpRequests.length, 1);
+  assert.equal(otpRequests[0].path, '/otp/send');
+  assert.equal(otpRequests[0].body.email, 'newemail@example.com');
+  assert.equal(otpRequests[0].body.reason, 'verify-email');
+
+  // Trying to save without OTP or invalid OTP fails
+  let putCalls = [];
+  app.api.put = async (path, body) => { putCalls.push({ path, body }); return { id: 1, email: body.email }; };
+  await saveBtn.fire('click');
+  assert.equal(putCalls.length, 0); // Blocked
+
+  otpInput.value = '123';
+  await saveBtn.fire('click');
+  assert.equal(putCalls.length, 0); // Blocked
+
+  // With 6-digit OTP, profile is updated with email & otp
+  otpInput.value = '123456';
+  await saveBtn.fire('click');
+  assert.equal(putCalls.length, 1);
+  assert.equal(putCalls[0].path, '/users/me');
+  assert.equal(putCalls[0].body.email, 'newemail@example.com');
+  assert.equal(putCalls[0].body.otp, '123456');
+  assert.equal(otpGroup.style.display, 'none');
+});
+
+test('category tags can be added and rendered at the top of settings', async () => {
+  const app = await settingsApp();
+  const addTagBtn = app.button('+ Thêm tag');
+  assert.ok(addTagBtn);
+
+  // Toggle inline form
+  await addTagBtn.fire('click');
+  const tagNameInput = app.get('settings-new-tag-name');
+  const tagColorInput = app.get('settings-new-tag-color');
+  assert.ok(tagNameInput);
+  assert.ok(tagColorInput);
+
+  tagNameInput.value = 'Dự án AI';
+  tagColorInput.value = '#10B981';
+
+  let postCalls = [];
+  app.api.post = async (path, body) => {
+    postCalls.push({ path, body });
+    return { id: 99, name: body.name, color: body.color };
+  };
+
+  const saveTagBtn = app.button('Lưu thẻ');
+  await saveTagBtn.fire('click');
+
+  assert.equal(postCalls.length, 1);
+  assert.equal(postCalls[0].path, '/categories');
+  assert.equal(postCalls[0].body.name, 'Dự án AI');
+  assert.equal(postCalls[0].body.color, '#10B981');
+
+  // Verify tag pill appears in the list
+  const pills = app.container.querySelectorAll('span');
+  const createdPill = pills.find(p => p.textContent.includes('Dự án AI'));
+  assert.ok(createdPill);
+
+  // Clicking the created pill enters edit mode
+  let putCalls = [];
+  app.api.put = async (path, body) => {
+    putCalls.push({ path, body });
+    return { id: 99, name: body.name, color: body.color };
+  };
+
+  const pillContainer = createdPill.closest('div');
+  await pillContainer.fire('click');
+  assert.equal(tagNameInput.value, 'Dự án AI');
+  assert.equal(tagColorInput.value, '#10B981');
+  assert.equal(saveTagBtn.textContent, 'Cập nhật thẻ');
+
+  tagNameInput.value = 'Dự án AI Nâng cao';
+  tagColorInput.value = '#EF4444';
+  await saveTagBtn.fire('click');
+
+  assert.equal(putCalls.length, 1);
+  assert.equal(putCalls[0].path, '/categories/99');
+  assert.equal(putCalls[0].body.name, 'Dự án AI Nâng cao');
+  assert.equal(putCalls[0].body.color, '#EF4444');
+});
+
+test('task item displays a tag color dot at the end when assigned a color', async () => {
+  const app = await setup();
+  const task = { id: 10, title: 'Việc có gắn thẻ', color: '#EF4444' };
+  const item = app.TaskItem.create({ task });
+  const dot = item.querySelector('.task-tag-dot');
+  assert.ok(dot);
+  assert.equal(dot.style.backgroundColor, '#EF4444');
+  assert.equal(dot.style.borderRadius, '50%');
+
+  const taskNoColor = { id: 11, title: 'Việc không màu' };
+  const itemNoColor = app.TaskItem.create({ task: taskNoColor });
+  assert.equal(itemNoColor.querySelector('.task-tag-dot'), null);
 });

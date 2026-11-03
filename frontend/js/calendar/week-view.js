@@ -585,13 +585,15 @@ export class WeekView {
 
       try {
         if (data.is_task) {
-          await api.put(`/tasks/${data.id}`, {
+          const updatePayload = {
             due_date: formatDate(newStart, 'YYYY-MM-DD'),
             start_time: `${String(newHour).padStart(2, '0')}:${String(newMin).padStart(2, '0')}:00`,
             end_time: `${String(newEnd.getHours()).padStart(2, '0')}:${String(newEnd.getMinutes()).padStart(2, '0')}:00`,
             is_all_day: false,
             duration_minutes: duration
-          });
+          };
+          if (data.color) updatePayload.color = data.color;
+          await api.put(`/tasks/${data.id}`, updatePayload);
           Toast.success(`Đã xếp công việc vào ${formatDate(newStart, 'HH:mm')}`);
           window.dispatchEvent(new CustomEvent('planify:data-changed', {
             detail: { source: 'calendar-week', action: 'move', type: 'task', id: data.id }
