@@ -1,12 +1,13 @@
 import { businessNow } from '../utils/date.js';
 import { createElement } from '../utils/dom.js';
-import { TaskItem } from './task-item.js';
+import { TaskItem, getAvailableCategories, resolveCategoryForTask } from './task-item.js';
 import { formatDate } from '../utils/date.js';
 import { store } from '../store.js';
 import { api } from '../api.js';
 import { isScheduleDismissal } from '../utils/api-error.js';
 import { Toast } from '../components/toast.js';
 import { EventForm } from '../calendar/event-form.js';
+import { Dropdown } from '../components/dropdown.js';
 import { revisionOptions } from '../utils/revision.js';
 
 export class TaskListView {
@@ -17,7 +18,8 @@ export class TaskListView {
     activeTaskId = null,
     sortBy = "time",
     onlyImportant = false,
-    statusFilter = 'all', dateFilter = 'all', dateFrom = '', dateTo = '',
+    timeFilter = 'all',
+    tagFilter = 'all',
     searchQuery = "",
     onSelectTask = null,
     onToggleComplete = null,
@@ -31,7 +33,8 @@ export class TaskListView {
     this.activeTaskId = activeTaskId;
     this.sortBy = sortBy || "time";
     this.onlyImportant = onlyImportant;
-    Object.assign(this, { statusFilter, dateFilter, dateFrom, dateTo });
+    this.timeFilter = timeFilter;
+    this.tagFilter = tagFilter;
     this.searchQuery = searchQuery;
     this.onSelectTask = onSelectTask;
     this.onToggleComplete = onToggleComplete;
@@ -40,6 +43,7 @@ export class TaskListView {
     this.onRefresh = onRefresh;
 
     this.isCompletedCollapsed = false;
+    this.tasksBodyContainer = null;
   }
 
   setProps(props = {}) {
@@ -49,12 +53,6 @@ export class TaskListView {
     this.render();
   }
 
-  /**
-   * Kiểm tra một công việc chưa hoàn thành có bị Quá hạn hay không:
-   * - Không có due_date -> Vĩnh viễn (Cột Cần làm), KHÔNG quá hạn.
-   * Dùng giờ kết thúc; nếu chỉ có giờ bắt đầu thì cộng duration_minutes,
-   * giống backend. Công việc cả ngày hết hạn ở đầu ngày tiếp theo.
-   */
   isTaskOverdue(t, todayStr, nowTimeStr) {
     if (t.is_completed) return false;
     if (!t.due_date) return false;
@@ -71,23 +69,35 @@ export class TaskListView {
     return end <= now;
   }
 
-  /**
-   * Sắp xếp mặc định theo thời gian cho tất cả các cột và danh sách
-   */
   sortTasks(list, isCompletedCol = false) {
     const sorted = [...list];
-    if (this.sortBy === "important") {
-      sorted.sort(
-        (a, b) => (b.is_important ? 1 : 0) - (a.is_important ? 1 : 0),
-      );
-      return sorted;
-    }
     if (this.sortBy === "title") {
       sorted.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
       return sorted;
     }
+    if (this.sortBy === "time_desc") {
+      sorted.sort((a, b) => {
+        const da = a.due_date ? String(a.due_date).slice(0, 10) : "0000-00-00";
+        const db = b.due_date ? String(b.due_date).slice(0, 10) : "0000-00-00";
+        if (da !== db) return db.localeCompare(da);
+        const ta = String(a.start_time || a.due_time || "00:00:00");
+        const tb = String(b.start_time || b.due_time || "00:00:00");
+        return tb.localeCompare(ta);
+      });
+      return sorted;
+    }
+    if (this.sortBy === "time_asc") {
+      sorted.sort((a, b) => {
+        const da = a.due_date ? String(a.due_date).slice(0, 10) : "9999-12-31";
+        const db = b.due_date ? String(b.due_date).slice(0, 10) : "9999-12-31";
+        if (da !== db) return da.localeCompare(db);
+        const ta = String(a.start_time || a.due_time || "23:59:59");
+        const tb = String(b.start_time || b.due_time || "23:59:59");
+        return ta.localeCompare(tb);
+      });
+      return sorted;
+    }
 
-    // Mặc định: Sắp xếp theo thời gian (time)
     if (isCompletedCol) {
       sorted.sort((a, b) => {
         const ca = a.completed_at || a.updated_at || a.created_at || "";
@@ -97,6 +107,7 @@ export class TaskListView {
       return sorted;
     }
 
+    // Mặc định: Sắp xếp theo thời gian tăng dần
     sorted.sort((a, b) => {
       const da = a.due_date ? String(a.due_date).slice(0, 10) : "9999-12-31";
       const db = b.due_date ? String(b.due_date).slice(0, 10) : "9999-12-31";
@@ -117,7 +128,7 @@ export class TaskListView {
   filterTasks() {
     let filtered = [...this.tasks];
 
-    // Nếu không phải Bảng quản lý chung ('board'), lọc theo list_id của Danh sách của tôi
+    // Lọc theo list_id nếu không phải board
     if (String(this.activeListId) !== "board") {
       const targetListId = parseInt(this.activeListId, 10);
       if (!isNaN(targetListId)) {
@@ -135,43 +146,315 @@ export class TaskListView {
         (t) =>
           (t.title || "").toLowerCase().includes(q) ||
           (t.note || "").toLowerCase().includes(q) ||
-          (t.location || "").toLowerCase().includes(q),
+          (t.location || "").toLowerCase().includes(q)
       );
     }
 
-    if (this.statusFilter === 'open') filtered = filtered.filter(t => !t.is_completed);
-    if (this.statusFilter === 'completed') filtered = filtered.filter(t => t.is_completed);
-    if (this.dateFilter && this.dateFilter !== 'all') {
-      const today = businessNow();
-      const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-      const last = new Date(today); last.setDate(today.getDate() + 6);
-      const from = this.dateFilter === 'tomorrow' ? formatDate(tomorrow, 'YYYY-MM-DD')
-        : this.dateFilter === 'next7' ? formatDate(today, 'YYYY-MM-DD') : this.dateFrom;
-      const to = this.dateFilter === 'tomorrow' ? from
-        : this.dateFilter === 'next7' ? formatDate(last, 'YYYY-MM-DD') : this.dateTo;
-      filtered = filtered.filter(t => {
-        const date = t.due_date ? String(t.due_date).slice(0, 10) : '';
-        return date && (!from || date >= from) && (!to || date <= to);
-      });
+    // Lọc theo Thời gian
+    if (this.timeFilter && this.timeFilter !== 'all') {
+      const now = businessNow();
+      const todayStr = formatDate(now, 'YYYY-MM-DD');
+      const nowTimeStr = `${formatDate(now, 'HH:mm')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+      if (this.timeFilter === 'today') {
+        filtered = filtered.filter(t => t.due_date && String(t.due_date).slice(0, 10) === todayStr);
+      } else if (this.timeFilter === 'week') {
+        const next7 = new Date(now);
+        next7.setDate(now.getDate() + 7);
+        const next7Str = formatDate(next7, 'YYYY-MM-DD');
+        filtered = filtered.filter(t => {
+          if (!t.due_date) return false;
+          const dStr = String(t.due_date).slice(0, 10);
+          return dStr >= todayStr && dStr <= next7Str;
+        });
+      } else if (this.timeFilter === 'overdue') {
+        filtered = filtered.filter(t => this.isTaskOverdue(t, todayStr, nowTimeStr));
+      } else if (this.timeFilter === 'unscheduled') {
+        filtered = filtered.filter(t => !t.due_date);
+      }
+    }
+
+    // Lọc theo Thẻ / Phân loại
+    if (this.tagFilter && this.tagFilter !== 'all') {
+      if (this.tagFilter === 'none') {
+        filtered = filtered.filter(t => !t.color && !t.category);
+      } else {
+        const tagLow = this.tagFilter.toLowerCase();
+        filtered = filtered.filter(t => {
+          const cat = resolveCategoryForTask(t);
+          if (cat && cat.name.toLowerCase() === tagLow) return true;
+          if (t.category && String(t.category).toLowerCase() === tagLow) return true;
+          if (t.color && String(t.color).toLowerCase() === tagLow) return true;
+          return false;
+        });
+      }
     }
 
     return filtered;
   }
 
+  createTableHeaderBar() {
+    const bar = createElement('div', { className: 'todo-table-header-bar' });
+
+    // 1. Cột Tìm kiếm
+    const searchCol = createElement('div', { className: 'todo-th-search' });
+    const searchInput = createElement('input', {
+      type: 'text',
+      className: 'todo-filter-search-input',
+      placeholder: '🔍 Tìm kiếm việc cần làm...',
+      value: this.searchQuery || '',
+      oninput: (e) => {
+        this.searchQuery = e.target.value;
+        if (clearBtn) clearBtn.style.display = this.searchQuery ? 'block' : 'none';
+        this.renderTaskListBody();
+      }
+    });
+
+    const clearBtn = createElement('button', {
+      type: 'button',
+      className: 'todo-filter-search-clear',
+      style: { display: this.searchQuery ? 'block' : 'none' },
+      textContent: '✕',
+      title: 'Xóa tìm kiếm',
+      onclick: () => {
+        this.searchQuery = '';
+        searchInput.value = '';
+        clearBtn.style.display = 'none';
+        this.renderTaskListBody();
+      }
+    });
+
+    searchCol.appendChild(searchInput);
+    searchCol.appendChild(clearBtn);
+
+    // 2. Cột Lọc Thời gian
+    const timeCol = createElement('div', { className: 'todo-th-time' });
+    let timeBtnLabel = 'Thời gian ▾';
+    if (this.timeFilter === 'today') timeBtnLabel = 'Hôm nay ▾';
+    else if (this.timeFilter === 'week') timeBtnLabel = 'Tuần này ▾';
+    else if (this.timeFilter === 'overdue') timeBtnLabel = 'Quá hạn ▾';
+    else if (this.timeFilter === 'unscheduled') timeBtnLabel = 'Chưa đặt giờ ▾';
+    else if (this.sortBy === 'time_asc') timeBtnLabel = 'Sớm nhất ▾';
+    else if (this.sortBy === 'time_desc') timeBtnLabel = 'Muộn nhất ▾';
+    else if (this.sortBy === 'title') timeBtnLabel = 'Tên A-Z ▾';
+
+    const timeBtn = createElement('button', {
+      type: 'button',
+      className: `todo-filter-dropdown-btn ${(this.timeFilter && this.timeFilter !== 'all') || this.sortBy !== 'time' ? 'active' : ''}`,
+      title: 'Lọc hoặc sắp xếp theo thời gian',
+      textContent: timeBtnLabel,
+      onclick: (e) => {
+        e.stopPropagation();
+        Dropdown.show({
+          triggerEl: timeBtn,
+          items: [
+            {
+              label: 'Tất cả thời gian',
+              icon: '🕒',
+              active: (!this.timeFilter || this.timeFilter === 'all') && this.sortBy === 'time',
+              onClick: () => {
+                this.timeFilter = 'all';
+                this.sortBy = 'time';
+                this.render();
+              }
+            },
+            {
+              label: 'Hôm nay',
+              icon: '☀️',
+              active: this.timeFilter === 'today',
+              onClick: () => {
+                this.timeFilter = 'today';
+                this.render();
+              }
+            },
+            {
+              label: 'Tuần này (7 ngày tới)',
+              icon: '📅',
+              active: this.timeFilter === 'week',
+              onClick: () => {
+                this.timeFilter = 'week';
+                this.render();
+              }
+            },
+            {
+              label: 'Quá hạn',
+              icon: '⚠️',
+              active: this.timeFilter === 'overdue',
+              onClick: () => {
+                this.timeFilter = 'overdue';
+                this.render();
+              }
+            },
+            {
+              label: 'Chưa đặt giờ',
+              icon: '📌',
+              active: this.timeFilter === 'unscheduled',
+              onClick: () => {
+                this.timeFilter = 'unscheduled';
+                this.render();
+              }
+            },
+            { divider: true },
+            {
+              label: 'Sắp xếp: Sớm nhất trước',
+              icon: '⬆️',
+              active: this.sortBy === 'time_asc',
+              onClick: () => {
+                this.sortBy = 'time_asc';
+                this.render();
+              }
+            },
+            {
+              label: 'Sắp xếp: Muộn nhất trước',
+              icon: '⬇️',
+              active: this.sortBy === 'time_desc',
+              onClick: () => {
+                this.sortBy = 'time_desc';
+                this.render();
+              }
+            },
+            {
+              label: 'Sắp xếp: Tên A-Z',
+              icon: '🔤',
+              active: this.sortBy === 'title',
+              onClick: () => {
+                this.sortBy = 'title';
+                this.render();
+              }
+            }
+          ]
+        });
+      }
+    });
+    timeCol.appendChild(timeBtn);
+
+    // 3. Cột Lọc Thẻ
+    const tagCol = createElement('div', { className: 'todo-th-tag' });
+    const availableCats = getAvailableCategories();
+    const activeCat = availableCats.find(c => c.name.toLowerCase() === (this.tagFilter || '').toLowerCase());
+
+    const tagBtn = createElement('button', {
+      type: 'button',
+      className: `todo-filter-dropdown-btn ${this.tagFilter && this.tagFilter !== 'all' ? 'active' : ''}`,
+      title: 'Lọc theo thẻ phân loại',
+      onclick: (e) => {
+        e.stopPropagation();
+        const currentCats = getAvailableCategories();
+        const items = [
+          {
+            label: 'Tất cả thẻ',
+            icon: '🏷️',
+            active: !this.tagFilter || this.tagFilter === 'all',
+            onClick: () => {
+              this.tagFilter = 'all';
+              this.render();
+            }
+          },
+          { divider: true }
+        ];
+
+        if (currentCats.length === 0) {
+          items.push({
+            label: '(Chưa tạo thẻ trong Cài đặt)',
+            disabled: true
+          });
+        } else {
+          currentCats.forEach(c => {
+            items.push({
+              tagBadge: { name: c.name, color: c.color },
+              active: this.tagFilter === c.name,
+              onClick: () => {
+                this.tagFilter = c.name;
+                this.render();
+              }
+            });
+          });
+        }
+
+        items.push({ divider: true });
+        items.push({
+          label: 'Chưa gắn thẻ',
+          icon: '—',
+          active: this.tagFilter === 'none',
+          onClick: () => {
+            this.tagFilter = 'none';
+            this.render();
+          }
+        });
+
+        Dropdown.show({
+          triggerEl: tagBtn,
+          items
+        });
+      }
+    });
+
+    if (activeCat) {
+      tagBtn.replaceChildren(
+        createElement('span', {
+          className: 'task-tag-badge',
+          style: {
+            backgroundColor: `${activeCat.color}20`,
+            color: activeCat.color,
+            border: `1px solid ${activeCat.color}60`,
+            padding: '1px 6px',
+            fontSize: '11px',
+            gap: '4px'
+          }
+        }, [
+          createElement('span', {
+            style: { display: 'inline-flex', alignItems: 'center' },
+            innerHTML: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`
+          }),
+          createElement('span', { textContent: activeCat.name })
+        ]),
+        createElement('span', { style: { marginLeft: '4px' }, textContent: '▾' })
+      );
+    } else if (this.tagFilter === 'none') {
+      tagBtn.textContent = 'Chưa gắn thẻ ▾';
+    } else {
+      tagBtn.textContent = '🏷️ Thẻ ▾';
+    }
+    tagCol.appendChild(tagBtn);
+
+    // 4. Cột Lọc Sao Quan trọng
+    const starCol = createElement('div', { className: 'todo-th-star' });
+    const starBtn = createElement('button', {
+      type: 'button',
+      className: `todo-filter-star-btn ${this.onlyImportant ? 'active' : ''}`,
+      title: this.onlyImportant ? 'Đang lọc: Chỉ việc Quan trọng (Bấm để xem tất cả)' : 'Lọc việc Quan trọng (Hiện việc có ⭐)',
+      innerHTML: '&#9733;',
+      onclick: () => {
+        this.onlyImportant = !this.onlyImportant;
+        this.render();
+      }
+    });
+    starCol.appendChild(starBtn);
+
+    bar.appendChild(searchCol);
+    bar.appendChild(timeCol);
+    bar.appendChild(tagCol);
+    bar.appendChild(starCol);
+
+    return bar;
+  }
+
   render() {
     this.container.innerHTML = "";
 
-    // 1. Bảng quản lý chung -> Luôn hiển thị dạng Kanban 4 cột
+    // 1. Bảng quản lý chung -> Kanban 4 cột
     if (String(this.activeListId) === "board") {
       this.renderGeneralKanbanBoard();
       return;
     }
 
-    // 2. Danh sách của tôi -> Luôn hiển thị dạng Danh sách chuẩn, sắp xếp theo thời gian
+    // 2. Danh sách của tôi -> Dạng bảng đồng bộ
     this.renderCustomListView();
   }
 
   renderGeneralKanbanBoard() {
+    this.container.appendChild(this.createTableHeaderBar());
+
     const allFiltered = this.filterTasks();
     const now = businessNow();
     const todayStr = formatDate(now, 'YYYY-MM-DD');
@@ -182,11 +465,6 @@ export class TaskListView {
       return acc;
     }, {});
 
-    // Phân loại vào đúng 4 cột theo mô tả của người dùng:
-    // 1. Cần làm: Chưa hoàn thành & (Không có thời gian vĩnh viễn HOẶC thời gian trong tương lai > hôm nay)
-    // 2. Hôm nay: Chưa hoàn thành & diễn ra trong ngày hôm nay (due_date === todayStr) & chưa quá hạn
-    // 3. Quá hạn: Chưa hoàn thành & đã quá thời gian
-    // 4. Hoàn thành: Đã tích hoàn thành hoặc Sự kiện tự động hoàn thành sau khi hết thời gian
     const colTodoItems = [];
     const colTodayItems = [];
     const colOverdueItems = [];
@@ -208,7 +486,6 @@ export class TaskListView {
       if (dStr === todayStr) {
         colTodayItems.push(t);
       } else {
-        // Không có thời gian (vĩnh viễn) hoặc trong tương lai (dStr > todayStr)
         colTodoItems.push(t);
       }
     });
@@ -216,8 +493,8 @@ export class TaskListView {
     const columns = [
       {
         id: "todo",
-        title: "Cần làm",
-        subtitle: "Việc vĩnh viễn & tương lai",
+        title: "📌 Cần làm",
+        subtitle: "Chưa đặt giờ & tương lai",
         color: "#6366F1",
         items: this.sortTasks(colTodoItems, false),
         onAddQuick: () =>
@@ -230,7 +507,6 @@ export class TaskListView {
           const dStr = targetTask?.due_date
             ? String(targetTask.due_date).slice(0, 10)
             : null;
-          // Nếu kéo từ Hôm nay / Quá hạn / Hoàn thành sang Cần làm: bỏ hoàn thành, nếu ngày <= hôm nay thì bỏ giới hạn ngày để thành vĩnh viễn
           const clearDate = !dStr || dStr <= todayStr;
           await api.put(`/tasks/${taskId}`, {
             is_completed: false,
@@ -240,7 +516,7 @@ export class TaskListView {
       },
       {
         id: "today",
-        title: "Hôm nay",
+        title: "☀️ Hôm nay",
         subtitle: "Công việc trong hôm nay",
         color: "#F59E0B",
         items: this.sortTasks(colTodayItems, false),
@@ -251,50 +527,86 @@ export class TaskListView {
             onCreated: this.onRefresh,
           }),
         onDropTask: async (taskId) => {
-          const targetTask = this.tasks.find(x => x.id === taskId);
+          const targetTask = this.tasks.find((x) => x.id === taskId);
           await api.put(`/tasks/${taskId}`, {
-            is_completed: false,
             due_date: todayStr,
-            is_in_my_day: true
+            is_completed: false,
+            is_in_my_day: true,
           }, revisionOptions(targetTask));
         }
       },
       {
         id: "overdue",
-        title: "Quá hạn",
-        subtitle: "Chưa xong & đã quá thời gian",
+        title: "⚠️ Quá hạn",
+        subtitle: "Đã quá thời gian quy định",
         color: "#EF4444",
         items: this.sortTasks(colOverdueItems, false),
         headerAction: colOverdueItems.length > 0 ? {
-          label: '↪ Hôm nay',
+          label: "Dời sang hôm nay",
           onClick: async () => {
+            const count = colOverdueItems.length;
             try {
-              await api.post('/tasks/batch', { action: 'reschedule_overdue', due_date: todayStr });
-              Toast.success('Đã dời toàn bộ việc quá hạn sang cột Hôm nay!');
-              window.dispatchEvent(new CustomEvent('planify:data-changed'));
+              await Promise.all(
+                colOverdueItems.map((task) =>
+                  api.put(`/tasks/${task.id}`, {
+                    due_date: todayStr,
+                    is_completed: false,
+                    is_in_my_day: true,
+                  }, revisionOptions(task)),
+                ),
+              );
+              Toast.success(`Đã dời ${count} công việc quá hạn sang Hôm nay`);
+              window.dispatchEvent(new CustomEvent("planify:data-changed"));
               if (this.onRefresh) this.onRefresh();
             } catch (err) {
-              if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể dời công việc quá hạn.');
+              if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể dời lịch');
               if (this.onRefresh) this.onRefresh();
             }
-          }
+          },
         } : null,
-        onDropTask: null
+        onDropTask: async (taskId) => {
+          const targetTask = this.tasks.find((x) => x.id === taskId);
+          const yesterday = businessNow();
+          yesterday.setDate(yesterday.getDate() - 1);
+          await api.put(`/tasks/${taskId}`, {
+            due_date: formatDate(yesterday, "YYYY-MM-DD"),
+            is_completed: false,
+          }, revisionOptions(targetTask));
+        }
       },
       {
         id: "completed",
-        title: "Hoàn thành",
-        subtitle: "Công việc đã hoàn thành",
+        title: "✅ Hoàn thành",
+        subtitle: "Các việc đã xong",
         color: "#10B981",
         items: this.sortTasks(colCompletedItems, true),
+        headerAction: colCompletedItems.length > 0 ? {
+          label: "Dọn dẹp",
+          onClick: async () => {
+            const count = colCompletedItems.length;
+            if (confirm(`Bạn có chắc muốn xóa tất cả ${count} công việc đã hoàn thành?`)) {
+              try {
+                await Promise.all(colCompletedItems.map((task) => api.delete(`/tasks/${task.id}`)));
+                Toast.success(`Đã xóa ${count} công việc đã hoàn thành`);
+                window.dispatchEvent(new CustomEvent("planify:data-changed"));
+                if (this.onRefresh) this.onRefresh();
+              } catch (err) {
+                Toast.error(err.message || 'Lỗi khi xóa công việc');
+              }
+            }
+          },
+        } : null,
         onDropTask: async (taskId) => {
-          const targetTask = this.tasks.find(x => x.id === taskId);
+          const targetTask = this.tasks.find((x) => x.id === taskId);
           await api.patch(`/tasks/${taskId}/complete`, { is_completed: true }, revisionOptions(targetTask));
         }
       }
     ];
 
-    const board = createElement("div", { className: "todo-kanban-board" });
+    const board = createElement("div", {
+      className: "todo-kanban-board",
+      style: { flex: '1', minHeight: '0' }
+    });
 
     columns.forEach((col) => {
       const colEl = createElement("div", {
@@ -406,7 +718,7 @@ export class TaskListView {
               borderRadius: "10px",
               marginTop: "4px",
             },
-            textContent: "Trống — Kéo thả thẻ việc vào đây",
+            textContent: "Trống — Kéo thả việc vào đây",
           }),
         );
       } else {
@@ -435,6 +747,28 @@ export class TaskListView {
   }
 
   renderCustomListView() {
+    // Đặt cả Table Header Bar và Task Items bên trong cùng 1 container cuộn
+    // để đồng bộ 100% về chiều rộng và lề thanh cuộn
+    const wrapper = createElement('div', {
+      className: 'todo-list-scroll',
+      style: { paddingRight: '4px', paddingBottom: '28px', flex: '1', overflowY: 'auto' }
+    });
+
+    // 1. Table Header Bar
+    wrapper.appendChild(this.createTableHeaderBar());
+
+    // 2. Container chứa các dòng công việc
+    this.tasksBodyContainer = createElement('div');
+    wrapper.appendChild(this.tasksBodyContainer);
+
+    this.renderTaskListBody();
+    this.container.appendChild(wrapper);
+  }
+
+  renderTaskListBody() {
+    if (!this.tasksBodyContainer) return;
+    this.tasksBodyContainer.innerHTML = '';
+
     const allFiltered = this.filterTasks();
     const now = businessNow();
     const todayStr = formatDate(now, "YYYY-MM-DD");
@@ -448,11 +782,6 @@ export class TaskListView {
       allFiltered.filter((t) => t.is_completed),
       true,
     );
-
-    const wrapper = createElement('div', {
-      className: 'todo-list-scroll',
-      style: { paddingRight: '4px', paddingBottom: '28px' }
-    });
 
     const createItemEl = (task) =>
       TaskItem.create({
@@ -468,7 +797,7 @@ export class TaskListView {
       });
 
     if (activeTasks.length === 0 && completedTasks.length === 0) {
-      wrapper.appendChild(
+      this.tasksBodyContainer.appendChild(
         createElement("div", {
           style: {
             padding: "48px 16px",
@@ -478,23 +807,28 @@ export class TaskListView {
             borderRadius: "14px",
             border: "1px dashed var(--color-border)",
           },
-          textContent: "Chưa có công việc nào trong danh sách này!",
+          textContent: this.searchQuery || this.timeFilter !== 'all' || this.tagFilter !== 'all' || this.onlyImportant
+            ? "Không tìm thấy công việc nào phù hợp với bộ lọc!"
+            : "Chưa có công việc nào trong danh sách này!",
         }),
       );
-    } else if (activeTasks.length > 0) {
+      return;
+    }
+
+    if (activeTasks.length > 0) {
       const activeContainer = createElement("div", {
-        className: "flex flex-col gap-sm",
+        className: "flex flex-col gap-xs",
       });
       activeTasks.forEach((task) => {
         activeContainer.appendChild(createItemEl(task));
       });
-      wrapper.appendChild(activeContainer);
+      this.tasksBodyContainer.appendChild(activeContainer);
     }
 
-    // Mục xổ xuống "Đã hoàn thành (X)" ở phía dưới danh sách
+    // Mục xổ xuống "Đã hoàn thành (X)"
     if (completedTasks.length > 0) {
       const completedSection = createElement("div", {
-        className: "flex flex-col gap-sm",
+        className: "flex flex-col gap-xs",
         style: {
           marginTop: "14px",
           paddingTop: "12px",
@@ -513,13 +847,13 @@ export class TaskListView {
             borderRadius: "8px",
             color: "var(--color-text-secondary)",
             cursor: "pointer",
-            padding: "7px 12px",
-            fontSize: "13px",
+            padding: "6px 12px",
+            fontSize: "12.5px",
             width: "fit-content",
           },
           onclick: () => {
             this.isCompletedCollapsed = !this.isCompletedCollapsed;
-            this.render();
+            this.renderTaskListBody();
           },
         },
         [
@@ -536,7 +870,8 @@ export class TaskListView {
 
       if (!this.isCompletedCollapsed) {
         const completedList = createElement("div", {
-          className: "flex flex-col gap-sm",
+          className: "flex flex-col gap-xs",
+          style: { marginTop: "6px" }
         });
         completedTasks.forEach((task) => {
           completedList.appendChild(createItemEl(task));
@@ -544,9 +879,7 @@ export class TaskListView {
         completedSection.appendChild(completedList);
       }
 
-      wrapper.appendChild(completedSection);
+      this.tasksBodyContainer.appendChild(completedSection);
     }
-
-    this.container.appendChild(wrapper);
   }
 }
