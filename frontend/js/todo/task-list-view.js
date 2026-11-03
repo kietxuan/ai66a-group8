@@ -21,7 +21,7 @@ export class TaskListView {
     onlyImportant = false,
     timeFilter = 'all',
     tagFilter = 'all',
-    statusFilter = 'all', dateFrom = '', dateTo = '',
+    dateFrom = '', dateTo = '',
     searchQuery = "",
     onSelectTask = null,
     onToggleComplete = null,
@@ -38,7 +38,7 @@ export class TaskListView {
     this.onlyImportant = onlyImportant;
     this.timeFilter = timeFilter;
     this.tagFilter = tagFilter;
-    Object.assign(this, { statusFilter, dateFrom, dateTo });
+    Object.assign(this, { dateFrom, dateTo });
     this.searchQuery = searchQuery;
     this.onSelectTask = onSelectTask;
     this.onToggleComplete = onToggleComplete;
@@ -59,7 +59,7 @@ export class TaskListView {
   }
 
   getFilterState() {
-    return Object.fromEntries(['sortBy', 'onlyImportant', 'timeFilter', 'tagFilter', 'statusFilter', 'dateFrom', 'dateTo', 'searchQuery'].map(key => [key, this[key]]));
+    return Object.fromEntries(['sortBy', 'onlyImportant', 'timeFilter', 'tagFilter', 'dateFrom', 'dateTo', 'searchQuery'].map(key => [key, this[key]]));
   }
 
   isTaskOverdue(t, todayStr, nowTimeStr) {
@@ -148,8 +148,6 @@ export class TaskListView {
     if (this.onlyImportant) {
       filtered = filtered.filter((t) => Boolean(t.is_important));
     }
-    if (this.statusFilter === 'open') filtered = filtered.filter(t => !t.is_completed);
-    if (this.statusFilter === 'completed') filtered = filtered.filter(t => t.is_completed);
 
     if (this.searchQuery && this.searchQuery.trim()) {
       const q = this.searchQuery.trim().toLowerCase();
@@ -469,14 +467,9 @@ export class TaskListView {
     bar.appendChild(searchCol);
     bar.appendChild(timeCol);
     bar.appendChild(tagCol);
-    const statusCol = createElement('div', { className: 'todo-th-status' });
-    const statusSelect = createElement('select', { className: 'todo-filter-dropdown-btn', 'aria-label': 'Lọc theo trạng thái',
-      onchange: event => { this.statusFilter = event.target.value; this.render(); }
-    }, [['all', 'Mọi trạng thái'], ['open', 'Chưa hoàn thành'], ['completed', 'Đã hoàn thành']].map(([value, label]) => createElement('option', { value, textContent: label, selected: this.statusFilter === value })));
-    statusCol.appendChild(statusSelect); bar.appendChild(statusCol);
     bar.appendChild(starCol);
     bar.appendChild(createElement('button', { type: 'button', className: 'btn btn-secondary btn-xs', textContent: 'Đặt lại', title: 'Đặt lại bộ lọc',
-      onclick: () => { Object.assign(this, { searchQuery: '', onlyImportant: false, statusFilter: 'all', timeFilter: 'all', tagFilter: 'all', dateFrom: '', dateTo: '', sortBy: 'time' }); this.render(); }
+      onclick: () => { Object.assign(this, { searchQuery: '', onlyImportant: false, timeFilter: 'all', tagFilter: 'all', dateFrom: '', dateTo: '', sortBy: 'time' }); this.render(); }
     }));
 
     return bar;

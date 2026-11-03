@@ -615,11 +615,6 @@
   justify-content: center;
 }
 
-.todo-th-status {
-  flex: 0 1 150px;
-  min-width: 120px;
-}
-
 .todo-filter-dropdown-btn {
   display: inline-flex;
   align-items: center;
