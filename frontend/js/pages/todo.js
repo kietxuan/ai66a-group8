@@ -3,41 +3,96 @@ import { createElement } from '../utils/dom.js';
 import { api } from '../api.js';
 import { store } from '../store.js';
 import { Toast } from '../components/toast.js';
+import { Modal } from '../components/modal.js';
 import { formatVietnameseDate } from '../utils/date.js';
-import { SmartListsSidebar } from '../todo/smart-lists.js';
+import { SmartListsSidebar, HOUSE_SVG, INFINITY_SVG, LIST_3BARS_SVG, TabSync } from '../todo/smart-lists.js';
 import { TaskListView } from '../todo/task-list-view.js';
 import { TaskForm } from '../todo/task-form.js';
 import { TaskDetail } from '../todo/task-detail.js';
-import { EventForm } from '../calendar/event-form.js';
-import { Dropdown } from '../components/dropdown.js';
 import { revisionOptions } from '../utils/revision.js';
-import { isScheduleDismissal } from '../utils/api-error.js';
+
+export const POPULAR_ICONS = [
+  { icon: '📋', name: 'Bảng, Kế hoạch, Công việc' },
+  { icon: '📝', name: 'Ghi chú, Viết, Bài viết' },
+  { icon: '📅', name: 'Lịch, Ngày tháng, Lịch hẹn' },
+  { icon: '⭐', name: 'Ngôi sao, Quan trọng, Yêu thích' },
+  { icon: '🎯', name: 'Mục tiêu, Target, Trọng tâm' },
+  { icon: '💼', name: 'Công việc, Sự nghiệp, Văn phòng' },
+  { icon: '💻', name: 'Máy tính, Code, Lập trình, IT' },
+  { icon: '📚', name: 'Sách vở, Học tập, Đọc sách' },
+  { icon: '🎓', name: 'Tốt nghiệp, Đại học, Nghiên cứu' },
+  { icon: '🚀', name: 'Khởi nghiệp, Dự án mới, Tên lửa' },
+  { icon: '🏠', name: 'Nhà, Gia đình, Việc nhà' },
+  { icon: '🛒', name: 'Mua sắm, Đi chợ, Siêu thị' },
+  { icon: '💡', name: 'Ý tưởng, Sáng tạo, Đèn' },
+  { icon: '🔔', name: 'Thông báo, Chuông, Nhắc nhở' },
+  { icon: '⏰', name: 'Đồng hồ, Báo thức, Thời gian' },
+  { icon: '☕', name: 'Cà phê, Nghỉ ngơi, Thư giãn' },
+  { icon: '🍔', name: 'Ăn uống, Thực phẩm, Bữa ăn' },
+  { icon: '🏃', name: 'Thể thao, Chạy bộ, Sức khỏe' },
+  { icon: '🏋️', name: 'Gym, Tập luyện, Thể hình' },
+  { icon: '🎨', name: 'Nghệ thuật, Thiết kế, Sáng tác' },
+  { icon: '🎵', name: 'Âm nhạc, Bài hát, Giải trí' },
+  { icon: '🎬', name: 'Phim ảnh, Video, Xem phim' },
+  { icon: '📷', name: 'Chụp ảnh, Nhiếp ảnh, Camera' },
+  { icon: '🎧', name: 'Nghe nhạc, Podcast, Audio' },
+  { icon: '✈️', name: 'Du lịch, Máy bay, Chuyến đi' },
+  { icon: '🚗', name: 'Xe cộ, Đi lại, Giao thông' },
+  { icon: '💰', name: 'Tài chính, Tiền tệ, Chi tiêu' },
+  { icon: '📈', name: 'Đầu tư, Biểu đồ, Tăng trưởng' },
+  { icon: '🏥', name: 'Y tế, Bệnh viện, Sức khỏe' },
+  { icon: '💊', name: 'Thuốc men, Khám bệnh, Y dược' },
+  { icon: '🔑', name: 'Chìa khóa, Mật khẩu, Bảo mật' },
+  { icon: '🔒', name: 'Khóa an toàn, Bảo mật, Riêng tư' },
+  { icon: '🛠️', name: 'Công cụ, Sửa chữa, Kỹ thuật' },
+  { icon: '📦', name: 'Đóng gói, Vận chuyển, Bưu kiện' },
+  { icon: '🏷️', name: 'Nhãn thẻ, Phân loại, Tag' },
+  { icon: '📌', name: 'Ghim, Đánh dấu, Lưu ý' },
+  { icon: '💬', name: 'Tin nhắn, Trò chuyện, Giao tiếp' },
+  { icon: '✉️', name: 'Thư điện tử, Email, Hộp thư' },
+  { icon: '📞', name: 'Điện thoại, Gọi điện, Liên hệ' },
+  { icon: '🌐', name: 'Website, Internet, Toàn cầu' },
+  { icon: '🏆', name: 'Giải thưởng, Thành tích, Chiến thắng' },
+  { icon: '🎁', name: 'Quà tặng, Sinh nhật, Kỷ niệm' },
+  { icon: '🎉', name: 'Sự kiện, Tiệc tùng, Chúc mừng' },
+  { icon: '🔥', name: 'Khẩn cấp, Hot, Nổi bật' },
+  { icon: '⚡', name: 'Nhanh chóng, Năng lượng, Sấm sét' },
+  { icon: '🌱', name: 'Cây cối, Thiên nhiên, Trồng cây' },
+  { icon: '☀️', name: 'Mặt trời, Ban ngày, Buổi sáng' },
+  { icon: '🌙', name: 'Mặt trăng, Buổi tối, Ban đêm' },
+  { icon: '🐾', name: 'Thú cưng, Chó mèo, Động vật' },
+  { icon: '🧹', name: 'Dọn dẹp, Vệ sinh, Nhà cửa' },
+  { icon: '❤️', name: 'Yêu thích, Trái tim, Tình cảm' },
+  { icon: '✨', name: 'Đặc biệt, Tỏa sáng, Lấp lánh' }
+];
+
+function renderHeaderIcon(el, icon) {
+  if (!el) return;
+  if (typeof icon === "string" && icon.trim().startsWith("<svg")) {
+    el.innerHTML = icon;
+    const svg = el.querySelector("svg");
+    if (svg) {
+      svg.setAttribute("width", "24");
+      svg.setAttribute("height", "24");
+    }
+  } else {
+    el.textContent = icon || "☰";
+  }
+}
 
 export const todoPage = {
   container: null,
   tasks: [],
   activeListId: "board",
-  activeListName: "Bảng quản lý chung",
-  activeListIcon: "📋",
+  activeListName: "All",
+  activeListIcon: HOUSE_SVG,
   activeTask: null,
   sortBy: "time",
   onlyImportant: false,
-  searchQuery: '',
-  dateFilter: 'all',
-  dateFrom: '',
-  dateTo: '',
-  statusFilter: 'all',
-
-  sidebarComponent: null,
-  taskListComponent: null,
-  taskFormComponent: null,
-  taskDetailComponent: null,
+  searchQuery: "",
 
   restoreSavedListSelection() {
-    const saved =
-      store.get("activeTodoList") ||
-      localStorage.getItem("planify_todo_active_list") ||
-      "board";
+    const saved = store.get("activeTodoList");
     if (
       !saved ||
       saved === "board" ||
@@ -52,8 +107,8 @@ export const todoPage = {
       ].includes(String(saved))
     ) {
       this.activeListId = "board";
-      this.activeListName = "Bảng quản lý chung";
-      this.activeListIcon = "📋";
+      this.activeListName = "All";
+      this.activeListIcon = HOUSE_SVG;
       store.set("activeTodoList", "board");
       return;
     }
@@ -67,16 +122,17 @@ export const todoPage = {
       const lists = store.get("taskLists") || [];
       const matched = lists.find((l) => l.id === numId);
       if (matched) {
+        const isTasks = matched.is_default || (matched.name && matched.name.toLowerCase() === "tasks");
         this.activeListName = matched.name;
-        this.activeListIcon = matched.icon || "📝";
+        this.activeListIcon = isTasks ? INFINITY_SVG : (matched.icon && matched.icon !== '☰' ? matched.icon : LIST_3BARS_SVG);
       } else {
         this.activeListName = "Danh sách công việc";
-        this.activeListIcon = "📝";
+        this.activeListIcon = LIST_3BARS_SVG;
       }
     } else {
       this.activeListId = "board";
-      this.activeListName = "Bảng quản lý chung";
-      this.activeListIcon = "📋";
+      this.activeListName = "All";
+      this.activeListIcon = HOUSE_SVG;
     }
   },
 
@@ -109,6 +165,29 @@ export const todoPage = {
       dataset: { listTheme: String(this.activeListId) },
     });
 
+    const isProtected = String(this.activeListId) === 'board' ||
+                        String(this.activeListName).toLowerCase() === 'all' ||
+                        String(this.activeListName).toLowerCase() === 'tasks';
+
+    // Nút Icon bên trái Tiêu đề (Đổi biểu tượng)
+    const iconBtn = createElement("button", {
+      type: "button",
+      className: `todo-header-icon-btn ${!isProtected ? 'interactive' : ''}`,
+      id: "todo-header-icon",
+      title: !isProtected ? 'Bấm để đổi biểu tượng danh sách' : '',
+      onclick: () => this.showIconPickerModal()
+    });
+    renderHeaderIcon(iconBtn, this.activeListIcon);
+
+    // Tiêu đề danh sách (Cho phép bấm vào để đổi tên)
+    const titleEl = createElement("h1", {
+      className: `todo-title ${!isProtected ? 'editable-title' : ''}`,
+      id: "todo-header-title",
+      textContent: this.activeListName,
+      title: !isProtected ? 'Bấm vào để đổi tên danh sách' : '',
+      onclick: () => this.startInlineTitleEdit(titleEl)
+    });
+
     const titleRow = createElement("div", { className: "todo-title-row" }, [
       createElement("button", {
         className: "btn-icon mobile-only",
@@ -116,98 +195,20 @@ export const todoPage = {
         title: "Mở danh sách To Do",
         onclick: () => sidebarEl.classList.toggle("mobile-open"),
       }),
-      createElement("div", {}, [
-        createElement("h1", {
-          className: "todo-title",
-          id: "todo-header-title",
-          textContent: this.activeListName,
-        }),
-        createElement("span", {
-          className: "todo-date-subtitle",
-          id: "todo-header-subtitle",
-          textContent:
-            String(this.activeListId) === "board"
-              ? `${formatVietnameseDate(businessNow())} • Sắp xếp tự động theo thời gian`
-              : "Chế độ Danh sách • Sắp xếp mặc định theo thời gian",
-        }),
-      ]),
+      iconBtn,
+      titleEl
     ]);
 
     const headerActions = createElement("div", {
-      className: "todo-header-actions flex items-center gap-xs flex-wrap",
+      className: "todo-header-actions",
       style: { marginLeft: "auto" },
     });
 
-    // Search Input (nằm bên trái Filter & Sắp xếp, cùng một dòng)
-    const searchInput = createElement("input", {
-      type: "text",
-      className: "todo-search-input",
-      placeholder: "Tìm kiếm công việc...",
-      value: this.searchQuery,
-      oninput: (e) => {
-        this.searchQuery = e.target.value;
-        this.updateComponents();
-      },
+    this.matchCountEl = createElement('div', {
+      className: 'todo-header-counter-pill',
+      role: 'status'
     });
-    const clearSearchBtn = createElement('button', { type: 'button', className: 'btn btn-secondary btn-sm', textContent: '✕ Từ khóa', onclick: () => {
-      searchInput.value = ''; this.searchQuery = ''; this.updateComponents();
-    } });
-    const dateSelect = createElement('select', { className: 'input', 'aria-label': 'Lọc theo ngày', onchange: e => {
-      this.dateFilter = e.target.value;
-      rangeWrap.style.display = this.dateFilter === 'range' ? 'flex' : 'none';
-      this.updateComponents();
-    } }, [
-      ['all', 'Mọi ngày'], ['tomorrow', 'Ngày mai'], ['next7', '7 ngày tới'], ['range', 'Khoảng ngày']
-    ].map(([value, label]) => createElement('option', { value, textContent: label })));
-    dateSelect.value = this.dateFilter;
-    const dateFromInput = createElement('input', { type: 'date', className: 'input', value: this.dateFrom, 'aria-label': 'Từ ngày', onchange: e => { this.dateFrom = e.target.value; this.updateComponents(); } });
-    const dateToInput = createElement('input', { type: 'date', className: 'input', value: this.dateTo, 'aria-label': 'Đến ngày', onchange: e => { this.dateTo = e.target.value; this.updateComponents(); } });
-    const rangeWrap = createElement('div', { className: 'todo-date-range', style: { display: this.dateFilter === 'range' ? 'flex' : 'none' } }, [dateFromInput, dateToInput]);
-    const statusSelect = createElement('select', { className: 'input', 'aria-label': 'Lọc theo trạng thái', onchange: e => { this.statusFilter = e.target.value; this.updateComponents(); } }, [
-      ['all', 'Mọi trạng thái'], ['open', 'Chưa hoàn thành'], ['completed', 'Đã hoàn thành']
-    ].map(([value, label]) => createElement('option', { value, textContent: label })));
-    statusSelect.value = this.statusFilter;
-    const resetFiltersBtn = createElement('button', { type: 'button', className: 'btn btn-secondary btn-sm', textContent: 'Đặt lại bộ lọc', onclick: () => {
-      this.searchQuery = ''; this.dateFilter = 'all'; this.dateFrom = ''; this.dateTo = ''; this.statusFilter = 'all'; this.onlyImportant = false;
-      searchInput.value = ''; dateSelect.value = 'all'; statusSelect.value = 'all'; dateFromInput.value = ''; dateToInput.value = ''; rangeWrap.style.display = 'none';
-      filterBtn.classList.remove('active'); this.updateComponents();
-    } });
-    this.matchCountEl = createElement('span', { role: 'status', style: { fontSize: '12px' } });
-
-    // Filter button (icon viền đen đơn giản)
-    const filterBtn = createElement("button", {
-      type: "button",
-      className: `btn btn-secondary btn-sm ${this.onlyImportant || (this.statusFilter && this.statusFilter !== "all") ? "active" : ""}`,
-      id: "btn-filter-tasks",
-      title: "Lọc công việc",
-      onclick: (e) => this.showFilterDropdown(e, filterBtn),
-    });
-    filterBtn.innerHTML = `
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-1px; margin-right:4px;">
-        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-      </svg>Filter
-    `.trim();
-    this.filterControls = { statusSelect, filterBtn };
-
-    // Sắp xếp button (icon viền đen đơn giản)
-    const sortBtn = createElement("button", {
-      type: "button",
-      className: "btn btn-secondary btn-sm",
-      id: "btn-sort-tasks",
-      title: "Sắp xếp danh sách",
-      onclick: (e) => this.showSortDropdown(e, sortBtn),
-    });
-    sortBtn.innerHTML = `<span style="font-size:14px; margin-right:4px; font-weight:bold; line-height:1;">⇅</span>Sắp xếp`;
-
-    headerActions.appendChild(searchInput);
-    headerActions.appendChild(clearSearchBtn);
-    headerActions.appendChild(dateSelect);
-    headerActions.appendChild(rangeWrap);
-    headerActions.appendChild(statusSelect);
-    headerActions.appendChild(filterBtn);
-    headerActions.appendChild(resetFiltersBtn);
     headerActions.appendChild(this.matchCountEl);
-    headerActions.appendChild(sortBtn);
 
     headerEl.appendChild(titleRow);
     headerEl.appendChild(headerActions);
@@ -216,7 +217,7 @@ export const todoPage = {
     const formContainer = createElement("div");
 
     // Task Items List / Kanban Container
-    const listContainer = createElement('div', { className: 'todo-list-container' });
+    const listContainer = createElement('div', { className: 'todo-list-container flex-1 overflow-hidden flex flex-col' });
 
     mainEl.appendChild(headerEl);
     mainEl.appendChild(formContainer);
@@ -285,25 +286,234 @@ export const todoPage = {
     window.addEventListener("planify:data-changed", this.dataChangedListener);
     document.addEventListener("task-changed", this.dataChangedListener);
 
+    this.tabSyncUnsubscribe = TabSync.subscribe((msg) => {
+      if (msg.type === 'lists_updated') {
+        this.fetchTasks({ refreshLists: true, preserveDetail: true });
+      } else if (msg.type === 'folders_updated') {
+        if (this.sidebarComponent) {
+          this.sidebarComponent.folders = this.sidebarComponent.loadFolders();
+          this.sidebarComponent.render();
+        }
+      }
+    });
+
     await this.fetchTasks({ refreshLists: true });
+  },
+
+  showIconPickerModal() {
+    const isProtected = String(this.activeListId) === 'board' ||
+                        String(this.activeListName).toLowerCase() === 'all' ||
+                        String(this.activeListName).toLowerCase() === 'tasks';
+    if (isProtected) return;
+
+    const searchInput = createElement('input', {
+      type: 'text',
+      className: 'input',
+      placeholder: '🔍 Tìm kiếm biểu tượng (công việc, học tập, sao, nhà, cà phê...)...',
+      id: 'icon-picker-search'
+    });
+
+    const gridContainer = createElement('div', {
+      className: 'list-icon-grid',
+      style: {
+        maxHeight: '280px',
+        overflowY: 'auto',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(6, 1fr)',
+        gap: '8px',
+        padding: '6px'
+      }
+    });
+
+    const renderGrid = (query = '') => {
+      gridContainer.innerHTML = '';
+      const q = query.trim().toLowerCase();
+      const filtered = POPULAR_ICONS.filter(item => !q || item.name.toLowerCase().includes(q) || item.icon.includes(q));
+
+      if (filtered.length === 0) {
+        gridContainer.appendChild(createElement('div', {
+          style: { gridColumn: '1 / -1', padding: '24px', textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: '13px' },
+          textContent: 'Không tìm thấy biểu tượng phù hợp'
+        }));
+        return;
+      }
+
+      filtered.forEach(item => {
+        const btn = createElement('button', {
+          type: 'button',
+          className: 'list-icon-option',
+          title: item.name,
+          textContent: item.icon,
+          style: {
+            fontSize: '20px',
+            height: '42px',
+            borderRadius: '8px',
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-bg-secondary)',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          },
+          onclick: async () => {
+            try {
+              await api.put(`/task-lists/${this.activeListId}`, { icon: item.icon });
+              this.activeListIcon = item.icon;
+              const lists = store.get('taskLists') || [];
+              const matched = lists.find(l => String(l.id) === String(this.activeListId));
+              if (matched) matched.icon = item.icon;
+              store.set('taskLists', lists);
+
+              const iconEl = document.getElementById('todo-header-icon');
+              renderHeaderIcon(iconEl, item.icon);
+              if (this.sidebarComponent) {
+                await this.sidebarComponent.fetchLists();
+                this.sidebarComponent.render();
+              }
+              TabSync.broadcast('lists_updated');
+              Modal.close();
+              Toast.success(`Đã đổi biểu tượng thành ${item.icon}`);
+            } catch (err) {
+              Toast.error(err.message || 'Lỗi khi cập nhật biểu tượng');
+            }
+          }
+        });
+        gridContainer.appendChild(btn);
+      });
+    };
+
+    searchInput.oninput = (e) => renderGrid(e.target.value);
+    renderGrid('');
+
+    const clearBtn = createElement('button', {
+      type: 'button',
+      className: 'btn btn-secondary',
+      style: { width: '100%', marginTop: '8px', justifyContent: 'center' },
+      textContent: '🧹 Đặt lại mặc định (3 gạch ☰)',
+      onclick: async () => {
+        try {
+          await api.put(`/task-lists/${this.activeListId}`, { icon: '☰' });
+          this.activeListIcon = LIST_3BARS_SVG;
+          const lists = store.get('taskLists') || [];
+          const matched = lists.find(l => String(l.id) === String(this.activeListId));
+          if (matched) matched.icon = '☰';
+          store.set('taskLists', lists);
+
+          const iconEl = document.getElementById('todo-header-icon');
+          renderHeaderIcon(iconEl, LIST_3BARS_SVG);
+          if (this.sidebarComponent) {
+            await this.sidebarComponent.fetchLists();
+            this.sidebarComponent.render();
+          }
+          TabSync.broadcast('lists_updated');
+          Modal.close();
+          Toast.success('Đã đặt lại biểu tượng mặc định (3 gạch)');
+        } catch (err) {
+          Toast.error(err.message || 'Lỗi khi đặt lại biểu tượng');
+        }
+      }
+    });
+
+    const content = createElement('div', { className: 'flex flex-col gap-sm' }, [
+      searchInput,
+      gridContainer,
+      clearBtn
+    ]);
+
+    Modal.open({
+      title: 'Chọn biểu tượng danh sách',
+      content,
+      width: '460px',
+      showConfirm: false
+    });
+
+    setTimeout(() => searchInput.focus(), 80);
+  },
+
+  startInlineTitleEdit(titleEl) {
+    const isProtected = String(this.activeListId) === 'board' ||
+                        String(this.activeListName).toLowerCase() === 'all' ||
+                        String(this.activeListName).toLowerCase() === 'tasks';
+    if (isProtected) return;
+
+    const currentText = this.activeListName;
+    const input = createElement('input', {
+      type: 'text',
+      className: 'input todo-title-edit-input',
+      value: currentText,
+      style: {
+        fontSize: '18px',
+        fontWeight: '800',
+        padding: '3px 8px',
+        minWidth: '220px',
+        maxWidth: '400px'
+      }
+    });
+
+    let saved = false;
+    const saveName = async () => {
+      if (saved) return;
+      saved = true;
+      const newName = input.value.trim();
+      if (newName && newName !== currentText) {
+        try {
+          await api.put(`/task-lists/${this.activeListId}`, { name: newName });
+          this.activeListName = newName;
+          const lists = store.get('taskLists') || [];
+          const found = lists.find(l => l.id === this.activeListId);
+          if (found) found.name = newName;
+          store.set('taskLists', lists);
+          if (this.sidebarComponent) await this.sidebarComponent.fetchLists();
+          TabSync.broadcast('lists_updated');
+          Toast.success('Đã cập nhật tên danh sách');
+        } catch (err) {
+          Toast.error(err.message || 'Lỗi khi cập nhật tên');
+        }
+      }
+      titleEl.textContent = this.activeListName;
+      titleEl.style.display = '';
+      input.remove();
+    };
+
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveName();
+      } else if (e.key === 'Escape') {
+        saved = true;
+        titleEl.textContent = currentText;
+        titleEl.style.display = '';
+        input.remove();
+      }
+    };
+
+    input.onblur = () => {
+      saveName();
+    };
+
+    titleEl.style.display = 'none';
+    titleEl.parentNode.insertBefore(input, titleEl);
+    input.focus();
+    input.select();
   },
 
   async fetchTasks({ preserveDetail = false, refreshLists = false } = {}) {
     if (refreshLists) this.listsNeedRefresh = true;
-    // Keep invalidation pending across overlapping task refreshes and failed requests.
     const reloadLists = this.listsNeedRefresh;
     const generation = this.requestGeneration = (this.requestGeneration || 0) + 1;
     const listContainer = this.taskListComponent?.container;
-    if (this.matchCountEl) this.matchCountEl.textContent = 'Đang cập nhật…';
+    if (this.matchCountEl) this.matchCountEl.textContent = 'Đang tải…';
     if (listContainer && !this.tasks?.length) listContainer.replaceChildren(createElement('div', { role: 'status', className: 'empty-state', textContent: 'Đang tải công việc…' }));
     try {
-      const [tasks, refreshedLists] = await Promise.all([
+      const [tasks, refreshedLists, refreshedCategories] = await Promise.all([
         api.get('/tasks'),
-        reloadLists ? api.get('/task-lists') : Promise.resolve(null)
+        reloadLists ? api.get('/task-lists') : Promise.resolve(null),
+        api.get('/categories').catch(() => null)
       ]);
       if (generation !== this.requestGeneration || !this.container) return;
       if (!Array.isArray(tasks) || (reloadLists && !Array.isArray(refreshedLists))) throw new Error('Dữ liệu công việc không hợp lệ.');
       this.tasks = tasks;
+      if (Array.isArray(refreshedCategories)) {
+        store.set('categories', refreshedCategories);
+      }
       if (reloadLists) {
         const lists = refreshedLists || [];
         store.set('taskLists', lists);
@@ -311,17 +521,27 @@ export const todoPage = {
         this.sidebarComponent.listsLoaded = true;
         this.listsNeedRefresh = false;
         if (typeof this.activeListId === 'number' && !lists.some(l => l.id === this.activeListId)) {
-          this.switchList('board', 'Bảng quản lý chung', '📋');
+          this.switchList('board', 'All', HOUSE_SVG);
         }
       }
-      // Update header title if custom list was restored from localStorage
-      if (typeof this.activeListId === "number") {
+
+      if (String(this.activeListId) === "board") {
+        this.activeListName = "All";
+        this.activeListIcon = HOUSE_SVG;
+        const iconEl = document.getElementById("todo-header-icon");
+        const titleEl = document.getElementById("todo-header-title");
+        renderHeaderIcon(iconEl, this.activeListIcon);
+        if (titleEl) titleEl.textContent = this.activeListName;
+      } else {
         const lists = store.get("taskLists") || [];
-        const matched = lists.find((l) => l.id === this.activeListId);
+        const matched = lists.find((l) => String(l.id) === String(this.activeListId));
         if (matched) {
+          const isTasks = matched.is_default || (matched.name && matched.name.toLowerCase() === "tasks");
           this.activeListName = matched.name;
-          this.activeListIcon = matched.icon || "📝";
+          this.activeListIcon = isTasks ? INFINITY_SVG : (matched.icon && matched.icon !== '☰' ? matched.icon : LIST_3BARS_SVG);
+          const iconEl = document.getElementById("todo-header-icon");
           const titleEl = document.getElementById("todo-header-title");
+          renderHeaderIcon(iconEl, this.activeListIcon);
           if (titleEl) titleEl.textContent = this.activeListName;
         }
       }
@@ -332,7 +552,7 @@ export const todoPage = {
         );
         if (updatedActive) {
           if (preserveDetail) {
-            // Keep the form's original revision: refresh must not authorize a stale draft.
+            // Keep the form's original revision
           } else {
             this.activeTask = updatedActive;
             this.taskDetailComponent.show(updatedActive);
@@ -345,7 +565,7 @@ export const todoPage = {
     } catch (err) {
       if (generation !== this.requestGeneration || !this.container) return;
       console.error('Failed to load tasks', err);
-      if (this.matchCountEl) this.matchCountEl.textContent = 'Không rõ số mục';
+      if (this.matchCountEl) this.matchCountEl.textContent = '';
       if (listContainer) listContainer.replaceChildren(createElement('div', { className: 'empty-state', role: 'alert' }, [
         createElement('p', { textContent: `Không tải được công việc: ${err.message || 'Lỗi không xác định.'}` }),
         createElement('button', { type: 'button', className: 'btn btn-primary', textContent: 'Thử lại', onclick: () => this.fetchTasks({ refreshLists: true }) })
@@ -361,11 +581,6 @@ export const todoPage = {
     )
       return;
 
-    if (this.filterControls) {
-      this.filterControls.statusSelect.value = this.statusFilter;
-      this.filterControls.filterBtn.classList.toggle('active', this.onlyImportant || this.statusFilter !== 'all');
-    }
-
     this.sidebarComponent.update({
       activeListId: this.activeListId,
       tasks: this.tasks,
@@ -375,15 +590,21 @@ export const todoPage = {
       tasks: this.tasks,
       activeListId: this.activeListId,
       activeTaskId: this.activeTask?.id || null,
-      sortBy: this.sortBy,
-      onlyImportant: this.onlyImportant,
-      searchQuery: this.searchQuery,
-      dateFilter: this.dateFilter,
-      dateFrom: this.dateFrom,
-      dateTo: this.dateTo,
-      statusFilter: this.statusFilter
     });
-    if (this.matchCountEl) this.matchCountEl.textContent = `${this.taskListComponent.filterTasks().length} mục khớp`;
+
+    const activeListTasks = this.tasks.filter(t => {
+      if (String(this.activeListId) === 'board') return true;
+      return t.list_id === parseInt(this.activeListId, 10);
+    });
+    const pendingCount = activeListTasks.filter(t => !t.is_completed).length;
+    const totalCount = activeListTasks.length;
+    if (this.matchCountEl) {
+      this.matchCountEl.innerHTML = `
+        <span class="counter-item pending"><strong class="counter-num">${pendingCount}</strong> việc cần làm</span>
+        <span class="counter-sep">•</span>
+        <span class="counter-item total"><strong class="counter-num">${totalCount}</strong> tổng số</span>
+      `.trim();
+    }
 
     this.taskFormComponent.setListContext(
       typeof this.activeListId === "number" ? this.activeListId : null,
@@ -394,12 +615,28 @@ export const todoPage = {
     if (this.activeTask && String(this.activeListId) !== String(id)) this.closeDetail();
     this.activeListId = id;
     this.activeListName = name;
-    this.activeListIcon = icon;
+
+    if (String(id) === "board") {
+      this.activeListIcon = HOUSE_SVG;
+    } else {
+      const lists = store.get("taskLists") || [];
+      const matched = lists.find((l) => String(l.id) === String(id));
+      const isTasks = matched?.is_default || (name && name.toLowerCase() === "tasks");
+      if (isTasks) {
+        this.activeListIcon = INFINITY_SVG;
+      } else if (icon && icon !== LIST_3BARS_SVG) {
+        this.activeListIcon = icon;
+      } else if (matched?.icon && matched.icon !== "☰") {
+        this.activeListIcon = matched.icon;
+      } else {
+        this.activeListIcon = LIST_3BARS_SVG;
+      }
+    }
 
     store.set("activeTodoList", id === "board" ? "board" : String(id));
 
+    const iconEl = document.getElementById("todo-header-icon");
     const titleEl = document.getElementById("todo-header-title");
-    const subEl = document.getElementById("todo-header-subtitle");
     const headerEl = document.getElementById("todo-page-header");
 
     if (headerEl) {
@@ -407,12 +644,20 @@ export const todoPage = {
     }
     const mainEl = this.container?.querySelector('.todo-main');
     if (mainEl) mainEl.dataset.view = String(id) === 'board' ? 'board' : 'list';
-    if (titleEl) titleEl.textContent = name;
-    if (subEl) {
-      subEl.textContent =
-        String(id) === "board"
-          ? `${formatVietnameseDate(businessNow())} • Sắp xếp tự động theo thời gian`
-          : "Chế độ Danh sách • Sắp xếp mặc định theo thời gian";
+
+    const isProtected = String(id) === 'board' ||
+                        String(name).toLowerCase() === 'all' ||
+                        String(name).toLowerCase() === 'tasks';
+
+    if (iconEl) {
+      iconEl.className = `todo-header-icon-btn ${!isProtected ? 'interactive' : ''}`;
+      iconEl.title = !isProtected ? 'Bấm để đổi biểu tượng danh sách' : '';
+      renderHeaderIcon(iconEl, this.activeListIcon);
+    }
+    if (titleEl) {
+      titleEl.className = `todo-title ${!isProtected ? 'editable-title' : ''}`;
+      titleEl.title = !isProtected ? 'Bấm vào để đổi tên danh sách' : '';
+      titleEl.textContent = name;
     }
 
     this.updateComponents();
@@ -469,9 +714,9 @@ export const todoPage = {
           detail: { action: "update", task: updated },
         }),
       );
-      await this.fetchTasks();
+      this.updateComponents();
     } catch (err) {
-      if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể cập nhật trạng thái');
+      Toast.error(err.message || 'Không thể cập nhật trạng thái');
       this.fetchTasks();
     }
   },
@@ -522,95 +767,6 @@ export const todoPage = {
     }
   },
 
-  showSortDropdown(e, sortBtn) {
-    const items = [
-      {
-        label: this.sortBy === "time" ? "✓ Theo thời gian (Mặc định)" : "Theo thời gian (Mặc định)",
-        icon: "🕒",
-        onClick: () => {
-          this.sortBy = "time";
-          this.updateComponents();
-        },
-      },
-      {
-        label: this.sortBy === "important" ? "✓ Quan trọng lên đầu" : "Quan trọng lên đầu",
-        icon: "⭐",
-        onClick: () => {
-          this.sortBy = "important";
-          this.updateComponents();
-        },
-      },
-      {
-        label: this.sortBy === "title" ? "✓ Theo tên (A-Z)" : "Theo tên (A-Z)",
-        icon: "🔤",
-        onClick: () => {
-          this.sortBy = "title";
-          this.updateComponents();
-        },
-      },
-    ];
-
-    Dropdown.show({
-      triggerEl: e.currentTarget,
-      anchorEl: e.currentTarget,
-      items,
-    });
-  },
-
-  showFilterDropdown(e, filterBtn) {
-    const isFiltered = this.onlyImportant || (this.statusFilter && this.statusFilter !== "all");
-    const items = [
-      {
-        label: !isFiltered ? "✓ Tất cả công việc (Bỏ lọc)" : "Tất cả công việc (Bỏ lọc)",
-        onClick: () => {
-          this.onlyImportant = false;
-          this.statusFilter = "all";
-          if (filterBtn) filterBtn.classList.remove("active");
-          this.updateComponents();
-        },
-      },
-      {
-        label: this.onlyImportant ? "✓ Chỉ mục quan trọng" : "Chỉ mục quan trọng",
-        icon: "⭐",
-        onClick: () => {
-          this.onlyImportant = !this.onlyImportant;
-          if (filterBtn) {
-            filterBtn.classList.toggle("active", this.onlyImportant || (this.statusFilter && this.statusFilter !== "all"));
-          }
-          this.updateComponents();
-        },
-      },
-      {
-        label: this.statusFilter === "open" ? "✓ Chỉ việc chưa hoàn thành" : "Chỉ việc chưa hoàn thành",
-        icon: "⏳",
-        onClick: () => {
-          this.statusFilter = this.statusFilter === "open" ? "all" : "open";
-          if (filterBtn) {
-            filterBtn.classList.toggle("active", this.onlyImportant || (this.statusFilter && this.statusFilter !== "all"));
-          }
-          this.updateComponents();
-        },
-      },
-      {
-        label: this.statusFilter === "completed" ? "✓ Chỉ việc đã hoàn thành" : "Chỉ việc đã hoàn thành",
-        icon: "✅",
-        onClick: () => {
-          this.statusFilter = this.statusFilter === "completed" ? "all" : "completed";
-          if (filterBtn) {
-            filterBtn.classList.toggle("active", this.onlyImportant || (this.statusFilter && this.statusFilter !== "all"));
-          }
-          this.updateComponents();
-        },
-      },
-    ];
-
-    Dropdown.show({
-      triggerEl: e.currentTarget,
-      anchorEl: e.currentTarget,
-      items,
-    });
-  },
-
   setupShortcuts() {
     this.keyHandler = (e) => {
       if (
@@ -640,6 +796,13 @@ export const todoPage = {
       );
       document.removeEventListener("task-changed", this.dataChangedListener);
       this.dataChangedListener = null;
+    }
+    if (this.tabSyncUnsubscribe) {
+      this.tabSyncUnsubscribe();
+      this.tabSyncUnsubscribe = null;
+    }
+    if (this.sidebarComponent?.destroy) {
+      this.sidebarComponent.destroy();
     }
     if (this.container) {
       this.container.innerHTML = "";

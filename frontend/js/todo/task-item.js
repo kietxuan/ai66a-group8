@@ -5,9 +5,38 @@ import { soundManager } from '../utils/sound.js';
 import { ContextMenu } from '../components/contextmenu.js';
 import { confirmDeleteItem } from '../utils/confirm-delete.js';
 import { revisionOptions } from '../utils/revision.js';
-import { EventForm } from '../calendar/event-form.js';
 import { api } from '../api.js';
 import { Toast } from '../components/toast.js';
+import { store } from '../store.js';
+
+export const DEFAULT_CATEGORIES = [
+  { name: 'Công việc', color: '#3B82F6' },
+  { name: 'Cá nhân', color: '#10B981' },
+  { name: 'Dự án', color: '#F97316' },
+  { name: 'Khẩn cấp', color: '#EF4444' },
+  { name: 'Học tập', color: '#8B5CF6' }
+];
+
+export function getAvailableCategories() {
+  const storeCats = store.get('categories');
+  if (Array.isArray(storeCats)) return storeCats;
+  return [];
+}
+
+export function resolveCategoryForTask(task) {
+  if (!task) return null;
+  const cats = getAvailableCategories();
+  if (task.category) {
+    const match = cats.find(c => c.name.toLowerCase() === String(task.category).toLowerCase());
+    if (match) return match;
+  }
+  if (task.color) {
+    const match = cats.find(c => c.color.toLowerCase() === String(task.color).toLowerCase());
+    if (match) return match;
+    return { name: 'Thẻ màu', color: task.color };
+  }
+  return null;
+}
 
 export class TaskItem {
   static create({
@@ -23,24 +52,20 @@ export class TaskItem {
   }) {
     const isCompleted = Boolean(task.is_completed);
     const isStarred = Boolean(task.is_important);
-    const isAutoEvent = Boolean(task.auto_complete);
-
-    const totalSteps = task.steps?.length || 0;
-    const completedSteps = task.steps?.filter(s => s.is_completed).length || 0;
+    const cat = resolveCategoryForTask(task);
 
     const item = createElement('div', {
       className: `task-item ${isCompleted ? 'completed' : ''} ${isActiveDetail ? 'active-task-open' : ''}`,
-      style: task.color ? { borderLeft: `4px solid ${task.color}` } : {},
+      style: cat?.color ? { borderLeft: `3px solid ${cat.color}` } : {},
       draggable: 'true',
       dataset: { taskId: task.id },
       title: isActiveDetail
-        ? 'Bấm chuột trái lần nữa để đóng cửa sổ chi tiết • Bấm chuột phải để mở menu thao tác nhanh'
-        : 'Bấm chuột trái để mở chi tiết • Bấm chuột phải để mở menu thao tác nhanh',
+        ? 'Bấm chuột trái lần nữa để đóng chi tiết • Bấm chuột phải để mở thao tác nhanh'
+        : 'Bấm chuột trái để mở chi tiết • Bấm chuột phải để mở thao tác nhanh',
       onclick: (e) => {
         if (
           e.target.closest('.task-checkbox') ||
           e.target.closest('.task-star-btn') ||
-          e.target.closest('.task-menu-btn') ||
           e.target.tagName === 'INPUT'
         ) {
           return;
@@ -78,6 +103,7 @@ export class TaskItem {
       }
     });
 
+    // 1. Cột Chính (Bên Trái): Checkbox + Tiêu đề
     const checkbox = createElement('div', {
       className: 'task-checkbox',
       title: isCompleted ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu hoàn thành',
@@ -99,11 +125,6 @@ export class TaskItem {
         textContent: '✓'
       }) : null
     ]);
-
-    const content = createElement('div', { className: 'flex-1 flex flex-col gap-xs overflow-hidden' });
-    const titleRow = createElement('div', { className: 'flex items-center gap-xs overflow-hidden' });
-
-
 
     const titleEl = createElement('span', {
       className: 'task-title',
@@ -144,80 +165,80 @@ export class TaskItem {
           }
         });
         titleEl.style.display = 'none';
-        titleRow.insertBefore(inlineInput, titleEl);
+        colMain.insertBefore(inlineInput, titleEl);
         inlineInput.focus();
       }
     });
-    titleRow.appendChild(titleEl);
-    content.appendChild(titleRow);
 
-    const metaRow = createElement('div', {
-      className: 'flex items-center gap-xs flex-wrap',
-      style: { fontSize: '11px', color: 'var(--color-text-secondary)' }
-    });
+    const colMain = createElement('div', { className: 'task-col-main' }, [
+      checkbox,
+      titleEl
+    ]);
 
-
+    // 2. Cột Thời gian (Đầy đủ ngày tháng năm DD/MM/YYYY)
+    let timeLabel = 'Chưa đặt giờ';
+    let timeClass = 'task-col-time is-unscheduled';
 
     if (task.due_date) {
       const isTod = isToday(task.due_date);
-      let dateLabel = isTod ? 'Hôm nay' : task.due_date;
+      const dStr = String(task.due_date).slice(0, 10);
+      const fullDate = formatDate(new Date(dStr + 'T00:00:00'), 'DD/MM/YYYY');
       const startT = task.start_time || task.due_time;
+
       if (startT && !task.is_all_day) {
-        dateLabel += ` · ${String(startT).substring(0, 5)}`;
-        if (task.end_time) {
-          dateLabel += `-${String(task.end_time).substring(0, 5)}`;
-        }
+        const timePart = String(startT).substring(0, 5);
+        timeLabel = `${timePart}, ${fullDate}`;
+      } else {
+        timeLabel = fullDate;
       }
-      metaRow.appendChild(createElement('span', {
+
+      if (isOverdue && !isCompleted) {
+        timeClass = 'task-col-time is-overdue';
+      } else if (isTod) {
+        timeClass = 'task-col-time is-today';
+      } else {
+        timeClass = 'task-col-time';
+      }
+    }
+
+    const colTime = createElement('div', {
+      className: timeClass,
+      title: task.due_date ? `Hạn: ${task.due_date}` : 'Chưa đặt giờ',
+      textContent: timeLabel
+    });
+
+    // 3. Cột Thẻ / Phân loại
+    const colTag = createElement('div', { className: 'task-col-tag' });
+    if (cat) {
+      const badge = createElement('span', {
+        className: 'task-tag-badge',
         style: {
-          color: (isOverdue && !isCompleted) ? 'var(--color-danger)' : (isTod ? 'var(--color-primary)' : 'inherit'),
-          fontWeight: (isOverdue || isTod) ? '700' : '600'
+          backgroundColor: `${cat.color}18`,
+          color: cat.color,
+          border: `1px solid ${cat.color}55`
         },
-        textContent: dateLabel
-      }));
+        title: `Phân loại: ${cat.name}`
+      }, [
+        createElement('span', {
+          className: 'task-tag-icon',
+          style: { display: 'inline-flex', alignItems: 'center', marginRight: '2px' },
+          innerHTML: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`
+        }),
+        createElement('span', {
+          className: 'task-tag-text',
+          textContent: cat.name
+        })
+      ]);
+      colTag.appendChild(badge);
     } else {
-      metaRow.appendChild(createElement('span', {
-        style: { color: 'var(--color-text-tertiary)', fontStyle: 'italic' },
-        textContent: 'Chưa đặt thời gian'
-      }));
+      colTag.appendChild(createElement('span', { className: 'task-col-empty', textContent: '—' }));
     }
 
-    if (listName) {
-      metaRow.appendChild(createElement('span', {
-        style: {
-          backgroundColor: 'var(--color-bg-tertiary)',
-          padding: '1px 6px',
-          borderRadius: '4px'
-        },
-        textContent: listName
-      }));
-    }
-
-    if (totalSteps > 0) {
-      metaRow.appendChild(createElement('span', { textContent: `☑️ ${completedSteps}/${totalSteps}` }));
-    }
-
-    if (task.location) {
-      metaRow.appendChild(createElement('span', {
-        className: 'truncate',
-        style: { maxWidth: '120px' },
-        textContent: `📍 ${task.location}`
-      }));
-    }
-
-    if (task.recurrence_rule) {
-      metaRow.appendChild(createElement('span', { title: 'Lặp lại', textContent: '🔄' }));
-    }
-
-    if (metaRow.children.length > 0) {
-      content.appendChild(metaRow);
-    }
-
-    // Star button (Quan trọng hiển thị ngay trên thẻ)
+    // 4. Cột Ngôi sao Đánh dấu Quan trọng
     const starBtn = createElement('button', {
       type: 'button',
       className: `task-star-btn ${isStarred ? 'starred' : ''}`,
-      title: isStarred ? 'Bỏ đánh dấu Quan trọng' : 'Đánh dấu Quan trọng (Hiện ngôi sao ⭐)',
+      title: isStarred ? 'Bỏ đánh dấu Quan trọng' : 'Đánh dấu Quan trọng',
       innerHTML: isStarred ? '&#9733;' : '&#9734;',
       onclick: (e) => {
         e.stopPropagation();
@@ -225,25 +246,12 @@ export class TaskItem {
       }
     });
 
-    // Context menu button (for both left-click on ⋮ and right-click anywhere on the card)
-    const menuBtn = createElement('button', {
-      type: 'button',
-      className: 'task-menu-btn btn-icon',
-      style: { width: '24px', height: '24px', fontSize: '14px', opacity: '0.75' },
-      title: 'Mở menu thao tác nhanh (hoặc bấm Chuột phải vào thẻ)',
-      textContent: '⋮',
-      onclick: (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const rect = menuBtn.getBoundingClientRect();
-        this.showContextMenu(rect.left, rect.bottom + 4, task, onToggleComplete, onToggleImportant, onUpdated);
-      }
-    });
+    const colStar = createElement('div', { className: 'task-col-star' }, [starBtn]);
 
-    item.appendChild(checkbox);
-    item.appendChild(content);
-    item.appendChild(starBtn);
-    item.appendChild(menuBtn);
+    item.appendChild(colMain);
+    item.appendChild(colTime);
+    item.appendChild(colTag);
+    item.appendChild(colStar);
 
     return item;
   }
@@ -260,23 +268,8 @@ export class TaskItem {
       title: task.title,
       items: [
         {
-          icon: '✏️',
-          label: 'Chỉnh sửa đầy đủ (Mở Form thống nhất)',
-          onClick: () => {
-            EventForm.showFullModal({
-              task,
-              onUpdated: () => {
-                if (onUpdated) onUpdated();
-              },
-              onDeleted: () => {
-                if (onUpdated) onUpdated();
-              }
-            });
-          }
-        },
-        {
           icon: '⭐',
-          label: task.is_important ? 'Bỏ đánh dấu Quan trọng' : 'Đánh dấu Quan trọng (Hiện ⭐)',
+          label: task.is_important ? 'Bỏ đánh dấu Quan trọng' : 'Đánh dấu Quan trọng',
           onClick: () => {
             if (onToggleImportant) onToggleImportant(task, !task.is_important);
           }
@@ -288,7 +281,6 @@ export class TaskItem {
             if (onToggleComplete) onToggleComplete(task, !task.is_completed);
           }
         },
-
         { divider: true },
         {
           icon: '☀️',
@@ -312,7 +304,7 @@ export class TaskItem {
         },
         {
           icon: '📌',
-          label: 'Bỏ thời gian (Đặt Vĩnh viễn ở cột Cần làm)',
+          label: 'Bỏ thời gian (Chưa đặt giờ)',
           onClick: async () => {
             await api.put(`/tasks/${task.id}`, {
               due_date: null,
@@ -322,7 +314,7 @@ export class TaskItem {
               is_all_day: true,
               is_completed: false
             }, revisionOptions(task));
-            Toast.success('Đã đặt làm Vĩnh viễn trong cột Cần làm!');
+            Toast.success('Đã chuyển về Chưa đặt giờ!');
             window.dispatchEvent(new CustomEvent('planify:data-changed'));
             if (onUpdated) onUpdated();
           }
