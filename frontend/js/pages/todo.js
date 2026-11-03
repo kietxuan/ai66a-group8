@@ -10,6 +10,7 @@ import { TaskListView } from '../todo/task-list-view.js';
 import { TaskForm } from '../todo/task-form.js';
 import { TaskDetail } from '../todo/task-detail.js';
 import { revisionOptions } from '../utils/revision.js';
+import { isScheduleDismissal } from '../utils/api-error.js';
 
 export const POPULAR_ICONS = [
   { icon: '📋', name: 'Bảng, Kế hoạch, Công việc' },
@@ -68,7 +69,7 @@ export const POPULAR_ICONS = [
 
 function renderHeaderIcon(el, icon) {
   if (!el) return;
-  if (typeof icon === "string" && icon.trim().startsWith("<svg")) {
+  if ([HOUSE_SVG, INFINITY_SVG, LIST_3BARS_SVG].includes(icon)) {
     el.innerHTML = icon;
     const svg = el.querySelector("svg");
     if (svg) {
@@ -90,6 +91,10 @@ export const todoPage = {
   sortBy: "time",
   onlyImportant: false,
   searchQuery: "",
+
+  isProtectedList(id = this.activeListId) {
+    return String(id) === 'board' || (store.get('taskLists') || []).some(list => list.is_default && String(list.id) === String(id));
+  },
 
   restoreSavedListSelection() {
     const saved = store.get("activeTodoList");
@@ -122,7 +127,7 @@ export const todoPage = {
       const lists = store.get("taskLists") || [];
       const matched = lists.find((l) => l.id === numId);
       if (matched) {
-        const isTasks = matched.is_default || (matched.name && matched.name.toLowerCase() === "tasks");
+        const isTasks = matched.is_default;
         this.activeListName = matched.name;
         this.activeListIcon = isTasks ? INFINITY_SVG : (matched.icon && matched.icon !== '☰' ? matched.icon : LIST_3BARS_SVG);
       } else {
@@ -137,6 +142,9 @@ export const todoPage = {
   },
 
   async render(container) {
+    const filterOwner = store.get('user')?.id;
+    if (this.filterOwner !== filterOwner) this.savedFilters = null;
+    this.filterOwner = filterOwner;
     this.container = container;
     container.innerHTML = '';
     this.tasks = [];
@@ -165,9 +173,7 @@ export const todoPage = {
       dataset: { listTheme: String(this.activeListId) },
     });
 
-    const isProtected = String(this.activeListId) === 'board' ||
-                        String(this.activeListName).toLowerCase() === 'all' ||
-                        String(this.activeListName).toLowerCase() === 'tasks';
+    const isProtected = this.isProtectedList();
 
     // Nút Icon bên trái Tiêu đề (Đổi biểu tượng)
     const iconBtn = createElement("button", {
@@ -254,6 +260,7 @@ export const todoPage = {
       sortBy: this.sortBy,
       onlyImportant: this.onlyImportant,
       searchQuery: this.searchQuery,
+      ...this.savedFilters,
       onSelectTask: (task) => this.selectTask(task),
       onToggleComplete: (task, isCompleted) =>
         this.toggleComplete(task, isCompleted),
@@ -261,6 +268,7 @@ export const todoPage = {
         this.toggleImportant(task, isImportant),
       onReorderTasks: (srcId, targetId) => this.reorderTasks(srcId, targetId),
       onRefresh: () => this.fetchTasks(),
+      onFilteredChange: (tasks) => this.updateMatchCount(tasks),
     });
 
     this.taskFormComponent = new TaskForm({
@@ -301,9 +309,7 @@ export const todoPage = {
   },
 
   showIconPickerModal() {
-    const isProtected = String(this.activeListId) === 'board' ||
-                        String(this.activeListName).toLowerCase() === 'all' ||
-                        String(this.activeListName).toLowerCase() === 'tasks';
+    const isProtected = this.isProtectedList();
     if (isProtected) return;
 
     const searchInput = createElement('input', {
@@ -429,9 +435,7 @@ export const todoPage = {
   },
 
   startInlineTitleEdit(titleEl) {
-    const isProtected = String(this.activeListId) === 'board' ||
-                        String(this.activeListName).toLowerCase() === 'all' ||
-                        String(this.activeListName).toLowerCase() === 'tasks';
+    const isProtected = this.isProtectedList();
     if (isProtected) return;
 
     const currentText = this.activeListName;
@@ -439,6 +443,7 @@ export const todoPage = {
       type: 'text',
       className: 'input todo-title-edit-input',
       value: currentText,
+      maxlength: 100,
       style: {
         fontSize: '18px',
         fontWeight: '800',
@@ -496,6 +501,7 @@ export const todoPage = {
   },
 
   async fetchTasks({ preserveDetail = false, refreshLists = false } = {}) {
+    const userId = store.get('user')?.id;
     if (refreshLists) this.listsNeedRefresh = true;
     const reloadLists = this.listsNeedRefresh;
     const generation = this.requestGeneration = (this.requestGeneration || 0) + 1;
@@ -508,7 +514,7 @@ export const todoPage = {
         reloadLists ? api.get('/task-lists') : Promise.resolve(null),
         api.get('/categories').catch(() => null)
       ]);
-      if (generation !== this.requestGeneration || !this.container) return;
+      if (generation !== this.requestGeneration || !this.container || userId !== store.get('user')?.id) return;
       if (!Array.isArray(tasks) || (reloadLists && !Array.isArray(refreshedLists))) throw new Error('Dữ liệu công việc không hợp lệ.');
       this.tasks = tasks;
       if (Array.isArray(refreshedCategories)) {
@@ -536,7 +542,7 @@ export const todoPage = {
         const lists = store.get("taskLists") || [];
         const matched = lists.find((l) => String(l.id) === String(this.activeListId));
         if (matched) {
-          const isTasks = matched.is_default || (matched.name && matched.name.toLowerCase() === "tasks");
+          const isTasks = matched.is_default;
           this.activeListName = matched.name;
           this.activeListIcon = isTasks ? INFINITY_SVG : (matched.icon && matched.icon !== '☰' ? matched.icon : LIST_3BARS_SVG);
           const iconEl = document.getElementById("todo-header-icon");
@@ -551,7 +557,7 @@ export const todoPage = {
           (t) => t.id === this.activeTask.id,
         );
         if (updatedActive) {
-          if (preserveDetail) {
+          if (preserveDetail || this.taskDetailComponent.isDirty?.() || this.taskDetailComponent.isSaving) {
             // Keep the form's original revision
           } else {
             this.activeTask = updatedActive;
@@ -563,7 +569,7 @@ export const todoPage = {
       }
       this.updateComponents();
     } catch (err) {
-      if (generation !== this.requestGeneration || !this.container) return;
+      if (generation !== this.requestGeneration || !this.container || userId !== store.get('user')?.id) return;
       console.error('Failed to load tasks', err);
       if (this.matchCountEl) this.matchCountEl.textContent = '';
       if (listContainer) listContainer.replaceChildren(createElement('div', { className: 'empty-state', role: 'alert' }, [
@@ -592,27 +598,35 @@ export const todoPage = {
       activeTaskId: this.activeTask?.id || null,
     });
 
-    const activeListTasks = this.tasks.filter(t => {
-      if (String(this.activeListId) === 'board') return true;
-      return t.list_id === parseInt(this.activeListId, 10);
-    });
-    const pendingCount = activeListTasks.filter(t => !t.is_completed).length;
-    const totalCount = activeListTasks.length;
-    if (this.matchCountEl) {
-      this.matchCountEl.innerHTML = `
-        <span class="counter-item pending"><strong class="counter-num">${pendingCount}</strong> việc cần làm</span>
-        <span class="counter-sep">•</span>
-        <span class="counter-item total"><strong class="counter-num">${totalCount}</strong> tổng số</span>
-      `.trim();
-    }
+    this.updateMatchCount(this.taskListComponent.filterTasks());
 
     this.taskFormComponent.setListContext(
       typeof this.activeListId === "number" ? this.activeListId : null,
     );
   },
 
+  updateMatchCount(filtered) {
+    const activeListTasks = this.tasks.filter(t => {
+      if (String(this.activeListId) === 'board') return true;
+      return t.list_id === parseInt(this.activeListId, 10);
+    });
+    const pendingCount = filtered.filter(t => !t.is_completed).length;
+    const totalCount = activeListTasks.length;
+    if (this.matchCountEl) {
+      this.matchCountEl.innerHTML = `
+        <span class="counter-item pending"><strong class="counter-num">${pendingCount}</strong> việc cần làm</span>
+        <span class="counter-sep">•</span>
+        <span class="counter-item total"><strong class="counter-num">${filtered.length}</strong> khớp / ${totalCount} tổng số</span>
+      `.trim();
+    }
+
+  },
+
   switchList(id, name, icon) {
-    if (this.activeTask && String(this.activeListId) !== String(id)) this.closeDetail();
+    if (this.activeTask && String(this.activeListId) !== String(id) && this.closeDetail() === false) {
+      this.updateComponents();
+      return false;
+    }
     this.activeListId = id;
     this.activeListName = name;
 
@@ -621,7 +635,7 @@ export const todoPage = {
     } else {
       const lists = store.get("taskLists") || [];
       const matched = lists.find((l) => String(l.id) === String(id));
-      const isTasks = matched?.is_default || (name && name.toLowerCase() === "tasks");
+      const isTasks = matched?.is_default;
       if (isTasks) {
         this.activeListIcon = INFINITY_SVG;
       } else if (icon && icon !== LIST_3BARS_SVG) {
@@ -645,9 +659,7 @@ export const todoPage = {
     const mainEl = this.container?.querySelector('.todo-main');
     if (mainEl) mainEl.dataset.view = String(id) === 'board' ? 'board' : 'list';
 
-    const isProtected = String(id) === 'board' ||
-                        String(name).toLowerCase() === 'all' ||
-                        String(name).toLowerCase() === 'tasks';
+    const isProtected = this.isProtectedList(id);
 
     if (iconEl) {
       iconEl.className = `todo-header-icon-btn ${!isProtected ? 'interactive' : ''}`;
@@ -669,6 +681,8 @@ export const todoPage = {
       return;
     }
 
+    if (this.taskDetailComponent?.canLeave() === false) return;
+
     this.activeTask = task;
     const detailContainer = this.container?.querySelector(
       ".task-detail-container",
@@ -681,6 +695,7 @@ export const todoPage = {
   },
 
   closeDetail() {
+    if (this.taskDetailComponent?.canLeave() === false) return false;
     this.activeTask = null;
     const detailContainer = this.container?.querySelector(
       ".task-detail-container",
@@ -694,10 +709,14 @@ export const todoPage = {
     }
   },
 
+  canLeave() {
+    return this.taskDetailComponent?.canLeave() !== false;
+  },
+
   async toggleComplete(task, isCompleted) {
     try {
       const updated = await api.patch(`/tasks/${task.id}/complete`, { is_completed: isCompleted }, revisionOptions(task));
-      task.is_completed = isCompleted;
+      Object.assign(task, updated);
       window.dispatchEvent(
         new CustomEvent("planify:data-changed", {
           detail: {
@@ -716,7 +735,7 @@ export const todoPage = {
       );
       this.updateComponents();
     } catch (err) {
-      Toast.error(err.message || 'Không thể cập nhật trạng thái');
+      if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể cập nhật trạng thái');
       this.fetchTasks();
     }
   },
@@ -724,7 +743,7 @@ export const todoPage = {
   async toggleImportant(task, isImportant) {
     try {
       const updated = await api.patch(`/tasks/${task.id}/important`, { is_important: isImportant }, revisionOptions(task));
-      task.is_important = isImportant;
+      Object.assign(task, updated);
       window.dispatchEvent(
         new CustomEvent("planify:data-changed", {
           detail: {
@@ -785,6 +804,7 @@ export const todoPage = {
   },
 
   destroy() {
+    this.savedFilters = this.taskListComponent?.getFilterState();
     this.requestGeneration = (this.requestGeneration || 0) + 1;
     if (this.keyHandler) {
       document.removeEventListener("keydown", this.keyHandler);
@@ -804,6 +824,7 @@ export const todoPage = {
     if (this.sidebarComponent?.destroy) {
       this.sidebarComponent.destroy();
     }
+    this.taskDetailComponent?.destroy();
     if (this.container) {
       this.container.innerHTML = "";
       this.container = null;

@@ -59,6 +59,11 @@ export class Router {
       targetPath = isAuthenticated ? savedRoute : "landing";
 
     const [path, ...params] = targetPath.split('/');
+    if (isAuthenticated && path !== store.get('currentRoute') && this.currentController?.canLeave?.() === false) {
+      this.revertingHash = true;
+      window.location.hash = `#${store.get('currentRoute')}`;
+      return;
+    }
     if (path !== store.get('currentRoute') && Modal.activeModal?.beforeClose) {
       if (Modal.activeModal.close() === false) {
         this.revertingHash = true;
