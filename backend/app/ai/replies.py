@@ -67,6 +67,20 @@ def _recurrence(rule):
 
 def summarize_tool(name, arguments, result):
     if not result.get("success"):
+        if result.get("code") == "SCHEDULE_CONFLICT":
+            lines = ["⚠️ Khung giờ này trùng lịch với:"]
+            for item in result.get("items", []):
+                try:
+                    start = datetime.fromisoformat(item["start"]).astimezone(BUSINESS_TZ)
+                    end = datetime.fromisoformat(item["end"]).astimezone(BUSINESS_TZ)
+                    when = f"{start:%d/%m/%Y %H:%M}–{end:%H:%M}"
+                    if start.date() != end.date():
+                        when = f"{start:%d/%m/%Y %H:%M}–{end:%d/%m/%Y %H:%M}"
+                except (KeyError, TypeError, ValueError):
+                    when = "không rõ thời gian"
+                lines.append(f"- {item.get('title') or 'Mục chưa có tên'}: {when}")
+            lines.append("Chọn Đổi giờ, Hủy hoặc Vẫn tiếp tục trong cảnh báo trùng lịch.")
+            return "\n".join(lines)
         return result.get("error") or "Mình chưa thực hiện được thao tác này. Vui lòng kiểm tra lại thông tin."
     data = result.get("data")
     if isinstance(data, list):

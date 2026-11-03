@@ -92,7 +92,19 @@ class PlanifyAgent:
 
         executor = ToolExecutor(user_id=user_id, db=db, conversation_id=conversation_id, request_text=last_user_msg)
         normalized = last_user_msg.strip().lower().rstrip('.!')
+        schedule_key = (user_id, conversation_id, "schedule")
         pending = pending_actions.take(executor.context_key)
+        if normalized in {"vẫn tiếp tục", "van tiep tuc", "continue"}:
+            scheduled = pending_actions.take(schedule_key)
+            if not scheduled:
+                return {"content": "Cảnh báo trùng lịch đã hết hạn. Vui lòng gửi lại yêu cầu ban đầu.", "tool_calls": None, "tool_results": None}
+            name, arguments = scheduled
+            executor.confirmed_overlap_action = (name, arguments)
+            result = await executor.execute(name, arguments)
+            return self._execution_reply(executor, result.get("error") if not result.get("success") and result.get("code") != "SCHEDULE_CONFLICT" else None)
+        if normalized in {"đổi giờ", "doi gio", "change time"}:
+            pending_actions.take(schedule_key)
+            return {"content": "Bạn muốn đổi sang ngày và khung giờ nào? Hãy gửi lại yêu cầu với thời gian mới.", "tool_calls": None, "tool_results": None}
         if normalized in {"xác nhận xóa", "confirm delete"}:
             if not pending:
                 return {"content": "Không có thao tác xóa đang chờ hoặc xác nhận đã hết hạn. Vui lòng yêu cầu lại.", "tool_calls": None, "tool_results": None}
@@ -101,7 +113,9 @@ class PlanifyAgent:
             result = await executor.execute(name, arguments)
             return self._execution_reply(executor, "Đã thực hiện thao tác xóa." if result.get("success") else result.get("error"))
         if normalized in {"hủy", "huỷ", "cancel", "không", "khong"}:
-            return {"content": "Đã hủy. Không thực hiện thao tác xóa.", "tool_calls": None, "tool_results": None}
+            pending_actions.take(schedule_key)
+            return {"content": "Đã hủy. Không thay đổi lịch hoặc công việc.", "tool_calls": None, "tool_results": None}
+        pending_actions.take(schedule_key)
         if re.search(r"(?:không|khong|đừng|dung|do not|don't|never)\s+(?:.*?\s)?(?:xóa|xoa|delete|remove|tạo|thêm|create|sửa|update|hoàn thành|complete|dời|reschedule|đánh dấu)", normalized):
             return {"content": "Tôi sẽ không thực hiện thao tác đó.", "tool_calls": None, "tool_results": None}
 
@@ -188,7 +202,7 @@ class PlanifyAgent:
                     return self._execution_reply(executor, "Đã xử lý thao tác này trong lượt chat; không thực hiện lặp.")
                 result = await executor.execute(tool_name, tool_args)
                 if result.get("requires_confirmation") or not result.get("success"):
-                    return self._execution_reply(executor, result.get("error", "Cần làm rõ yêu cầu."))
+                    return self._execution_reply(executor, None if result.get("code") == "SCHEDULE_CONFLICT" else result.get("error", "Cần làm rõ yêu cầu."))
                 tool_msg = {
                     "role": "tool",
                     "tool_call_id": tc["id"],

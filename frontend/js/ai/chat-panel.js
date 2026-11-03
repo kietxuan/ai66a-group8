@@ -4,6 +4,7 @@ import { Toast } from '../components/toast.js';
 import { store } from '../store.js';
 import { ChatMessage } from './message.js';
 import { ChatInput } from './chat-input.js';
+import { showAiScheduleConflict } from './schedule-conflict.js';
 import { notifyAiDataChanges } from './sync.js';
 
 export class ChatPanel {
@@ -271,6 +272,11 @@ export class ChatPanel {
       });
       this.messagesListEl.appendChild(assistantMsgEl);
       this.scrollToBottom();
+      const conversationId = this.currentConversationId;
+      showAiScheduleConflict(toolCalls, choice => {
+        if (generation !== this.generation || this.currentConversationId !== conversationId || !this.panelEl?.isConnected || store.get('user')?.id !== userId) return;
+        this.sendMessage(choice === 'continue' ? 'vẫn tiếp tục' : choice === 'change' ? 'đổi giờ' : 'hủy');
+      });
 
     } catch (err) {
       if (generation !== this.generation) return;

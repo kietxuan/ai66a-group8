@@ -94,6 +94,7 @@ class ToolExecutor:
         self.context_key = (user_id, conversation_id)
         self.executions = []
         self.confirmed_action = None
+        self.confirmed_overlap_action = None
         self.pending_snapshot = None
         self.request_text = request_text
 
@@ -189,6 +190,8 @@ class ToolExecutor:
             arguments = constrain_creation(tool_name, arguments, self.request_text)
             tool_name, arguments = self._normalize_creation(tool_name, dict(arguments))
             tool_name, arguments = await self._normalize_event_action(tool_name, arguments)
+            if self.confirmed_overlap_action == (tool_name, arguments):
+                arguments = {**arguments, "allow_overlap": True}
             handler = tool_map.get(tool_name)
             if not handler:
                 raise ValueError(f"Tool '{tool_name}' không tồn tại.")
@@ -215,7 +218,14 @@ class ToolExecutor:
             result = {"success": True, "data": result}
         except Exception as e:
             from fastapi import HTTPException
-            result = {"success": False, "error": str(e.detail) if isinstance(e, HTTPException) else str(e)}
+            detail = e.detail if isinstance(e, HTTPException) else None
+            if isinstance(detail, dict) and detail.get("code") == "SCHEDULE_CONFLICT":
+                pending_actions.put((*self.context_key, "schedule"), tool_name, arguments)
+                result = {"success": False, "code": "SCHEDULE_CONFLICT",
+                          "error": detail.get("message", "Khung giờ này trùng lịch."),
+                          "items": detail.get("items", [])}
+            else:
+                result = {"success": False, "error": str(detail) if detail is not None else str(e)}
             await self.db.rollback()
         self.executions.append((tool_name, arguments, result))
         return result
@@ -444,7 +454,8 @@ class ToolExecutor:
             color=kwargs.get("color"),
             recurrence_rule=kwargs.get("recurrence_rule"),
             calendar_id=cal_id,
-            reminders=reminders
+            reminders=reminders,
+            allow_overlap=kwargs.get("allow_overlap", False)
         )
         created = await event_service.create_event(self.db, user_id=self.user_id, event_in=event_in)
         return {
@@ -497,7 +508,7 @@ class ToolExecutor:
 
         updated = await event_service.update_event(
             self.db, event_id=target.id, user_id=self.user_id,
-            event_in=EventUpdate(start_at=s_dt, end_at=e_dt, original_start=parse_datetime(kwargs.get("original_start")), scope=kwargs.get("scope", "this"))
+            event_in=EventUpdate(start_at=s_dt, end_at=e_dt, original_start=parse_datetime(kwargs.get("original_start")), scope=kwargs.get("scope", "this"), allow_overlap=kwargs.get("allow_overlap", False))
         )
         return {
             "id": updated.id,
@@ -643,7 +654,8 @@ class ToolExecutor:
             recurrence_rule=kwargs.get("recurrence_rule"),
             is_important=kwargs.get("is_important", False),
             is_in_my_day=kwargs.get("is_in_my_day", due_date_val == business_today()),
-            steps=[TaskStepCreate(title=str(s)) for s in steps] if steps else None
+            steps=[TaskStepCreate(title=str(s)) for s in steps] if steps else None,
+            allow_overlap=kwargs.get("allow_overlap", False)
         )
         created = await task_service.create_task(self.db, user_id=self.user_id, task_in=task_in)
         return {
@@ -704,7 +716,8 @@ class ToolExecutor:
         target = await self._resolve_task(task_id, title_query)
         updated = await task_service.toggle_complete(
             self.db, task_id=target.id, user_id=self.user_id,
-            is_completed=True if is_completed is None else bool(is_completed)
+            is_completed=True if is_completed is None else bool(is_completed),
+            allow_overlap=kwargs.get("allow_overlap", False)
         )
         return {"id": updated.id, "title": updated.title, "is_completed": updated.is_completed}
 
@@ -832,7 +845,8 @@ class ToolExecutor:
                 end_time=e_dt.time(),
                 duration_minutes=dur,
                 is_all_day=False,
-                is_in_my_day=(target_date == local_now().date())
+                is_in_my_day=(target_date == local_now().date()),
+                allow_overlap=kwargs.get("allow_overlap", False)
             )
         )
         return {
