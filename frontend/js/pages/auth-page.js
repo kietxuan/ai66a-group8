@@ -19,7 +19,7 @@ export const authPage = {
       });
       const updateThemeButton = () => {
         const dark = store.get('theme') === 'dark';
-        this.themeButton.textContent = dark ? '☀️' : '🌙';
+        this.themeButton.textContent = dark ? '☾' : '☀';
         this.themeButton.setAttribute('aria-label', dark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối');
         this.themeButton.title = this.themeButton.getAttribute('aria-label');
       };

@@ -142,28 +142,7 @@ export class TaskDetail {
     titleRow.appendChild(titleInput);
     titleRow.appendChild(starBtn);
 
-    // 3. Completion Mode Toggle (Phải tích vs Tự động hoàn thành khi hết giờ)
-    const modeCard = createElement('div', {
-      style: {
-        padding: '10px 12px',
-        borderRadius: '10px',
-        backgroundColor: t.auto_complete ? 'var(--color-primary-light)' : 'var(--color-bg-secondary)',
-        border: `1px solid ${t.auto_complete ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
-        marginBottom: '16px',
-        cursor: 'pointer'
-      },
-      onclick: async () => {
-        const nextAuto = !t.auto_complete;
-        await api.put(`/tasks/${t.id}`, { auto_complete: nextAuto });
-        t.auto_complete = nextAuto;
-        Toast.success(nextAuto ? 'Đã bật chế độ Sự kiện (Tự động hoàn thành khi hết giờ)' : 'Đã chuyển về chế độ Phải tích thủ công mới hoàn thành');
-        this.render();
-        this.notifyChanged('auto_complete');
-      }
-    }, [
-      createElement('div', { style: { fontSize: '12.5px', fontWeight: '800', color: 'var(--color-text-primary)' }, textContent: t.auto_complete ? '⚡ Chế độ: Sự kiện (Tự động hoàn thành)' : '☑️ Chế độ: Phải tích mới hoàn thành' }),
-      createElement('div', { style: { fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '2px' }, textContent: 'Bấm vào đây để chuyển đổi chế độ hoàn thành' })
-    ]);
+
 
     // 4. Steps (Subtasks) List
     const stepsSection = createElement('div', {
@@ -496,8 +475,7 @@ export class TaskDetail {
 
     panel.appendChild(header);
     panel.appendChild(titleRow);
-    panel.appendChild(modeCard);
-    panel.appendChild(stepsSection);
+        panel.appendChild(stepsSection);
     panel.appendChild(actionsGroup);
     panel.appendChild(notesSection);
     panel.appendChild(deleteBtn);

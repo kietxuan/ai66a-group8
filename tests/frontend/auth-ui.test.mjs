@@ -338,9 +338,9 @@ test('failed notification save does not persist unsaved preferences locally', as
   app.localStorage.setItem('planify_notify_minutes_before', '15');
   app.get('settings-notify-minutes').value = '30';
   app.api.put = async () => { throw new Error('Offline'); };
-  await app.button('💾 Lưu cài đặt thông báo').fire('click');
+  await app.button('Lưu').fire('click');
   assert.equal(app.localStorage.getItem('planify_notify_minutes_before'), '15');
-  assert.equal(app.button('💾 Lưu cài đặt thông báo').disabled, false);
+  assert.equal(app.button('Lưu').disabled, false);
 });
 
 test('successful password change clears revoked session and credential inputs', async () => {

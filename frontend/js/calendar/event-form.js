@@ -111,74 +111,24 @@ export class EventForm {
 
     // 1. Tiêu đề
     const titleInput = createElement('input', {
-      'aria-label': 'Tiêu đề Công việc / Sự kiện',
+      'aria-label': 'Tiêu đề Công việc',
       type: 'text',
       className: 'input',
       style: { fontSize: '15px', fontWeight: '700', padding: '11px 14px' },
       value: existingItem?.title || '',
-      placeholder: 'Nhập tên việc cần làm hoặc sự kiện (VD: Họp dự án, Tập thể dục...)',
+      placeholder: 'Nhập tên công việc (VD: Họp dự án, Tập thể dục...)',
       required: true
     });
 
-    // 2. Chế độ Hoàn thành (Tích thủ công vs Tự động hoàn thành khi hết giờ) & Quan trọng (⭐)
+    // 2. Đánh dấu Quan trọng (⭐)
+    isAutoComplete = false;
     const modeRow = createElement('div', {
       style: {
         display: 'grid',
-        gridTemplateColumns: '1.5fr 1fr',
+        gridTemplateColumns: '1fr',
         gap: '10px'
       }
     });
-
-    const autoCompleteCard = createElement('div', {
-      style: {
-        padding: '11px 13px',
-        borderRadius: '12px',
-        border: '1.5px solid var(--color-border)',
-        background: 'var(--color-bg-secondary)',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '10px',
-        transition: 'all 0.15s ease'
-      }
-    });
-
-    const autoCheck = createElement('input', {
-      'aria-label': 'Sự kiện (Tự động hoàn thành)',
-      type: 'checkbox',
-      checked: isAutoComplete,
-      style: { width: '17px', height: '17px', marginTop: '2px', accentColor: 'var(--color-primary)', cursor: 'pointer' }
-    });
-
-    const autoLabelDesc = createElement('div', { style: { fontSize: '11.5px', color: 'var(--color-text-secondary)', marginTop: '2px', lineHeight: '1.4' } });
-    const updateAutoUI = () => {
-      autoCheck.checked = isAutoComplete;
-      if (isAutoComplete) {
-        autoCompleteCard.style.borderColor = 'var(--color-primary)';
-        autoCompleteCard.style.background = 'var(--color-primary-light)';
-        autoLabelDesc.textContent = 'Tự động sang cột Hoàn thành sau khi hết thời gian. Nếu diễn ra hôm nay sẽ nằm ở cột Hôm nay.';
-      } else {
-        autoCompleteCard.style.borderColor = 'var(--color-border)';
-        autoCompleteCard.style.background = 'var(--color-bg-secondary)';
-        autoLabelDesc.textContent = 'Mặc định: Phải tích chọn thủ công mới hoàn thành.';
-      }
-    };
-
-    autoCompleteCard.onclick = (e) => {
-      if (e.target !== autoCheck) {
-        isAutoComplete = !isAutoComplete;
-      } else {
-        isAutoComplete = autoCheck.checked;
-      }
-      updateAutoUI();
-    };
-
-    autoCompleteCard.appendChild(autoCheck);
-    autoCompleteCard.appendChild(createElement('div', { style: { flex: '1' } }, [
-      createElement('div', { style: { fontSize: '13px', fontWeight: '800', color: 'var(--color-text-primary)' }, textContent: '⚡ Sự kiện (Tự động hoàn thành)' }),
-      autoLabelDesc
-    ]));
-    updateAutoUI();
 
     const importantCard = createElement('div', {
       role: 'checkbox', tabindex: '0', 'aria-label': 'Quan trọng',
@@ -222,7 +172,6 @@ export class EventForm {
     ]));
     updateImportantUI();
 
-    modeRow.appendChild(autoCompleteCard);
     modeRow.appendChild(importantCard);
 
     // 3. Danh sách lưu trữ & Màu sắc thẻ
@@ -528,7 +477,7 @@ export class EventForm {
       style: { display: 'flex', flexDirection: 'column', gap: '12px' }
     }, [
       createElement('div', { className: 'form-group' }, [
-        createElement('label', { className: 'form-label', textContent: 'Tiêu đề Công việc / Sự kiện *' }),
+        createElement('label', { className: 'form-label', textContent: 'Tiêu đề Công việc *' }),
         titleInput
       ]),
       modeRow,
@@ -543,7 +492,7 @@ export class EventForm {
     const handleSave = async () => {
       const title = titleInput.value.trim();
       if (!title) {
-        Toast.error('Vui lòng nhập tiêu đề công việc / sự kiện.');
+        Toast.error('Vui lòng nhập tiêu đề công việc.');
         titleInput.focus();
         return;
       }
@@ -663,7 +612,7 @@ export class EventForm {
     );
 
     modalRef = Modal.open({
-      title: isEdit ? '✏️ Chỉnh sửa Công việc / Sự kiện' : '✨ Thêm Công việc / Sự kiện mới',
+      title: isEdit ? '✏️ Chỉnh sửa Công việc' : '✨ Thêm Công việc mới',
       content: formContent,
       footerButtons
     });

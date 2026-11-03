@@ -61,6 +61,8 @@
   border: 1px solid var(--color-border);
   border-radius: 50%;
   background: var(--color-bg-card);
+  font-size: 18px;
+  line-height: 1;
 }
 
 .auth-stage {

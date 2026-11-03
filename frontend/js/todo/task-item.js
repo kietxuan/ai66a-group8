@@ -150,20 +150,7 @@ export class TaskItem {
       style: { fontSize: '11px', color: 'var(--color-text-secondary)' }
     });
 
-    // Badge loại hoàn thành: Sự kiện (Tự động hoàn thành) vs Phải tích
-    if (isAutoEvent) {
-      metaRow.appendChild(createElement('span', {
-        style: {
-          backgroundColor: 'rgba(99, 102, 241, 0.14)',
-          color: 'var(--color-primary)',
-          padding: '1px 6px',
-          borderRadius: '4px',
-          fontWeight: '700'
-        },
-        title: 'Sự kiện tự động chuyển sang cột Hoàn thành sau khi hết thời gian',
-        textContent: '⚡ Sự kiện (Tự hoàn thành)'
-      }));
-    }
+
 
     if (task.due_date) {
       const isTod = isToday(task.due_date);
@@ -295,22 +282,7 @@ export class TaskItem {
             if (onToggleComplete) onToggleComplete(task, !task.is_completed);
           }
         },
-        {
-          icon: '⚡',
-          label: task.auto_complete
-            ? 'Chuyển thành: Phải tích mới hoàn thành'
-            : 'Chuyển thành: Sự kiện (Tự động hoàn thành)',
-          onClick: async () => {
-            await api.put(`/tasks/${task.id}`, { auto_complete: !task.auto_complete });
-            Toast.success(
-              !task.auto_complete
-                ? 'Đã chuyển sang chế độ Sự kiện (tự động hoàn thành khi hết giờ)!'
-                : 'Đã chuyển sang chế độ Phải tích thủ công mới hoàn thành!'
-            );
-            window.dispatchEvent(new CustomEvent('planify:data-changed'));
-            if (onUpdated) onUpdated();
-          }
-        },
+
         { divider: true },
         {
           icon: '☀️',

@@ -201,6 +201,8 @@
   color: var(--color-text-secondary);
   background-color: var(--color-bg-tertiary);
   transition: all var(--transition-fast);
+  font-size: 18px;
+  line-height: 1;
 }
 
 .theme-toggle-btn:hover {

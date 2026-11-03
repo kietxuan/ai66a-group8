@@ -57,16 +57,7 @@ export class TaskForm {
 
     const leftToggles = createElement('div', { className: 'flex items-center gap-xs flex-wrap' });
 
-    const autoBtn = createElement('button', {
-      type: 'button',
-      className: `btn btn-secondary btn-sm ${this.autoComplete ? 'active' : ''}`,
-      title: 'Bật nếu đây là Sự kiện tự động hoàn thành khi hết thời gian',
-      textContent: this.autoComplete ? '⚡ Sự kiện (Tự hoàn thành)' : '☑️ Phải tích mới hoàn thành (Mặc định)',
-      onclick: () => {
-        this.autoComplete = !this.autoComplete;
-        this.render();
-      }
-    });
+this.autoComplete = false;
 
     const starBtn = createElement('button', {
       type: 'button',
@@ -97,8 +88,7 @@ export class TaskForm {
       }
     });
 
-    leftToggles.appendChild(autoBtn);
-    leftToggles.appendChild(starBtn);
+        leftToggles.appendChild(starBtn);
     toolbar.appendChild(leftToggles);
     toolbar.appendChild(openFullModalBtn);
 

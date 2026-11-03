@@ -427,7 +427,7 @@ export class DayView {
             start_at: toLocalISOString(newStart),
             end_at: toLocalISOString(newEnd)
           });
-          Toast.success(`Đã dời sự kiện sang ${formatDate(newStart, 'HH:mm')}`);
+          Toast.success(`Đã dời công việc sang ${formatDate(newStart, 'HH:mm')}`);
           window.dispatchEvent(new CustomEvent('planify:data-changed', {
             detail: { source: 'calendar-day', action: 'move', type: 'event', id: data.id }
           }));
