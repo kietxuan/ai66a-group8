@@ -17,6 +17,10 @@ export class TaskDetail {
     this.onClose = onClose;
     this.task = null;
     this.isSaving = false;
+    this.beforeUnload = event => {
+      if (this.isSaving || this.isDirty()) { event.preventDefault(); event.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', this.beforeUnload);
   }
 
   show(task) {
@@ -26,7 +30,42 @@ export class TaskDetail {
 
   hide() {
     this.task = null;
+    this.getDraft = null;
     this.container.innerHTML = '';
+  }
+
+  destroy() {
+    window.removeEventListener('beforeunload', this.beforeUnload);
+    this.hide();
+  }
+
+  isDirty() {
+    return Boolean(this.task && this.getDraft && JSON.stringify(this.getDraft()) !== this.initialDraft);
+  }
+
+  canLeave() {
+    if (this.isSaving) { Toast.info('Vui lòng chờ thao tác đang lưu hoàn tất.'); return false; }
+    return !this.isDirty() || confirm('Bạn có thay đổi chưa lưu. Bạn có muốn bỏ các thay đổi này không?');
+  }
+
+  async mutate(action) {
+    if (this.isSaving) return;
+    this.isSaving = true;
+    const fields = [...this.container.querySelectorAll('input, textarea, select, button')];
+    const disabled = fields.map(field => field.disabled);
+    fields.forEach(field => { field.disabled = true; });
+    try { return await action(); }
+    finally {
+      this.isSaving = false;
+      fields.forEach((field, index) => { field.disabled = disabled[index]; });
+      this.updateDirtyState?.();
+    }
+  }
+
+  refreshPreservingDraft() {
+    const draft = this.getDraft?.();
+    this.render();
+    if (draft) this.restoreDraft?.(draft);
   }
 
   notifyChanged(action = 'update', { preserveDetail = false } = {}) {
@@ -72,7 +111,6 @@ export class TaskDetail {
         style: { fontSize: '18px', width: '28px', height: '28px' },
         title: 'Đóng chi tiết',
         onclick: () => {
-          this.hide();
           if (this.onClose) this.onClose();
         }
       })
@@ -84,6 +122,8 @@ export class TaskDetail {
       className: 'input',
       value: t.title || '',
       placeholder: 'Tên việc cần làm...',
+      maxlength: 500,
+      'aria-label': 'Tên việc cần làm',
       style: {
         fontSize: '15px',
         fontWeight: '700',
@@ -106,13 +146,14 @@ export class TaskDetail {
       className: 'task-checkbox',
       title: t.is_completed ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu hoàn thành',
       onclick: async () => {
+        if (this.isSaving) return;
         try {
           const nextState = !t.is_completed;
-          const updated = await api.patch(`/tasks/${t.id}/complete`, { is_completed: nextState }, revisionOptions(t));
-          if (updated?.updated_at) t.updated_at = updated.updated_at;
-          t.is_completed = nextState;
+          const updated = await this.mutate(() => api.patch(`/tasks/${t.id}/complete`, { is_completed: nextState }, revisionOptions(t)));
+          Object.assign(t, updated);
+          if (this.task !== t) return;
           if (nextState) soundManager.playTaskComplete();
-          this.render();
+          this.refreshPreservingDraft();
           this.notifyChanged('complete', { preserveDetail: true });
         } catch (err) {
           if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể cập nhật trạng thái.');
@@ -137,11 +178,14 @@ export class TaskDetail {
       style: { fontSize: '17px', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 4px' },
       title: isImportant ? 'Bỏ đánh dấu Quan trọng' : 'Đánh dấu Quan trọng',
       innerHTML: isImportant ? '&#9733;' : '&#9734;',
-      onclick: () => {
+      onclick: (event) => {
+        event.stopPropagation();
+        if (this.isSaving) return;
         isImportant = !isImportant;
         starBtn.className = `task-star-btn ${isImportant ? 'starred' : ''}`;
         starBtn.innerHTML = isImportant ? '&#9733;' : '&#9734;';
         starLabelText.style.color = isImportant ? '#D97706' : 'var(--color-text-secondary)';
+        this.updateDirtyState?.();
       }
     });
 
@@ -181,7 +225,7 @@ export class TaskDetail {
     });
 
     // Danh sách select
-    const listSelect = createElement('select', { className: 'input' },
+    const listSelect = createElement('select', { className: 'input', 'aria-label': 'Thuộc danh sách' },
       taskLists.map(l => createElement('option', {
         value: String(l.id),
         textContent: `${l.icon || '📝'} ${l.name}`,
@@ -194,7 +238,7 @@ export class TaskDetail {
     ]);
 
     // Phân loại thẻ select
-    const catSelect = createElement('select', { className: 'input' });
+    const catSelect = createElement('select', { className: 'input', 'aria-label': 'Phân loại thẻ' });
     const emptyCatOpt = createElement('option', { value: '', textContent: '— Chưa phân loại —' });
     emptyCatOpt.dataset.color = '';
     catSelect.appendChild(emptyCatOpt);
@@ -210,6 +254,11 @@ export class TaskDetail {
       opt.dataset.color = c.color;
       catSelect.appendChild(opt);
     });
+    if (t.color && !categories.some(c => c.color?.toLowerCase() === t.color.toLowerCase())) {
+      const retained = createElement('option', { value: '__current_color', textContent: 'Thẻ màu hiện tại (giữ nguyên)', selected: true });
+      retained.dataset.color = t.color;
+      catSelect.appendChild(retained);
+    }
 
     const tagColorPreview = createElement('span', {
       style: {
@@ -284,6 +333,7 @@ export class TaskDetail {
       onclick: () => {
         scheduleEnabled = !scheduleEnabled;
         updateScheduleFieldsVisibility();
+        this.updateDirtyState?.();
       }
     });
 
@@ -304,6 +354,7 @@ export class TaskDetail {
     // Ô trái trên: Ngày
     const dateInput = createElement('input', {
       type: 'date',
+      'aria-label': 'Ngày',
       className: 'input',
       value: initialDate
     });
@@ -315,6 +366,7 @@ export class TaskDetail {
     // Ô phải trên: Giờ bắt đầu
     const startTimeInput = createElement('input', {
       type: 'time',
+      'aria-label': 'Giờ bắt đầu',
       className: 'input',
       value: initialStartTime,
       disabled: isAllDay
@@ -331,7 +383,10 @@ export class TaskDetail {
       { val: 'FREQ=WEEKLY', label: 'Hàng tuần' },
       { val: 'FREQ=MONTHLY', label: 'Hàng tháng' }
     ];
-    const rruleSelect = createElement('select', { className: 'input' }, recurrenceOptions.map(o => {
+    if (t.recurrence_rule && !recurrenceOptions.some(option => option.val === t.recurrence_rule)) {
+      recurrenceOptions.push({ val: t.recurrence_rule, label: 'Chu kỳ hiện tại (giữ nguyên)' });
+    }
+    const rruleSelect = createElement('select', { className: 'input', 'aria-label': 'Chu kỳ lặp' }, recurrenceOptions.map(o => {
       const opt = createElement('option', { value: o.val, textContent: o.label });
       if (t.recurrence_rule === o.val) opt.selected = true;
       return opt;
@@ -344,6 +399,7 @@ export class TaskDetail {
     // Ô phải dưới: Giờ kết thúc
     const endTimeInput = createElement('input', {
       type: 'time',
+      'aria-label': 'Giờ kết thúc',
       className: 'input',
       value: initialEndTime,
       disabled: isAllDay
@@ -427,12 +483,16 @@ export class TaskDetail {
         checked: Boolean(step.is_completed),
         style: { accentColor: 'var(--color-primary)', cursor: 'pointer' },
         onchange: async (e) => {
-          step.is_completed = e.target.checked;
+          if (this.isSaving) { e.target.checked = step.is_completed; return; }
+          const next = e.target.checked;
           try {
-            await api.patch(`/tasks/${t.id}/steps/${step.id}/complete`, { is_completed: step.is_completed });
-            this.render();
+            await this.mutate(() => api.patch(`/tasks/${t.id}/steps/${step.id}/complete`, { is_completed: next }));
+            step.is_completed = next;
+            if (this.task !== t) return;
+            this.refreshPreservingDraft();
             this.notifyChanged('step_complete', { preserveDetail: true });
           } catch (err) {
+            e.target.checked = step.is_completed;
             Toast.error('Không thể cập nhật bước');
           }
         }
@@ -442,19 +502,23 @@ export class TaskDetail {
         type: 'text',
         className: 'input flex-1',
         value: step.title,
+        maxlength: 500,
         style: {
           padding: '4px 8px',
           fontSize: '12px',
           textDecoration: step.is_completed ? 'line-through' : 'none'
         },
         onchange: async () => {
+          if (this.isSaving) return;
           const val = stepInput.value.trim();
+          if (!val) { stepInput.value = step.title; Toast.error('Tên bước không được để trống.'); return; }
           if (val && val !== step.title) {
             try {
-              await api.put(`/tasks/${t.id}/steps/${step.id}`, { title: val });
+              await this.mutate(() => api.put(`/tasks/${t.id}/steps/${step.id}`, { title: val }));
               step.title = val;
               this.notifyChanged('step_update', { preserveDetail: true });
             } catch (err) {
+              stepInput.value = step.title;
               Toast.error('Không thể lưu tên bước');
             }
           }
@@ -468,11 +532,13 @@ export class TaskDetail {
         innerHTML: '&times;',
         title: 'Xóa bước này',
         onclick: async () => {
+          if (this.isSaving) return;
           if (!confirmDeleteItem({ title: step.title })) return;
           try {
-            await api.delete(`/tasks/${t.id}/steps/${step.id}`);
+            await this.mutate(() => api.delete(`/tasks/${t.id}/steps/${step.id}`));
             t.steps = t.steps.filter(s => s.id !== step.id);
-            this.render();
+            if (this.task !== t) return;
+            this.refreshPreservingDraft();
             this.notifyChanged('step_delete', { preserveDetail: true });
           } catch (err) {
             Toast.error('Lỗi khi xóa bước');
@@ -491,18 +557,21 @@ export class TaskDetail {
       type: 'text',
       className: 'input',
       placeholder: '+ Thêm bước nhỏ... (Nhấn Enter)',
+      maxlength: 500,
       style: { fontSize: '12px', marginTop: '6px' },
       onkeydown: async (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
+          if (this.isSaving) return;
           const val = addStepInput.value.trim();
           if (val) {
             try {
-              const newStep = await api.post(`/tasks/${t.id}/steps`, { title: val });
+              const newStep = await this.mutate(() => api.post(`/tasks/${t.id}/steps`, { title: val }));
               if (!t.steps) t.steps = [];
               t.steps.push(newStep);
               addStepInput.value = '';
-              this.render();
+              if (this.task !== t) return;
+              this.refreshPreservingDraft();
               this.notifyChanged('step_add', { preserveDetail: true });
             } catch (err) {
               Toast.error('Không thể thêm bước mới');
@@ -518,6 +587,7 @@ export class TaskDetail {
       type: 'text',
       className: 'input',
       placeholder: 'Thêm địa điểm / vị trí...',
+      maxlength: 300,
       value: t.location || '',
       style: { fontSize: '13px' }
     });
@@ -531,6 +601,7 @@ export class TaskDetail {
       className: 'textarea',
       rows: 3,
       placeholder: 'Thêm ghi chú chi tiết...',
+      maxlength: 5000,
       value: t.note || '',
       style: { fontSize: '12.5px', resize: 'vertical' }
     });
@@ -553,9 +624,14 @@ export class TaskDetail {
           titleInput.focus();
           return;
         }
-
-        this.isSaving = true;
-        saveBtn.disabled = true;
+        if (newTitle.length > 500 || notesTextarea.value.length > 5000 || locationInput.value.length > 300) {
+          Toast.error('Tiêu đề tối đa 500, ghi chú 5.000 và địa điểm 300 ký tự.'); return;
+        }
+        if (scheduleEnabled && (!dateInput.value || (!isAllDay && (!startTimeInput.value || !endTimeInput.value || endTimeInput.value <= startTimeInput.value)))) {
+          Toast.error('Vui lòng nhập ngày hợp lệ và giờ kết thúc sau giờ bắt đầu.'); return;
+        }
+        if (!this.isDirty()) return;
+        if (addStepInput.value.trim()) { Toast.info('Nhấn Enter để thêm bước nhỏ trước khi lưu.'); addStepInput.focus(); return; }
         saveBtn.textContent = 'Đang lưu...';
 
         try {
@@ -565,7 +641,6 @@ export class TaskDetail {
             is_important: isImportant,
             auto_complete: isAutoComplete,
             color: selectedColor || null,
-            category: catSelect.value || null,
             location: locationInput.value.trim() || null,
             note: notesTextarea.value.trim() || null,
           };
@@ -592,9 +667,25 @@ export class TaskDetail {
             updates.recurrence_rule = null;
           }
 
-          const result = await api.put(`/tasks/${t.id}`, updates, revisionOptions(t));
-          Object.assign(t, updates);
-          if (result?.updated_at) t.updated_at = result.updated_at;
+          // Editing a note/star must not resubmit an unchanged schedule (and
+          // trigger overlap checks or truncate seconds from existing times).
+          const original = JSON.parse(this.initialDraft);
+          const draft = this.getDraft();
+          for (const [key, field] of Object.entries({ title: 'title', list: 'list_id', important: 'is_important', auto: 'auto_complete', color: 'color', location: 'location', note: 'note' })) {
+            if (draft[key] === original[key]) delete updates[field];
+          }
+          const scheduleFields = ['scheduled', 'date', 'allDay', 'start', 'end', 'rule'];
+          if (scheduleFields.every(key => draft[key] === original[key])) {
+            for (const field of ['due_date', 'is_all_day', 'start_time', 'end_time', 'due_time', 'recurrence_rule']) delete updates[field];
+          } else if (scheduleEnabled && !isAllDay && original.scheduled && !original.allDay) {
+            if (draft.start === original.start) { delete updates.start_time; delete updates.due_time; }
+            if (draft.end === original.end) delete updates.end_time;
+          }
+          const result = await this.mutate(() => api.put(`/tasks/${t.id}`, updates, revisionOptions(t)));
+          Object.assign(t, result);
+          if (this.task !== t) return;
+          this.initialDraft = JSON.stringify(this.getDraft());
+          this.updateDirtyState();
 
           Toast.success('Đã lưu thay đổi công việc thành công!');
           this.notifyChanged('update', { preserveDetail: true });
@@ -603,8 +694,7 @@ export class TaskDetail {
             Toast.error(err.message || 'Lỗi khi lưu thay đổi công việc');
           }
         } finally {
-          this.isSaving = false;
-          saveBtn.disabled = false;
+          this.updateDirtyState?.();
           saveBtn.textContent = '💾 Lưu thay đổi';
         }
       }
@@ -616,13 +706,14 @@ export class TaskDetail {
       style: { width: '100%', padding: '8px 14px', fontSize: '12.5px' },
       textContent: '🗑️ Xóa công việc này',
       onclick: async () => {
+        if (this.isSaving) return;
         if (!confirmDeleteItem(t)) return;
         try {
-          await api.delete(`/tasks/${t.id}`);
+          await this.mutate(() => api.delete(`/tasks/${t.id}`));
           Toast.success('Đã xóa công việc thành công');
+          this.notifyChanged('delete');
           this.hide();
           if (this.onClose) this.onClose();
-          this.notifyChanged('delete');
         } catch (err) {
           Toast.error(err.message || 'Lỗi khi xóa công việc');
         }
@@ -648,5 +739,30 @@ export class TaskDetail {
     panel.appendChild(actionsContainer);
 
     this.container.appendChild(panel);
+    this.getDraft = () => ({
+      title: titleInput.value, list: listSelect.value, important: isImportant,
+      auto: autoCheck.checked, color: selectedColor, category: catSelect.value,
+      scheduled: scheduleEnabled, date: dateInput.value, allDay: isAllDay,
+      start: startTimeInput.value, end: endTimeInput.value, rule: rruleSelect.value,
+      location: locationInput.value, note: notesTextarea.value, stepDraft: addStepInput.value
+    });
+    this.initialDraft = JSON.stringify(this.getDraft());
+    this.updateDirtyState = () => { saveBtn.disabled = this.isSaving || !this.isDirty(); };
+    this.restoreDraft = draft => {
+      titleInput.value = draft.title; listSelect.value = draft.list;
+      if (isImportant !== draft.important) starBtn.click();
+      isAutoComplete = draft.auto; autoCheck.checked = draft.auto;
+      catSelect.value = draft.category; selectedColor = draft.color; catSelect.onchange();
+      scheduleEnabled = draft.scheduled; updateScheduleFieldsVisibility();
+      dateInput.value = draft.date; isAllDay = draft.allDay; allDayCheck.checked = draft.allDay;
+      startTimeInput.value = draft.start; endTimeInput.value = draft.end;
+      startTimeInput.disabled = endTimeInput.disabled = draft.allDay;
+      rruleSelect.value = draft.rule; locationInput.value = draft.location;
+      notesTextarea.value = draft.note; addStepInput.value = draft.stepDraft;
+      this.updateDirtyState();
+    };
+    panel.addEventListener('input', this.updateDirtyState);
+    panel.addEventListener('change', this.updateDirtyState);
+    this.updateDirtyState();
   }
 }

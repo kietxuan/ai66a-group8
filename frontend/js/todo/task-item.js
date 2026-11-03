@@ -53,6 +53,8 @@ export class TaskItem {
     const isCompleted = Boolean(task.is_completed);
     const isStarred = Boolean(task.is_important);
     const cat = resolveCategoryForTask(task);
+    let selectTimer = null;
+    let completing = false;
 
     const item = createElement('div', {
       className: `task-item ${isCompleted ? 'completed' : ''} ${isActiveDetail ? 'active-task-open' : ''}`,
@@ -70,7 +72,10 @@ export class TaskItem {
         ) {
           return;
         }
-        if (onSelect) onSelect(task);
+        if (e.target.closest('.task-title')) {
+          clearTimeout(selectTimer);
+          selectTimer = setTimeout(() => { if (item.isConnected && onSelect) onSelect(task); }, 250);
+        } else if (onSelect) onSelect(task);
       },
       oncontextmenu: (e) => {
         e.preventDefault();
@@ -98,6 +103,7 @@ export class TaskItem {
         item.classList.remove('task-drag-over');
         const sourceTaskId = parseInt(e.dataTransfer.getData('text/plain'), 10);
         if (sourceTaskId && sourceTaskId !== task.id && onReorder) {
+          e.stopPropagation();
           onReorder(sourceTaskId, task.id);
         }
       }
@@ -109,13 +115,17 @@ export class TaskItem {
       title: isCompleted ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu hoàn thành',
       onclick: (e) => {
         e.stopPropagation();
+        if (completing) return;
         if (onToggleComplete) {
+          completing = true;
           if (!isCompleted) {
             soundManager.playTaskComplete();
           }
           item.classList.add('task-completing');
           setTimeout(() => {
-            onToggleComplete(task, !isCompleted);
+            Promise.resolve(onToggleComplete(task, !isCompleted)).finally(() => {
+              completing = false; item.classList.remove('task-completing');
+            });
           }, 180);
         }
       }
@@ -132,36 +142,47 @@ export class TaskItem {
       textContent: task.title,
       ondblclick: (e) => {
         e.stopPropagation();
+        clearTimeout(selectTimer);
+        let saving = false;
+        const closeEditor = () => { titleEl.style.display = ''; inlineInput.remove(); };
         const inlineInput = createElement('input', {
           type: 'text',
           className: 'input',
           value: task.title,
+          maxlength: 500,
+          'aria-label': 'Sửa nhanh tiêu đề',
           style: { padding: '2px 8px', fontSize: '13px', fontWeight: '600' },
           onkeydown: async (ke) => {
+            if (saving) return;
             if (ke.key === 'Enter') {
+              ke.preventDefault();
               const newVal = inlineInput.value.trim();
               if (newVal && newVal !== task.title) {
+                if (newVal.length > 500) { Toast.error('Tiêu đề tối đa 500 ký tự.'); return; }
+                saving = true; inlineInput.disabled = true;
                 try {
-                  await api.put(`/tasks/${task.id}`, { title: newVal }, revisionOptions(task));
-                  task.title = newVal;
+                  const updated = await api.put(`/tasks/${task.id}`, { title: newVal }, revisionOptions(task));
+                  Object.assign(task, updated);
+                  titleEl.textContent = task.title;
+                  closeEditor();
                   Toast.success('Đã cập nhật tên công việc!');
                   window.dispatchEvent(new CustomEvent('planify:data-changed'));
                   if (onUpdated) onUpdated();
                 } catch (err) {
                   Toast.error(err.message || 'Không thể đổi tên công việc.');
+                } finally {
+                  saving = false; inlineInput.disabled = false;
                 }
               } else {
-                titleEl.style.display = '';
-                inlineInput.remove();
+                if (!newVal) { Toast.error('Tiêu đề không được để trống.'); return; }
+                closeEditor();
               }
             } else if (ke.key === 'Escape') {
-              titleEl.style.display = '';
-              inlineInput.remove();
+              closeEditor();
             }
           },
           onblur: () => {
-            titleEl.style.display = '';
-            inlineInput.remove();
+            if (!saving) closeEditor();
           }
         });
         titleEl.style.display = 'none';
