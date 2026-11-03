@@ -1,4 +1,4 @@
-from app.services.write_lock import serialized_write
+from app.services.write_lock import serialized_write, lock_owner
 from typing import List, Optional
 from datetime import datetime, date, time, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -98,7 +98,13 @@ class TaskService:
 
     @serialized_write
     async def create_task(self, db: AsyncSession, user_id: int, task_in: TaskCreate) -> Task:
+        if task_in.client_request_id:
+            existing = (await db.execute(select(Task.id).where(Task.user_id == user_id, Task.client_request_id == task_in.client_request_id))).scalar_one_or_none()
+            if existing:
+                return await task_crud.get_with_steps(db, existing)
         task_in = self._validate_schedule(task_in)
+        from app.services.schedule_conflict import check_task_overlap
+        await check_task_overlap(db, user_id, task_in, allowed=task_in.allow_overlap)
         if not task_in.list_id:
             default_list = await task_list_crud.get_default(db, user_id)
             if default_list:
@@ -117,19 +123,29 @@ class TaskService:
                     task_in.list_id = new_list.id
 
         await self._check_list(db, task_in.list_id, user_id)
+        await lock_owner(db, user_id)
+        if task_in.client_request_id:
+            existing = (await db.execute(select(Task.id).where(Task.user_id == user_id, Task.client_request_id == task_in.client_request_id))).scalar_one_or_none()
+            if existing:
+                return await task_crud.get_with_steps(db, existing)
         task = await task_crud.create(db, user_id=user_id, obj_in=task_in)
         await self.evaluate_auto_complete(db, [task])
         return task
 
     @serialized_write
-    async def update_task(self, db: AsyncSession, task_id: int, user_id: int, task_in: TaskUpdate) -> Task:
+    async def update_task(self, db: AsyncSession, task_id: int, user_id: int, task_in: TaskUpdate, expected_revision: Optional[str] = None) -> Task:
         task = await self.get_task_by_id(db, task_id, user_id)
+        from app.services.revision import require_current_revision
+        require_current_revision(task, expected_revision)
         if "list_id" in task_in.model_fields_set:
             await self._check_list(db, task_in.list_id, user_id)
         payload = task_in.model_dump(exclude_unset=True)
+        allow_overlap = payload.pop("allow_overlap", False)
         completed = payload.pop("is_completed", None)
-        merged = {key: getattr(task, key) for key in TaskCreate.model_fields if key != "steps"}
+        merged = {key: getattr(task, key) for key in TaskCreate.model_fields if key not in ("steps", "allow_overlap", "client_request_id")}
         merged.update(payload)
+        # Legacy notes can exceed the new input limit; schedule validation does not need them.
+        merged.pop("note", None)
         from pydantic import ValidationError
         try:
             validated = self._validate_schedule(TaskCreate(**merged), explicit_all_day=payload.get("is_all_day") is True)
@@ -137,15 +153,27 @@ class TaskService:
             raise HTTPException(422, "Dữ liệu công việc không hợp lệ.")
         for key in ("due_time", "start_time", "end_time", "duration_minutes", "is_all_day"):
             payload[key] = getattr(validated, key)
+        from app.services.schedule_conflict import check_task_overlap
+        schedule_changed = bool({"due_date", "due_time", "start_time", "end_time", "duration_minutes", "is_all_day"} & task_in.model_fields_set)
+        if completed is not True and (schedule_changed or completed is False):
+            await check_task_overlap(db, user_id, validated, exclude=("task", task_id), allowed=allow_overlap)
         task_in = TaskUpdate(**payload)
         updated = await task_crud.update(db, db_obj=task, obj_in=task_in)
         if completed is not None:
-            updated = await self.toggle_complete(db, task_id, user_id, completed)
+            updated = await self.toggle_complete(db, task_id, user_id, completed, allow_overlap=allow_overlap)
         await self.evaluate_auto_complete(db, [updated])
         return updated
 
     @serialized_write
-    async def toggle_complete(self, db: AsyncSession, task_id: int, user_id: int, is_completed: bool) -> Task:
+    async def toggle_complete(self, db: AsyncSession, task_id: int, user_id: int, is_completed: bool, allow_overlap: bool = False, expected_revision: Optional[str] = None) -> Task:
+        if expected_revision is not None:
+            from app.services.revision import require_current_revision
+            require_current_revision(await self.get_task_by_id(db, task_id, user_id), expected_revision)
+        if not is_completed and not allow_overlap:
+            task_before = await self.get_task_by_id(db, task_id, user_id)
+            if task_before.is_completed:
+                from app.services.schedule_conflict import check_task_overlap
+                await check_task_overlap(db, user_id, task_before, exclude=("task", task_id))
         task = await self._complete_transition(db, task_id, user_id, is_completed)
         await db.commit()
         return await task_crud.get_with_steps(db, task.id)
@@ -237,13 +265,17 @@ class TaskService:
         return task
 
     @serialized_write
-    async def toggle_important(self, db: AsyncSession, task_id: int, user_id: int, is_important: bool) -> Task:
+    async def toggle_important(self, db: AsyncSession, task_id: int, user_id: int, is_important: bool, expected_revision: Optional[str] = None) -> Task:
         task = await self.get_task_by_id(db, task_id, user_id)
+        from app.services.revision import require_current_revision
+        require_current_revision(task, expected_revision)
         return await task_crud.set_important(db, db_obj=task, is_important=is_important)
 
     @serialized_write
-    async def toggle_my_day(self, db: AsyncSession, task_id: int, user_id: int, is_in_my_day: bool) -> Task:
+    async def toggle_my_day(self, db: AsyncSession, task_id: int, user_id: int, is_in_my_day: bool, expected_revision: Optional[str] = None) -> Task:
         task = await self.get_task_by_id(db, task_id, user_id)
+        from app.services.revision import require_current_revision
+        require_current_revision(task, expected_revision)
         return await task_crud.set_my_day(db, db_obj=task, is_in_my_day=is_in_my_day)
 
     @serialized_write

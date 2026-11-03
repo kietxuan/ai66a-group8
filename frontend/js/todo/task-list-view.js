@@ -4,8 +4,10 @@ import { TaskItem } from './task-item.js';
 import { formatDate } from '../utils/date.js';
 import { store } from '../store.js';
 import { api } from '../api.js';
+import { isScheduleDismissal } from '../utils/api-error.js';
 import { Toast } from '../components/toast.js';
 import { EventForm } from '../calendar/event-form.js';
+import { revisionOptions } from '../utils/revision.js';
 
 export class TaskListView {
   constructor({
@@ -132,6 +134,22 @@ export class TaskListView {
       );
     }
 
+    if (this.statusFilter === 'open') filtered = filtered.filter(t => !t.is_completed);
+    if (this.statusFilter === 'completed') filtered = filtered.filter(t => t.is_completed);
+    if (this.dateFilter && this.dateFilter !== 'all') {
+      const today = businessNow();
+      const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+      const last = new Date(today); last.setDate(today.getDate() + 6);
+      const from = this.dateFilter === 'tomorrow' ? formatDate(tomorrow, 'YYYY-MM-DD')
+        : this.dateFilter === 'next7' ? formatDate(today, 'YYYY-MM-DD') : this.dateFrom;
+      const to = this.dateFilter === 'tomorrow' ? from
+        : this.dateFilter === 'next7' ? formatDate(last, 'YYYY-MM-DD') : this.dateTo;
+      filtered = filtered.filter(t => {
+        const date = t.due_date ? String(t.due_date).slice(0, 10) : '';
+        return date && (!from || date >= from) && (!to || date <= to);
+      });
+    }
+
     return filtered;
   }
 
@@ -206,7 +224,7 @@ export class TaskListView {
           await api.put(`/tasks/${taskId}`, {
             is_completed: false,
             ...(clearDate ? { due_date: null, due_time: null, start_time: null, end_time: null, is_all_day: true } : {})
-          });
+          }, revisionOptions(targetTask));
         }
       },
       {
@@ -217,11 +235,12 @@ export class TaskListView {
         items: this.sortTasks(colTodayItems, false),
         onAddQuick: () => EventForm.showFullModal({ hasDate: true, startAt: businessNow(), onCreated: this.onRefresh }),
         onDropTask: async (taskId) => {
+          const targetTask = this.tasks.find(x => x.id === taskId);
           await api.put(`/tasks/${taskId}`, {
             is_completed: false,
             due_date: todayStr,
             is_in_my_day: true
-          });
+          }, revisionOptions(targetTask));
         }
       },
       {
@@ -233,10 +252,15 @@ export class TaskListView {
         headerAction: colOverdueItems.length > 0 ? {
           label: '↪ Hôm nay',
           onClick: async () => {
-            await api.post('/tasks/batch', { action: 'reschedule_overdue', due_date: todayStr });
-            Toast.success('Đã dời toàn bộ việc quá hạn sang cột Hôm nay!');
-            window.dispatchEvent(new CustomEvent('planify:data-changed'));
-            if (this.onRefresh) this.onRefresh();
+            try {
+              await api.post('/tasks/batch', { action: 'reschedule_overdue', due_date: todayStr });
+              Toast.success('Đã dời toàn bộ việc quá hạn sang cột Hôm nay!');
+              window.dispatchEvent(new CustomEvent('planify:data-changed'));
+              if (this.onRefresh) this.onRefresh();
+            } catch (err) {
+              if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể dời công việc quá hạn.');
+              if (this.onRefresh) this.onRefresh();
+            }
           }
         } : null,
         onDropTask: null
@@ -248,7 +272,8 @@ export class TaskListView {
         color: '#10B981',
         items: this.sortTasks(colCompletedItems, true),
         onDropTask: async (taskId) => {
-          await api.patch(`/tasks/${taskId}/complete`, { is_completed: true });
+          const targetTask = this.tasks.find(x => x.id === taskId);
+          await api.patch(`/tasks/${taskId}/complete`, { is_completed: true }, revisionOptions(targetTask));
         }
       }
     ];
@@ -280,7 +305,10 @@ export class TaskListView {
             Toast.success(`Đã chuyển sang cột "${col.title}"`);
             window.dispatchEvent(new CustomEvent('planify:data-changed'));
             if (this.onRefresh) this.onRefresh();
-          } catch (_) {}
+          } catch (err) {
+            if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể chuyển công việc.');
+            if (this.onRefresh) this.onRefresh();
+          }
         }
       });
 
@@ -358,7 +386,7 @@ export class TaskListView {
     const completedTasks = this.sortTasks(allFiltered.filter(t => t.is_completed), true);
 
     const wrapper = createElement('div', {
-      className: 'flex-1 overflow-y-auto flex flex-col gap-md',
+      className: 'todo-list-scroll',
       style: { paddingRight: '4px', paddingBottom: '28px' }
     });
 

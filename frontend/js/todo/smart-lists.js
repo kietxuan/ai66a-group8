@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { Toast } from '../components/toast.js';
 import { Modal } from '../components/modal.js';
 import { store } from '../store.js';
+import { revisionOptions } from '../utils/revision.js';
 
 const LIST_ICONS = ['📝', '🛒', '💼', '🏠', '📚', '🎯', '💡', '🎨', '✈️', '🏋️', '🚀', '❤️'];
 const LIST_COLORS = ['#4F46E5', '#10B981', '#EF4444', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899', '#64748B'];
@@ -15,6 +16,7 @@ export class SmartListsSidebar {
     this.onSelectList = onSelectList;
     this.onListsChanged = onListsChanged;
     this.taskLists = [];
+    this.listsLoaded = false;
   }
 
   update({ activeListId, tasks }) {
@@ -24,17 +26,28 @@ export class SmartListsSidebar {
   }
 
   async fetchLists() {
-    try {
-      this.taskLists = await api.get('/task-lists') || [];
-      store.set('taskLists', this.taskLists);
-    } catch (err) {
-      console.error('Failed to load task lists', err);
-    }
+    const lists = await api.get('/task-lists');
+    if (!Array.isArray(lists)) throw new Error('Dữ liệu danh sách không hợp lệ.');
+    this.taskLists = lists;
+    this.listsLoaded = true;
+    store.set('taskLists', lists);
   }
 
   async render() {
-    if (this.taskLists.length === 0) {
-      await this.fetchLists();
+    const generation = this.renderGeneration = (this.renderGeneration || 0) + 1;
+    if (!this.listsLoaded) {
+      this.container.replaceChildren(createElement('div', { role: 'status', textContent: 'Đang tải danh sách…' }));
+      try {
+        await this.fetchLists();
+      } catch (err) {
+        if (generation !== this.renderGeneration) return;
+        this.container.replaceChildren(createElement('div', { role: 'alert' }, [
+          createElement('p', { textContent: `Không tải được danh sách: ${err.message || 'Lỗi không xác định.'}` }),
+          createElement('button', { type: 'button', className: 'btn btn-primary btn-sm', textContent: 'Thử lại', onclick: () => this.render() })
+        ]));
+        return;
+      }
+      if (generation !== this.renderGeneration) return;
     }
 
     this.container.innerHTML = '';
@@ -107,11 +120,15 @@ export class SmartListsSidebar {
           const taskId = parseInt(e.dataTransfer.getData('text/plain'), 10);
           if (!taskId) return;
           try {
-            await api.put(`/tasks/${taskId}`, { list_id: l.id });
+            const task = this.tasks.find(item => item.id === taskId);
+            await api.put(`/tasks/${taskId}`, { list_id: l.id }, revisionOptions(task));
             Toast.success(`Đã chuyển vào danh sách "${l.name}"!`);
             window.dispatchEvent(new CustomEvent('planify:data-changed'));
             if (this.onListsChanged) this.onListsChanged();
-          } catch (_) {}
+          } catch (err) {
+            Toast.error(err.message || 'Không thể chuyển công việc.');
+            if (this.onListsChanged) this.onListsChanged();
+          }
         }
       }, [
         createElement('span', { style: { fontSize: '16px' }, textContent: l.icon || '📝' }),
@@ -135,6 +152,10 @@ export class SmartListsSidebar {
 
       customSection.appendChild(el);
     });
+    if (this.taskLists.length === 0) customSection.appendChild(createElement('p', {
+      style: { padding: '8px', fontSize: '12px', color: 'var(--color-text-muted)' },
+      textContent: 'Chưa có danh sách cá nhân.'
+    }));
 
     // 3. Add list button
     const addListBtn = createElement('button', {
@@ -346,6 +367,7 @@ export class SmartListsSidebar {
     Modal.open({
       title: 'Tạo danh sách mới',
       content: formObj.content,
+      guardUnsaved: true,
       confirmText: 'Tạo danh sách',
       width: '480px',
       onConfirm: async () => {
@@ -357,7 +379,9 @@ export class SmartListsSidebar {
 
         try {
           const newList = await api.post('/task-lists', { name, icon, color });
-          await this.fetchLists();
+          this.taskLists = [...this.taskLists, newList];
+          this.listsLoaded = true;
+          store.set('taskLists', this.taskLists);
           this.activeListId = newList.id;
           this.render();
           if (this.onSelectList) this.onSelectList(newList.id, newList.name, newList.icon, newList);
@@ -390,7 +414,8 @@ export class SmartListsSidebar {
         style: { justifyContent: 'flex-start' },
         textContent: '🗑️ Xóa danh sách này',
         onclick: async () => {
-          if (confirm(`Bạn có chắc muốn xóa danh sách "${list.name}"? Các công việc bên trong sẽ bị xóa.`)) {
+          const count = (this.tasks || []).filter(task => task.list_id === list.id).length;
+          if (confirm(`Xóa danh sách "${list.name}" và ${count} công việc bên trong?`)) {
             try {
               await api.delete(`/task-lists/${list.id}`);
               this.taskLists = this.taskLists.filter(l => l.id !== list.id);
@@ -427,6 +452,7 @@ export class SmartListsSidebar {
     Modal.open({
       title: 'Chỉnh sửa danh sách',
       content: formObj.content,
+      guardUnsaved: true,
       confirmText: 'Lưu thay đổi',
       width: '480px',
       onConfirm: async () => {

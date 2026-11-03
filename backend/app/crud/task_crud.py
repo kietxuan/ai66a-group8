@@ -1,5 +1,5 @@
 from typing import List, Optional
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -82,6 +82,7 @@ class CRUDTask(CRUDBase[Task]):
         is_today = bool(obj_in.is_in_my_day) or obj_in.due_date == today
         db_obj = Task(
             user_id=user_id,
+            client_request_id=obj_in.client_request_id,
             list_id=obj_in.list_id,
             title=obj_in.title,
             note=obj_in.note,
@@ -139,6 +140,7 @@ class CRUDTask(CRUDBase[Task]):
                 db_obj.reminder_sent = False
             setattr(db_obj, field, value)
 
+        db_obj.updated_at = datetime.now(timezone.utc)
         await db.commit()
         return await self.get_with_steps(db, db_obj.id)
 

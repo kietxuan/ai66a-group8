@@ -1,4 +1,5 @@
 import { createElement } from '../utils/dom.js';
+import { newRequestId } from '../utils/request-id.js';
 import { api } from '../api.js';
 import { Toast } from '../components/toast.js';
 import { EventForm } from '../calendar/event-form.js';
@@ -20,6 +21,7 @@ export class TaskForm {
   }
 
   render() {
+    const draft = this.input?.value || '';
     this.container.innerHTML = '';
 
     const form = createElement('div', { className: 'todo-input-bar-container' });
@@ -30,7 +32,9 @@ export class TaskForm {
     const input = createElement('input', {
       type: 'text',
       className: 'todo-input',
+      value: draft,
       placeholder: 'Nhập tên việc cần làm (Mặc định vĩnh viễn ở cột Cần làm, kéo thả được vào Lịch)... Nhấn Enter để lưu',
+      oninput: () => { if (this.errorEl) this.errorEl.textContent = [...input.value].length > 500 ? 'Tiêu đề tối đa 500 ký tự.' : ''; },
       onkeydown: (e) => {
         if (e.key === 'Enter') {
           this.submit(input);
@@ -103,6 +107,8 @@ export class TaskForm {
     toolbar.appendChild(openFullModalBtn);
 
     form.appendChild(inputRow);
+    this.errorEl = createElement('small', { role: 'alert', style: { color: 'var(--color-danger, #dc2626)' } });
+    form.appendChild(this.errorEl);
     form.appendChild(toolbar);
 
     this.container.appendChild(form);
@@ -112,19 +118,27 @@ export class TaskForm {
   async submit(inputEl) {
     const title = inputEl.value.trim();
     if (!title) return;
+    if ([...title].length > 500) {
+      if (this.errorEl) this.errorEl.textContent = 'Tiêu đề tối đa 500 ký tự.';
+      return;
+    }
 
     try {
       // Mặc định không để thời gian (due_date: null -> Vĩnh viễn ở cột Cần làm & kéo vào Lịch được)
+      const signature = JSON.stringify({ title, listId: this.listId, isImportant: this.isImportant, autoComplete: this.autoComplete });
       const payload = {
         title,
+        client_request_id: this.pendingCreate?.signature === signature ? this.pendingCreate.id : newRequestId(),
         list_id: this.listId || undefined,
         due_date: null,
         is_all_day: true,
         is_important: this.isImportant,
         auto_complete: this.autoComplete
       };
+      this.pendingCreate = { signature, id: payload.client_request_id };
 
       const newTask = await api.post('/tasks', payload);
+      this.pendingCreate = null;
       inputEl.value = '';
       this.isImportant = false;
       this.autoComplete = false;

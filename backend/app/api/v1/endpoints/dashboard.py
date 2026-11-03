@@ -213,7 +213,7 @@ async def get_dashboard_stats(
     activity_bonus = min(15.0, (completed_today_count * 5.0) + (len(events_today) * 2.5))
     productivity_score = int(max(10, min(100, round(base_score + my_day_ratio + activity_bonus - overdue_penalty))))
     if total_tasks == 0 and len(active_events) == 0:
-        productivity_score = 80  # Fresh account welcome score
+        productivity_score = None  # No activity yet; do not present a fabricated score.
 
     summary = DashboardSummaryMetrics(
         total_tasks=total_tasks,

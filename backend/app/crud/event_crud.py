@@ -1,5 +1,5 @@
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -52,6 +52,7 @@ class CRUDEvent(CRUDBase[Event]):
     async def create(self, db: AsyncSession, user_id: int, obj_in: EventCreate) -> Event:
         db_obj = Event(
             user_id=user_id,
+            client_request_id=obj_in.client_request_id,
             calendar_id=obj_in.calendar_id,
             title=obj_in.title,
             description=obj_in.description,
@@ -78,7 +79,7 @@ class CRUDEvent(CRUDBase[Event]):
         return await self.get_with_reminders(db, db_obj.id)
 
     async def update(self, db: AsyncSession, db_obj: Event, obj_in: EventUpdate) -> Event:
-        update_data = obj_in.model_dump(exclude_unset=True, exclude={"scope", "reminders", "original_start"})
+        update_data = obj_in.model_dump(exclude_unset=True, exclude={"scope", "reminders", "original_start", "allow_overlap"})
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
@@ -93,6 +94,7 @@ class CRUDEvent(CRUDBase[Event]):
                 new_rem = EventReminder(event_id=db_obj.id, minutes_before=rem.minutes_before)
                 db.add(new_rem)
 
+        db_obj.updated_at = datetime.now(timezone.utc)
         await db.commit()
         return await self.get_with_reminders(db, db_obj.id)
 

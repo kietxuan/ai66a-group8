@@ -5,6 +5,8 @@ import { EventForm } from './event-form.js';
 import { api } from '../api.js';
 import { Toast } from '../components/toast.js';
 import { ContextMenu } from '../components/contextmenu.js';
+import { confirmDeleteItem } from '../utils/confirm-delete.js';
+import { revisionOptions } from '../utils/revision.js';
 import { toggleCalendarTaskComplete } from './task-adapter.js';
 
 export class EventCard {
@@ -59,7 +61,7 @@ export class EventCard {
         onclick: async (e) => {
           e.stopPropagation();
           try {
-            await toggleCalendarTaskComplete(event.id, event.is_completed);
+            await toggleCalendarTaskComplete(event.id, event.is_completed, rawTask || event);
             if (onUpdate) onUpdate();
           } catch (_) {}
         }
@@ -120,7 +122,7 @@ export class EventCard {
             icon: event.is_completed ? '☐' : '✅',
             label: event.is_completed ? 'Đánh dấu Chưa hoàn thành' : 'Đánh dấu Hoàn thành',
             onClick: async () => {
-              await toggleCalendarTaskComplete(event.id, event.is_completed);
+              await toggleCalendarTaskComplete(event.id, event.is_completed, rawTask || event);
               if (onUpdate) onUpdate();
             }
           },
@@ -130,7 +132,7 @@ export class EventCard {
               ? 'Chuyển sang: Phải tích mới hoàn thành'
               : 'Chuyển sang: Sự kiện (Tự động hoàn thành)',
             onClick: async () => {
-              await api.put(`/tasks/${event.id}`, { auto_complete: !rawTask?.auto_complete });
+              await api.put(`/tasks/${event.id}`, { auto_complete: !rawTask?.auto_complete }, revisionOptions(rawTask || event));
               Toast.success('Đã cập nhật chế độ hoàn thành!');
               window.dispatchEvent(new CustomEvent('planify:data-changed'));
               if (onUpdate) onUpdate();
@@ -146,7 +148,7 @@ export class EventCard {
                 start_time: null,
                 end_time: null,
                 is_all_day: true
-              });
+              }, revisionOptions(rawTask || event));
               Toast.success('Đã đưa về cột Cần làm (Vĩnh viễn)!');
               window.dispatchEvent(new CustomEvent('planify:data-changed'));
               if (onUpdate) onUpdate();
@@ -158,6 +160,7 @@ export class EventCard {
             label: 'Xóa mục này',
             danger: true,
             onClick: async () => {
+              if (!confirmDeleteItem(rawTask || event)) return;
               await api.delete(`/tasks/${event.id}`);
               Toast.success('Đã xóa thành công');
               window.dispatchEvent(new CustomEvent('planify:data-changed'));
@@ -189,7 +192,7 @@ export class EventCard {
                 ...recurrenceContext(event),
                 start_at: toLocalISOString(s),
                 end_at: toLocalISOString(e)
-              });
+              }, revisionOptions(event));
               Toast.success('Đã dời sự kiện sang ngày mai!');
               window.dispatchEvent(new CustomEvent('planify:data-changed'));
               if (onUpdate) onUpdate();
@@ -201,7 +204,7 @@ export class EventCard {
             label: 'Xóa sự kiện',
             danger: true,
             onClick: async () => {
-              if (!confirm(`Xóa sự kiện "${event.title}"?`)) return;
+              if (!confirmDeleteItem(event, { scope: event.recurrence_rule || event.parent_event_id ? 'this' : null })) return;
               await api.delete(eventDeleteUrl(event));
               Toast.success('Đã xóa sự kiện');
               window.dispatchEvent(new CustomEvent('planify:data-changed'));

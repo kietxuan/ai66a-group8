@@ -12,13 +12,24 @@ export class AuthManager {
     formData.append('username', email.trim());
     formData.append('password', password);
 
-    const res = await fetch('/api/v1/auth/login', {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    let res;
+    try {
+      res = await fetch('/api/v1/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: formData.toString()
-    });
+      body: formData.toString(),
+      signal: controller.signal
+      });
+    } catch (err) {
+      if (err.name === 'AbortError') throw new Error('Đăng nhập quá thời gian. Vui lòng thử lại.');
+      throw err;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const data = await res.json().catch(() => null);
     if (!res.ok) {

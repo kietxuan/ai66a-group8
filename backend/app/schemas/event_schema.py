@@ -30,12 +30,16 @@ class EventBase(BaseModel):
     recurrence_end: Optional[datetime] = None
 
 class EventCreate(EventBase, InputValidation):
+    description: Optional[str] = Field(None, max_length=5000)
     reminders: Optional[List[EventReminderCreate]] = None
+    allow_overlap: bool = False
+    client_request_id: Optional[str] = Field(None, max_length=36)
 
 class EventUpdate(InputValidation):
+    allow_overlap: bool = False
     calendar_id: Optional[int] = None
     title: Optional[str] = Field(None, max_length=200)
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=5000)
     location: Optional[str] = Field(None, max_length=300)
     start_at: Optional[datetime] = None
     end_at: Optional[datetime] = None

@@ -2,6 +2,7 @@
  * API Client with JWT authorization handling
  */
 import { businessWallTime } from './utils/date.js';
+import { parseApiError } from './utils/api-error.js';
 
 function calendarTimes(data, outgoing = false) {
   if (Array.isArray(data)) return data.map(value => calendarTimes(value, outgoing));
@@ -74,10 +75,7 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        const errorMsg = data?.error?.message || data?.detail || data?.message || `Lỗi yêu cầu: ${response.status}`;
-        const error = new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
-        error.status = response.status;
-        throw error;
+        throw parseApiError(data, response.status);
       }
 
       // Auto-unwrap ApiResponse wrapper if present
@@ -108,24 +106,30 @@ class ApiClient {
   }
 
   post(endpoint, body = {}) {
-    return this.request(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(calendarTimes(body, true))
-    });
+    return this.write('POST', endpoint, body);
   }
 
-  put(endpoint, body = {}) {
-    return this.request(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(calendarTimes(body, true))
-    });
+  put(endpoint, body = {}, options = {}) {
+    return this.write('PUT', endpoint, body, options);
   }
 
-  patch(endpoint, body = {}) {
-    return this.request(endpoint, {
-      method: 'PATCH',
-      body: JSON.stringify(calendarTimes(body, true))
-    });
+  patch(endpoint, body = {}, options = {}) {
+    return this.write('PATCH', endpoint, body, options);
+  }
+
+  async write(method, endpoint, body, options = {}) {
+    const send = payload => this.request(endpoint, { ...options, method, body: JSON.stringify(calendarTimes(payload, true)) });
+    try {
+      return await send(body);
+    } catch (err) {
+      if (err.code !== 'SCHEDULE_CONFLICT') throw err;
+      const { chooseScheduleConflict } = await import('./components/schedule-conflict.js');
+      const choice = await chooseScheduleConflict(err.items || []);
+      if (choice === 'continue') return send({ ...body, allow_overlap: true });
+      const cancelled = new Error(choice === 'change' ? 'Hãy chọn giờ khác rồi lưu lại.' : 'Đã hủy thao tác.');
+      cancelled.code = choice === 'change' ? 'SCHEDULE_CHANGE' : 'SCHEDULE_CANCEL';
+      throw cancelled;
+    }
   }
 
   delete(endpoint) {

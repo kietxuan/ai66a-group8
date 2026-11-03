@@ -20,6 +20,8 @@ export const calendarPage = {
   miniCalendar: null,
   handleKeyDown: null,
   unscheduledContainer: null,
+  calendarListFilter: 'all',
+  calendarStatusFilter: 'all',
 
   async render(container) {
     const renderGeneration = this.renderGeneration = (this.renderGeneration || 0) + 1;
@@ -151,6 +153,8 @@ export const calendarPage = {
         ondragstart: (e) => {
           const payload = {
             id: t.id,
+            updated_at: t.updated_at,
+            created_at: t.created_at,
             is_task: true,
             durationMinutes: t.duration_minutes || 60,
             title: t.title,
@@ -237,6 +241,25 @@ export const calendarPage = {
         <button class="view-toggle-btn ${curMode === 'agenda' ? 'active' : ''}" data-view="agenda">Lịch biểu</button>
       </div>
     `;
+    const filters = createElement('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' } });
+    const listFilter = createElement('select', { className: 'input', 'aria-label': 'Lọc lịch theo danh sách', onchange: e => { this.calendarListFilter = e.target.value; this.updateView(); } }, [
+      createElement('option', { value: 'all', textContent: 'Mọi danh sách và sự kiện' }),
+      createElement('option', { value: 'events', textContent: 'Chỉ sự kiện' }),
+      ...(store.get('taskLists') || []).map(list => createElement('option', { value: String(list.id), textContent: list.name }))
+    ]);
+    listFilter.value = this.calendarListFilter;
+    const statusFilter = createElement('select', { className: 'input', 'aria-label': 'Lọc lịch theo trạng thái', onchange: e => { this.calendarStatusFilter = e.target.value; this.updateView(); } }, [
+      createElement('option', { value: 'all', textContent: 'Mọi trạng thái' }),
+      createElement('option', { value: 'open', textContent: 'Chưa hoàn thành' }),
+      createElement('option', { value: 'completed', textContent: 'Đã hoàn thành' })
+    ]);
+    statusFilter.value = this.calendarStatusFilter;
+    const resetFilters = createElement('button', { type: 'button', className: 'btn btn-secondary btn-sm', textContent: 'Đặt lại bộ lọc', onclick: () => {
+      this.calendarListFilter = 'all'; this.calendarStatusFilter = 'all'; this.updateView();
+    } });
+    const countEl = createElement('span', { role: 'status', style: { fontSize: '12px' }, textContent: 'Đang tải…' });
+    filters.append(listFilter, statusFilter, resetFilters, countEl);
+    toolbar.appendChild(filters);
 
     document.getElementById('btn-cal-mobile-drawer')?.addEventListener('click', () => {
       const subSidebar = document.getElementById('calendar-sub-sidebar');
@@ -259,20 +282,42 @@ export const calendarPage = {
     });
 
     try {
-      const [events, allTasks] = await Promise.all([
+      viewContainer.replaceChildren(createElement('div', { role: 'status', className: 'empty-state', textContent: 'Đang tải lịch…' }));
+      const [events, allTasks, lists] = await Promise.all([
         api.get('/events', { start: `${toLocalISOString(startDt)}+07:00`, end: `${toLocalISOString(endDt)}+07:00` }),
-        api.get('/tasks')
+        api.get('/tasks'),
+        api.get('/task-lists')
       ]);
       if (generation !== this.requestGeneration || !this.container) return;
+      if (!Array.isArray(events) || !Array.isArray(allTasks) || !Array.isArray(lists)) throw new Error('Dữ liệu lịch không hợp lệ.');
+      store.set('taskLists', lists);
+      listFilter.replaceChildren(
+        createElement('option', { value: 'all', textContent: 'Mọi danh sách và sự kiện' }),
+        createElement('option', { value: 'events', textContent: 'Chỉ sự kiện' }),
+        ...lists.map(list => createElement('option', { value: String(list.id), textContent: list.name }))
+      );
+      if (this.calendarListFilter !== 'all' && this.calendarListFilter !== 'events' && !lists.some(list => String(list.id) === this.calendarListFilter)) this.calendarListFilter = 'all';
+      listFilter.value = this.calendarListFilter;
 
-      this.renderUnscheduledTray(allTasks || []);
+      this.renderUnscheduledTray(allTasks.filter(task =>
+        (this.calendarListFilter === 'all' || String(task.list_id) === this.calendarListFilter) &&
+        (this.calendarStatusFilter === 'all' || (this.calendarStatusFilter === 'completed') === Boolean(task.is_completed))
+      ));
 
       if (this.activeView && typeof this.activeView.destroy === 'function') {
         this.activeView.destroy();
       }
 
-      const expandedEvents = RRuleParser.expandAll(events || [], startDt, endDt);
-      const adaptedTasks = adaptTasksForCalendar(allTasks || []);
+      const expandedEvents = (this.calendarListFilter === 'all' || this.calendarListFilter === 'events') && this.calendarStatusFilter !== 'completed'
+        ? RRuleParser.expandAll(events, startDt, endDt) : [];
+      const firstDate = formatDate(startDt, 'YYYY-MM-DD');
+      const lastDate = formatDate(endDt, 'YYYY-MM-DD');
+      const adaptedTasks = this.calendarListFilter === 'events' ? [] : adaptTasksForCalendar(allTasks.filter(task =>
+        task.due_date && String(task.due_date).slice(0, 10) >= firstDate && String(task.due_date).slice(0, 10) <= lastDate &&
+        (this.calendarListFilter === 'all' || String(task.list_id) === this.calendarListFilter) &&
+        (this.calendarStatusFilter === 'all' || (this.calendarStatusFilter === 'completed') === Boolean(task.is_completed))
+      ));
+      countEl.textContent = `${expandedEvents.length + adaptedTasks.length} mục khớp`;
 
       // Tránh trùng lặp nếu một sự kiện vừa nằm ở bảng events cũ vừa đã đồng bộ sang tasks
 
@@ -299,6 +344,12 @@ export const calendarPage = {
     } catch (err) {
       if (generation !== this.requestGeneration || !this.container) return;
       Toast.error(err.message || 'Không tải được lịch.');
+      countEl.textContent = 'Không rõ số mục';
+      viewContainer.replaceChildren(createElement('div', { className: 'empty-state', role: 'alert' }, [
+        createElement('p', { textContent: `Không tải được lịch: ${err.message || 'Lỗi không xác định.'}` }),
+        createElement('button', { type: 'button', className: 'btn btn-primary', textContent: 'Thử lại', onclick: () => this.updateView() })
+      ]));
+      if (this.unscheduledContainer) this.unscheduledContainer.replaceChildren(createElement('div', { role: 'alert', textContent: 'Không tải được khay công việc.' }));
       console.warn('Failed to load calendar items:', err);
     }
   },

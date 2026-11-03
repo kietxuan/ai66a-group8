@@ -1,6 +1,7 @@
 import { AuthManager } from './auth.js';
 import { store } from './store.js';
 import { AiDemoAccess } from './ai/demo-access.js';
+import { Modal } from './components/modal.js';
 
 const PAGE_META = {
   dashboard: { title: 'Dashboard', subtitle: 'Biểu đồ thống kê & tổng quan tiến độ công việc' },
@@ -27,6 +28,7 @@ export class Router {
   }
 
   async handleRoute() {
+    if (this.revertingHash) { this.revertingHash = false; return; }
     const navigation = this.navigation = (this.navigation || 0) + 1;
     const rawHash = window.location.hash.slice(1).trim();
     const isAuthenticated = AuthManager.isAuthenticated();
@@ -36,6 +38,20 @@ export class Router {
     if (targetPath === 'home' || targetPath === '/') targetPath = isAuthenticated ? savedRoute : 'landing';
 
     const [path, ...params] = targetPath.split('/');
+    if (path !== store.get('currentRoute') && Modal.activeModal?.beforeClose) {
+      if (Modal.activeModal.close() === false) {
+        this.revertingHash = true;
+        window.location.hash = `#${store.get('currentRoute')}`;
+        return;
+      }
+    }
+    if (isAuthenticated && path !== store.get('currentRoute') && store.get('currentRoute') === 'todo' && document.querySelector('.todo-input')?.value.trim()) {
+      if (!confirm('Bạn có công việc đang nhập chưa lưu. Bạn có muốn bỏ nội dung này không?')) {
+        this.revertingHash = true;
+        window.location.hash = `#${store.get('currentRoute')}`;
+        return;
+      }
+    }
     if (path !== 'ai') {
       // Approval lasts only for the current AI visit, never across other pages.
       AiDemoAccess.reset();

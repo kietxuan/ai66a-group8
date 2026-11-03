@@ -10,6 +10,8 @@ import { TaskForm } from '../todo/task-form.js';
 import { TaskDetail } from '../todo/task-detail.js';
 import { EventForm } from '../calendar/event-form.js';
 import { Dropdown } from '../components/dropdown.js';
+import { revisionOptions } from '../utils/revision.js';
+import { isScheduleDismissal } from '../utils/api-error.js';
 
 export const todoPage = {
   container: null,
@@ -21,6 +23,10 @@ export const todoPage = {
   sortBy: 'time',
   onlyImportant: false,
   searchQuery: '',
+  dateFilter: 'all',
+  dateFrom: '',
+  dateTo: '',
+  statusFilter: 'all',
 
   sidebarComponent: null,
   taskListComponent: null,
@@ -60,6 +66,8 @@ export const todoPage = {
   async render(container) {
     this.container = container;
     container.innerHTML = '';
+    this.tasks = [];
+    this.activeTask = null;
 
     this.restoreSavedListSelection();
 
@@ -69,7 +77,10 @@ export const todoPage = {
     const sidebarEl = createElement('aside', { className: 'todo-sidebar', id: 'todo-sub-sidebar' });
 
     // 2. Main Content Container
-    const mainEl = createElement('div', { className: 'todo-main flex-1 flex flex-col overflow-hidden' });
+    const mainEl = createElement('div', {
+      className: 'todo-main flex-1 flex flex-col overflow-hidden',
+      dataset: { view: String(this.activeListId) === 'board' ? 'board' : 'list' }
+    });
 
     // Header
     const headerEl = createElement('div', {
@@ -111,6 +122,30 @@ export const todoPage = {
         this.updateComponents();
       }
     });
+    const clearSearchBtn = createElement('button', { type: 'button', className: 'btn btn-secondary btn-sm', textContent: '✕ Từ khóa', onclick: () => {
+      searchInput.value = ''; this.searchQuery = ''; this.updateComponents();
+    } });
+    const dateSelect = createElement('select', { className: 'input', 'aria-label': 'Lọc theo ngày', onchange: e => {
+      this.dateFilter = e.target.value;
+      rangeWrap.style.display = this.dateFilter === 'range' ? 'flex' : 'none';
+      this.updateComponents();
+    } }, [
+      ['all', 'Mọi ngày'], ['tomorrow', 'Ngày mai'], ['next7', '7 ngày tới'], ['range', 'Khoảng ngày']
+    ].map(([value, label]) => createElement('option', { value, textContent: label })));
+    dateSelect.value = this.dateFilter;
+    const dateFromInput = createElement('input', { type: 'date', className: 'input', value: this.dateFrom, 'aria-label': 'Từ ngày', onchange: e => { this.dateFrom = e.target.value; this.updateComponents(); } });
+    const dateToInput = createElement('input', { type: 'date', className: 'input', value: this.dateTo, 'aria-label': 'Đến ngày', onchange: e => { this.dateTo = e.target.value; this.updateComponents(); } });
+    const rangeWrap = createElement('div', { className: 'todo-date-range', style: { display: this.dateFilter === 'range' ? 'flex' : 'none' } }, [dateFromInput, dateToInput]);
+    const statusSelect = createElement('select', { className: 'input', 'aria-label': 'Lọc theo trạng thái', onchange: e => { this.statusFilter = e.target.value; this.updateComponents(); } }, [
+      ['all', 'Mọi trạng thái'], ['open', 'Chưa hoàn thành'], ['completed', 'Đã hoàn thành']
+    ].map(([value, label]) => createElement('option', { value, textContent: label })));
+    statusSelect.value = this.statusFilter;
+    const resetFiltersBtn = createElement('button', { type: 'button', className: 'btn btn-secondary btn-sm', textContent: 'Đặt lại bộ lọc', onclick: () => {
+      this.searchQuery = ''; this.dateFilter = 'all'; this.dateFrom = ''; this.dateTo = ''; this.statusFilter = 'all'; this.onlyImportant = false;
+      searchInput.value = ''; dateSelect.value = 'all'; statusSelect.value = 'all'; dateFromInput.value = ''; dateToInput.value = ''; rangeWrap.style.display = 'none';
+      filterImpBtn.classList.remove('active'); filterImpBtn.textContent = '☆ Lọc Quan trọng'; this.updateComponents();
+    } });
+    this.matchCountEl = createElement('span', { role: 'status', style: { fontSize: '12px' } });
 
     // Filter Important (⭐) toggle button
     const filterImpBtn = createElement('button', {
@@ -150,7 +185,13 @@ export const todoPage = {
     });
 
     headerActions.appendChild(searchInput);
+    headerActions.appendChild(clearSearchBtn);
+    headerActions.appendChild(dateSelect);
+    headerActions.appendChild(rangeWrap);
+    headerActions.appendChild(statusSelect);
     headerActions.appendChild(filterImpBtn);
+    headerActions.appendChild(resetFiltersBtn);
+    headerActions.appendChild(this.matchCountEl);
     headerActions.appendChild(sortBtn);
     headerActions.appendChild(fullFormBtn);
 
@@ -161,7 +202,7 @@ export const todoPage = {
     const formContainer = createElement('div');
 
     // Task Items List / Kanban Container
-    const listContainer = createElement('div', { className: 'flex-1 overflow-hidden flex flex-col' });
+    const listContainer = createElement('div', { className: 'todo-list-container' });
 
     mainEl.appendChild(headerEl);
     mainEl.appendChild(formContainer);
@@ -233,17 +274,22 @@ export const todoPage = {
     // Keep invalidation pending across overlapping task refreshes and failed requests.
     const reloadLists = this.listsNeedRefresh;
     const generation = this.requestGeneration = (this.requestGeneration || 0) + 1;
+    const listContainer = this.taskListComponent?.container;
+    if (this.matchCountEl) this.matchCountEl.textContent = 'Đang cập nhật…';
+    if (listContainer && !this.tasks?.length) listContainer.replaceChildren(createElement('div', { role: 'status', className: 'empty-state', textContent: 'Đang tải công việc…' }));
     try {
       const [tasks, refreshedLists] = await Promise.all([
         api.get('/tasks'),
         reloadLists ? api.get('/task-lists') : Promise.resolve(null)
       ]);
       if (generation !== this.requestGeneration || !this.container) return;
-      this.tasks = tasks || [];
+      if (!Array.isArray(tasks) || (reloadLists && !Array.isArray(refreshedLists))) throw new Error('Dữ liệu công việc không hợp lệ.');
+      this.tasks = tasks;
       if (reloadLists) {
         const lists = refreshedLists || [];
         store.set('taskLists', lists);
         this.sidebarComponent.taskLists = lists;
+        this.sidebarComponent.listsLoaded = true;
         this.listsNeedRefresh = false;
         if (typeof this.activeListId === 'number' && !lists.some(l => l.id === this.activeListId)) {
           this.switchList('board', 'Bảng quản lý chung', '📋');
@@ -279,7 +325,13 @@ export const todoPage = {
       }
       this.updateComponents();
     } catch (err) {
+      if (generation !== this.requestGeneration || !this.container) return;
       console.error('Failed to load tasks', err);
+      if (this.matchCountEl) this.matchCountEl.textContent = 'Không rõ số mục';
+      if (listContainer) listContainer.replaceChildren(createElement('div', { className: 'empty-state', role: 'alert' }, [
+        createElement('p', { textContent: `Không tải được công việc: ${err.message || 'Lỗi không xác định.'}` }),
+        createElement('button', { type: 'button', className: 'btn btn-primary', textContent: 'Thử lại', onclick: () => this.fetchTasks({ refreshLists: true }) })
+      ]));
     }
   },
 
@@ -297,8 +349,13 @@ export const todoPage = {
       activeTaskId: this.activeTask?.id || null,
       sortBy: this.sortBy,
       onlyImportant: this.onlyImportant,
-      searchQuery: this.searchQuery
+      searchQuery: this.searchQuery,
+      dateFilter: this.dateFilter,
+      dateFrom: this.dateFrom,
+      dateTo: this.dateTo,
+      statusFilter: this.statusFilter
     });
+    if (this.matchCountEl) this.matchCountEl.textContent = `${this.taskListComponent.filterTasks().length} mục khớp`;
 
     this.taskFormComponent.setListContext(
       typeof this.activeListId === 'number' ? this.activeListId : null
@@ -321,6 +378,8 @@ export const todoPage = {
     if (headerEl) {
       headerEl.dataset.listTheme = String(id);
     }
+    const mainEl = this.container?.querySelector('.todo-main');
+    if (mainEl) mainEl.dataset.view = String(id) === 'board' ? 'board' : 'list';
     if (iconEl) iconEl.textContent = icon;
     if (titleEl) titleEl.textContent = name;
     if (subEl) {
@@ -361,7 +420,7 @@ export const todoPage = {
 
   async toggleComplete(task, isCompleted) {
     try {
-      const updated = await api.patch(`/tasks/${task.id}/complete`, { is_completed: isCompleted });
+      const updated = await api.patch(`/tasks/${task.id}/complete`, { is_completed: isCompleted }, revisionOptions(task));
       task.is_completed = isCompleted;
       window.dispatchEvent(new CustomEvent('planify:data-changed', {
         detail: { source: 'todo', action: 'complete', type: 'task', id: task.id, is_completed: isCompleted }
@@ -371,13 +430,14 @@ export const todoPage = {
       }));
       await this.fetchTasks();
     } catch (err) {
-      Toast.error('Không thể cập nhật trạng thái');
+      if (!isScheduleDismissal(err)) Toast.error(err.message || 'Không thể cập nhật trạng thái');
+      this.fetchTasks();
     }
   },
 
   async toggleImportant(task, isImportant) {
     try {
-      const updated = await api.patch(`/tasks/${task.id}/important`, { is_important: isImportant });
+      const updated = await api.patch(`/tasks/${task.id}/important`, { is_important: isImportant }, revisionOptions(task));
       task.is_important = isImportant;
       window.dispatchEvent(new CustomEvent('planify:data-changed', {
         detail: { source: 'todo', action: 'important', type: 'task', id: task.id, is_important: isImportant }
@@ -387,7 +447,8 @@ export const todoPage = {
       }));
       this.updateComponents();
     } catch (err) {
-      Toast.error('Không thể cập nhật quan trọng');
+      Toast.error(err.message || 'Không thể cập nhật quan trọng');
+      this.fetchTasks();
     }
   },
 

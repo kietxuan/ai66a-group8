@@ -227,7 +227,37 @@
   padding: 16px 18px;
   position: relative;
   min-width: 0;
+  min-height: 0;
   container-type: inline-size;
+}
+
+.todo-main[data-view="board"] {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.todo-main[data-view="board"] .todo-list-container {
+  flex: none;
+  min-height: auto;
+  overflow: visible;
+}
+
+.todo-list-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.todo-list-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .todo-header {
@@ -235,13 +265,13 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  margin-bottom: 12px;
-  padding: 12px 16px;
+  margin-bottom: 8px;
+  padding: 10px 14px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border-light);
   background: var(--color-bg-secondary);
   transition: all var(--transition-normal);
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -408,13 +438,32 @@
 @container (max-width: 520px) {
   .todo-kanban-board { grid-template-columns: minmax(0, 1fr) !important; }
 }
-.todo-header-actions { min-width: 0; max-width: 100%; flex-wrap: wrap; }
-.todo-search-input { min-width: 0; max-width: 100%; }
+.todo-header-actions {
+  width: 100%;
+  min-width: 0;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.todo-header-actions > .todo-search-input {
+  width: 190px;
+  min-width: 0;
+  flex: 1 1 190px;
+}
+.todo-header-actions > select.input {
+  width: 170px;
+  min-width: 140px;
+  flex: 0 1 170px;
+}
+.todo-date-range {
+  gap: 4px;
+  flex: 1 1 300px;
+}
+.todo-date-range .input { min-width: 0; }
 @media (max-width: 768px) {
   .todo-title-row, .todo-header-actions { width: 100%; }
   .todo-title-row > div { min-width: 0; }
   .todo-title, .todo-date-subtitle { overflow-wrap: anywhere; }
-  .todo-search-input { width: 100%; flex: 1 1 100%; }
+  .todo-header-actions > .todo-search-input { width: 100%; flex: 1 1 100%; }
   .todo-header-actions .btn { max-width: 100%; white-space: normal; }
 }
 
@@ -449,6 +498,18 @@
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+}
+
+.todo-main[data-view="board"] .todo-kanban-board {
+  height: auto;
+  min-height: 300px;
+  grid-auto-rows: max-content;
+  overflow: visible;
+}
+
+.todo-main[data-view="board"] .kanban-col-body {
+  flex: 1 0 auto;
+  overflow: visible;
 }
 
 /* Detail Panel */

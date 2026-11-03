@@ -107,9 +107,12 @@ export const dashboardPage = {
   async loadAndRender(pageEl) {
     if (!pageEl) return;
     const generation = this.generation = (this.generation || 0) + 1;
+    this.stats = null;
+    pageEl.replaceChildren(createElement('div', { className: 'dash-panel-card', role: 'status', textContent: 'Đang tải thống kê…' }));
     try {
       const stats = await api.get('/dashboard/stats');
       if (generation !== this.generation || !this.container) return;
+      if (!stats || !stats.summary || !stats.status_breakdown) throw new Error('Dữ liệu thống kê không hợp lệ.');
       this.stats = stats;
     } catch (err) {
       if (generation !== this.generation || !this.container) return;
@@ -118,8 +121,8 @@ export const dashboardPage = {
       pageEl.appendChild(createElement('div', {
         className: 'dash-panel-card',
         role: 'alert',
-        textContent: 'Không tải được dữ liệu Dashboard. Vui lòng tải lại trang hoặc thử lại sau.'
-      }));
+        textContent: `Không tải được dữ liệu Dashboard: ${err.message || 'Lỗi không xác định.'}`
+      }, [createElement('button', { type: 'button', className: 'btn btn-primary', textContent: 'Thử lại', onclick: () => this.loadAndRender(pageEl) })]));
       return;
     }
     if (generation !== this.generation || !this.container) return;
@@ -147,20 +150,22 @@ export const dashboardPage = {
     ctx.lineWidth = 6.5;
     ctx.stroke();
 
-    const startAngle = -Math.PI / 2;
-    const endAngle = startAngle + (Math.max(5, Math.min(100, score)) / 100) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, startAngle, endAngle);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 6.5;
-    ctx.lineCap = 'round';
-    ctx.stroke();
+    if (score != null) {
+      const startAngle = -Math.PI / 2;
+      const endAngle = startAngle + (Math.max(0, Math.min(100, score)) / 100) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, startAngle, endAngle);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 6.5;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
 
     ctx.fillStyle = '#ffffff';
     ctx.font = '800 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(String(score), cx, cy + 1);
+    ctx.fillText(score == null ? '—' : String(score), cx, cy + 1);
   },
 
   drawWeeklyTrendCanvas(canvas, trendItems) {
@@ -323,8 +328,8 @@ export const dashboardPage = {
     const greeting = hour < 12 ? 'Chào buổi sáng' : (hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối');
 
     // 1. HERO BANNER
-    const score = s.productivity_score ?? 80;
-    const scoreStatus = score >= 80 ? 'Xuất sắc 🔥' : (score >= 60 ? 'Tốt 👍' : 'Cần tăng tốc ⚡');
+    const score = s.productivity_score;
+    const scoreStatus = score == null ? 'Chưa có dữ liệu' : score >= 80 ? 'Xuất sắc 🔥' : (score >= 60 ? 'Tốt 👍' : 'Cần tăng tốc ⚡');
     const scoreCanvas = createElement('canvas');
 
     const heroBanner = createElement('section', { className: 'dash-hero-banner' }, [
@@ -418,19 +423,7 @@ export const dashboardPage = {
     );
 
     // 3. CHARTS ROW
-    const trendItems = (data?.weekly_trend && data.weekly_trend.length > 0)
-      ? data.weekly_trend
-      : Array.from({ length: 7 }, (_, idx) => {
-          const d = businessNow();
-          d.setDate(d.getDate() - (6 - idx));
-          return {
-            date: formatDate(d, 'YYYY-MM-DD'),
-            label: `${['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d.getDay()]} (${formatDate(d, 'DD/MM')})`,
-            completed_tasks: idx === 6 ? (s.completed_today_count || 0) : 0,
-            due_tasks: idx === 6 ? (s.due_today_count || 0) : 0,
-            events_count: idx === 6 ? (s.events_today_count || 0) : 0
-          };
-        });
+    const trendItems = Array.isArray(data?.weekly_trend) ? data.weekly_trend : [];
 
     const barCanvas = createElement('canvas', { id: 'dash-weekly-bar-canvas' });
     const barChartCard = createElement('div', { className: 'dash-panel-card' }, [
@@ -454,7 +447,7 @@ export const dashboardPage = {
           ])
         ])
       ]),
-      createElement('div', { className: 'dash-canvas-box' }, [barCanvas])
+      createElement('div', { className: 'dash-canvas-box' }, trendItems.length ? [barCanvas] : [createElement('p', { textContent: 'Chưa có dữ liệu hoạt động 7 ngày.' })])
     ]);
 
     const donutSegments = [
@@ -601,7 +594,7 @@ export const dashboardPage = {
 
     requestAnimationFrame(() => {
       this.drawScoreRingCanvas(scoreCanvas, score);
-      this.drawWeeklyTrendCanvas(barCanvas, trendItems);
+      if (trendItems.length) this.drawWeeklyTrendCanvas(barCanvas, trendItems);
       this.drawDonutCanvas(donutCanvas, donutSegments, s.total_tasks || 0);
     });
   },
