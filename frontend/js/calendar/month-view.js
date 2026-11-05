@@ -66,7 +66,7 @@ export class MonthView {
           textDecoration: 'underline',
           textUnderlineOffset: '4px'
         } : {},
-        textContent: isTodayCol ? `📍 ${label}` : label
+        textContent: label
       });
     }));
     // Lịch Tháng hiển thị vừa vặn không gian, không cuộn chuột chuyển tháng

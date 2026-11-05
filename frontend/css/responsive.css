@@ -51,12 +51,12 @@
   /* Header Compact */
   .app-header {
     padding: 0 12px;
-    height: 52px;
+    height: 56px;
     gap: 8px;
   }
 
   .header-left {
-    min-width: auto;
+    min-width: 0;
   }
 
   .header-subtitle {
@@ -68,58 +68,23 @@
   }
 
   .command-search-trigger {
-    padding: 6px 10px;
-    font-size: 12px;
-    max-width: 185px;
-  }
-
-  /* Reserve space at bottom for Mobile Bottom Navigation Bar */
-  .page-container {
-    padding-bottom: 60px;
-  }
-
-  /* Fixed Mobile Bottom Nav (5 Tabs) */
-  .mobile-bottom-nav {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background-color: var(--color-surface);
-    border-top: 1px solid var(--color-border);
-    z-index: 350;
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
-  }
-
-  .mobile-nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
     justify-content: center;
-    gap: 2px;
-    color: var(--color-text-tertiary);
-    font-size: 10px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: color var(--transition-fast);
+    font-size: 12px;
   }
 
-  .mobile-nav-item.active {
-    color: var(--color-primary);
-  }
-
-  .mobile-nav-icon {
-    font-size: 18px;
-    line-height: 1.1;
+  /* Navigation lives in the header drawer; do not reserve a second tab bar. */
+  .page-container {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   /* Dashboard, Guide, Settings Mobile Adjustments */
   .dashboard-page,
   .guide-page,
   .settings-page {
-    padding: 14px 14px 80px !important;
+    padding: 14px 14px max(20px, env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .dash-hero-banner {
@@ -260,8 +225,8 @@
   .task-detail-container {
     position: fixed;
     right: 0;
-    top: 52px;
-    bottom: 60px;
+    top: 56px;
+    bottom: 0;
     height: auto;
     width: 100% !important;
     max-width: 100% !important;

@@ -1,3 +1,4 @@
+import { iconMarkup } from "../utils/icons.js";
 import { createElement } from "../utils/dom.js";
 import { store } from "../store.js";
 import { ThemeManager } from "../theme.js";
@@ -15,6 +16,8 @@ export const settingsPage = {
     const generation = (this.generation = (this.generation || 0) + 1);
     this.container = container;
     container.innerHTML = "";
+    const loading = createElement('div', { className: 'empty-state', role: 'status', textContent: 'Đang tải cài đặt…' });
+    container.appendChild(loading);
 
     const page = createElement("div", { className: "settings-page" });
     const inner = createElement("div", { className: "settings-inner" });
@@ -65,7 +68,7 @@ export const settingsPage = {
           flexShrink: "0",
           lineHeight: "1",
         },
-        innerHTML: `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" fill="currentColor" fill-opacity="0.22"></path><circle cx="7" cy="7" r="1.5" fill="currentColor"></circle></svg>`,
+        innerHTML: iconMarkup("tag", size),
       });
     }
 
@@ -460,7 +463,7 @@ export const settingsPage = {
             [
               createElement("span", {
                 style: { fontSize: "26px" },
-                textContent: "☀",
+                innerHTML: iconMarkup("sun", 26),
               }),
               createElement("span", {
                 style: { fontWeight: "700" },
@@ -489,7 +492,7 @@ export const settingsPage = {
             [
               createElement("span", {
                 style: { fontSize: "26px" },
-                textContent: "☾",
+                innerHTML: iconMarkup("moon", 26),
               }),
               createElement("span", {
                 style: { fontWeight: "700" },
@@ -1170,6 +1173,7 @@ export const settingsPage = {
     inner.appendChild(securitySection);
     inner.appendChild(logoutSection);
     page.appendChild(inner);
+    loading.remove();
     container.appendChild(page);
   },
 

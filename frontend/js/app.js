@@ -3,6 +3,7 @@
  */
 
 import { ThemeManager } from './theme.js';
+import { initUiIcons } from './utils/icons.js';
 import { Toast } from './components/toast.js';
 import { AuthManager } from './auth.js';
 import { Sidebar } from './components/sidebar.js';
@@ -29,6 +30,7 @@ import { ContextMenu } from './components/contextmenu.js';
 
 class App {
   static async init() {
+    initUiIcons();
     // 1. Initialize Theme & Toast
     ThemeManager.init();
     Toast.init();

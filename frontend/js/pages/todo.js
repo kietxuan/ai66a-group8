@@ -1,4 +1,5 @@
 import { businessNow } from '../utils/date.js';
+import { iconMarkup } from '../utils/icons.js';
 import { createElement } from '../utils/dom.js';
 import { api } from '../api.js';
 import { store } from '../store.js';
@@ -207,7 +208,7 @@ export const todoPage = {
     const titleRow = createElement("div", { className: "todo-title-row" }, [
       createElement("button", {
         className: "btn-icon mobile-only",
-        textContent: "☰",
+        innerHTML: iconMarkup('panel-left'),
         title: "Mở danh sách To Do",
         onclick: () => sidebarEl.classList.toggle("mobile-open"),
       }),

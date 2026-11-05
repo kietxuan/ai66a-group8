@@ -1,3 +1,4 @@
+import { iconMarkup } from "../utils/icons.js";
 import { businessNow } from "../utils/date.js";
 import { createElement } from "../utils/dom.js";
 import {
@@ -254,7 +255,7 @@ export class TaskListView {
     const searchInput = createElement("input", {
       type: "text",
       className: "todo-filter-search-input",
-      placeholder: "🔍 Tìm kiếm việc cần làm...",
+      placeholder: "Tìm kiếm việc cần làm...",
       value: this.searchQuery || "",
       oninput: (e) => {
         this.searchQuery = e.target.value;
@@ -517,7 +518,7 @@ export class TaskListView {
           [
             createElement("span", {
               style: { display: "inline-flex", alignItems: "center" },
-              innerHTML: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
+              innerHTML: iconMarkup("tag", 10),
             }),
             createElement("span", { textContent: activeCat.name }),
           ],

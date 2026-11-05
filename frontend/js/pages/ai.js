@@ -1,4 +1,5 @@
 import { createElement } from "../utils/dom.js";
+import { createIcon } from '../utils/icons.js';
 import { api } from "../api.js";
 import { Toast } from "../components/toast.js";
 import { ChatMessage } from "../ai/message.js";
@@ -97,6 +98,7 @@ export const aiPage = {
         { className: "flex flex-col gap-xs" },
         [
           createElement("div", {
+            className: 'ai-prompt-category',
             style: {
               fontSize: "12px",
               fontWeight: "700",
@@ -146,6 +148,8 @@ export const aiPage = {
       [
         createElement("div", { className: "flex items-center gap-sm" }, [
           createElement("span", {
+            'data-icon': 'bot',
+            'aria-hidden': 'true',
             style: { fontSize: "22px" },
             textContent: "🤖",
           }),
@@ -260,9 +264,8 @@ export const aiPage = {
         },
         [
           createElement("span", {
-            className: "truncate flex-1",
-            textContent: `💬 ${c.title || "Hội thoại"}`,
-          }),
+            className: "flex items-center gap-xs truncate flex-1",
+          }, [createIcon('message-circle'), createElement('span', { className: 'truncate', textContent: c.title || 'Hội thoại' })]),
           createElement("button", {
             className: "btn-icon",
             style: { width: "20px", height: "20px", fontSize: "12px" },
@@ -397,10 +400,9 @@ export const aiPage = {
       { className: "ai-message assistant" },
       [
         createElement("div", { className: "ai-avatar", textContent: "🤖" }),
-        createElement("div", { className: "ai-bubble ai-typing-indicator" }, [
-          createElement("div", { className: "ai-typing-dot" }),
-          createElement("div", { className: "ai-typing-dot" }),
-          createElement("div", { className: "ai-typing-dot" }),
+        createElement("div", { className: "ai-bubble ai-typing-indicator", role: 'status' }, [
+          createIcon('loader-circle', { spin: true }),
+          createElement('span', { className: 'visually-hidden', textContent: 'AI đang xử lý yêu cầu' }),
         ]),
       ],
     );

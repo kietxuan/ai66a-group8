@@ -1,3 +1,4 @@
+import { decorateUiElement } from './icons.js';
 /**
  * DOM Helper Utilities
  */
@@ -63,6 +64,7 @@ export function createElement(tag, attrs = {}, children = []) {
     }
   });
   
+  decorateUiElement(el);
   return el;
 }
 

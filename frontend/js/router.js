@@ -168,8 +168,8 @@ export class Router {
       if (titleEl) titleEl.textContent = meta.title;
       if (subEl) subEl.textContent = meta.subtitle;
 
-      // Update desktop sidebar & mobile bottom nav active state
-      document.querySelectorAll(".nav-item, .mobile-nav-item").forEach((el) => {
+      // One sidebar serves desktop navigation and the mobile drawer.
+      document.querySelectorAll(".nav-item").forEach((el) => {
         el.classList.toggle("active", el.dataset.page === path);
       });
 
