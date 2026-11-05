@@ -338,3 +338,30 @@
 .ai-payment-option.is-selected { border-color:var(--color-border-focus); box-shadow:none; }
 .ai-payment-pay { background:var(--color-accent); color:var(--color-accent-contrast); box-shadow:none; border-radius:8px; font-size:18px; }
 .ai-payment-pay:hover { background:var(--color-accent-hover); }
+/* A branded conversation space; only actual successful results get success cards. */
+.ai-workspace-sidebar { background:var(--color-bg-sidebar); }
+.ai-workspace-header { padding:16px 24px; box-shadow:var(--shadow-xs); }
+.ai-workspace-mark { display:grid; place-items:center; width:36px; height:36px; border:1px solid var(--color-brand-border); border-radius:12px; background:var(--color-bg-selected); color:var(--color-text-link); flex-shrink:0; }
+.ai-message.user .ai-bubble { background:var(--color-accent); color:var(--color-accent-contrast); border-radius:14px 14px 4px 14px; box-shadow:var(--shadow-xs); }
+.ai-message.assistant .ai-avatar { background:var(--color-bg-selected); color:var(--color-text-link); border:1px solid var(--color-brand-border); border-radius:10px; }
+.ai-message.assistant .ai-bubble { line-height:1.75; }
+.ai-workspace-main .ai-input-box { min-height:56px; border-radius:14px; border-color:var(--color-border); box-shadow:var(--shadow-card); }
+.ai-input-box:focus-within { border-color:var(--color-border-focus); box-shadow:0 0 0 3px var(--color-accent-light); }
+.ai-conv-item.active { box-shadow:inset 3px 0 0 var(--color-accent); }
+.ai-prompt-library > summary { color:var(--color-text-link); font-weight:500; }
+.ai-tool-details summary { display:inline-flex; max-width:100%; padding:4px 8px; border-radius:6px; font-size:12px; gap:6px; background:var(--color-bg-tertiary); }
+.ai-tool-details[open] summary { margin-bottom:4px; }
+.ai-tool-result[data-status="success"] summary { color:var(--color-success); background:var(--color-success-bg); }
+.ai-tool-result[data-status="pending"] summary { color:var(--color-warning); background:var(--color-warning-bg); }
+.ai-tool-result[data-status="error"] summary { color:var(--color-danger); background:var(--color-danger-bg); }
+.ai-result-card { margin-bottom:8px; padding:14px; border-radius:12px; box-shadow:var(--shadow-xs); border-left:3px solid var(--color-success); gap:12px; }
+.ai-result-title { font-weight:600; line-height:1.5; }
+.ai-result-time { line-height:1.6; color:var(--color-text-secondary); }
+.ai-header-title > span:first-child { color:var(--color-text-link); }
+@media(max-width:768px) {
+  .ai-workspace-header { padding:10px 12px; }
+  .ai-workspace-mark { width:32px; height:32px; border-radius:10px; }
+  .ai-workspace-sidebar { gap:10px; }
+  .ai-message.user .ai-bubble { padding:10px 12px; }
+  .ai-result-card { padding:12px; }
+}

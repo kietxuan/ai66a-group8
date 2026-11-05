@@ -31,13 +31,13 @@
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: var(--color-text-primary);
-  color: var(--color-bg-secondary);
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  box-shadow: none;
+  box-shadow: var(--shadow-brand);
 }
 
 .logo-brand-col {
@@ -58,7 +58,7 @@
   font-weight: 600;
   color: var(--color-text-secondary);
   text-transform: none;
-  letter-spacing: 0.05em;
+  letter-spacing: 0;
 }
 
 .sidebar-section-label {
@@ -102,7 +102,10 @@
   background: var(--color-bg-selected);
   color: var(--color-text-link);
   box-shadow: inset 3px 0 0 var(--color-accent);
+  font-weight: 600;
 }
+
+.nav-item.active .nav-icon { color: var(--color-text-link); }
 
 .nav-item .nav-icon {
   font-size: 18px;

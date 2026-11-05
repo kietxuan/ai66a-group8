@@ -79,7 +79,7 @@
   }
 
   .dash-hero-banner {
-    padding: 0 0 16px;
+    padding: 20px;
   }
 
   .dash-score-card {
@@ -272,7 +272,7 @@
   }
 
   .theme-options-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -281,9 +281,33 @@
     grid-template-columns: 1fr 1fr;
   }
   .dash-kpi-value {
-    font-size: 20px;
+    font-size: 28px;
   }
   .command-search-placeholder {
     display: none;
   }
+}
+@media(max-width:380px) { .theme-options-grid { grid-template-columns:1fr; } .dash-hero-banner { padding:16px; } }
+
+/* Keep five metrics balanced on compact screens, rather than one orphan card. */
+@media(min-width:769px) and (max-width:1240px) {
+  .dash-kpi-grid { grid-template-columns:repeat(6,minmax(0,1fr)); }
+  .dash-kpi-card { grid-column:span 2; }
+  .dash-kpi-card:nth-last-child(-n+2) { grid-column:span 3; }
+}
+@media(max-width:768px) {
+  .dash-kpi-card:last-child { grid-column:1 / -1; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 16px; }
+  .dash-kpi-card:last-child .dash-kpi-top { grid-column:1; grid-row:1; justify-content:flex-end; flex-direction:row-reverse; gap:8px; }
+  .dash-kpi-card:last-child .dash-kpi-value { grid-column:2; grid-row:1 / 3; align-self:center; }
+  .dash-kpi-card:last-child .dash-kpi-label { grid-column:1; grid-row:2; }
+}
+@media(max-width:360px) {
+  .app-header { padding:0 8px; gap:4px; }
+  .header-left { gap:6px; }
+  .header-right { gap:4px; }
+  .header-title { font-size:16px; }
+  .user-profile-badge { padding:4px; }
+}
+@media(min-width:601px) and (max-width:768px) {
+  .todo-kanban-board { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
 }

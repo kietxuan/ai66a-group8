@@ -626,3 +626,10 @@
 :root[data-theme] .landing-feature-card,:root[data-theme] .landing-feature-frame { background:var(--color-bg-secondary); border-color:var(--color-border); box-shadow:none; }
 :root[data-theme] .landing-feature-icon { background:var(--color-bg-tertiary); color:var(--color-text-secondary); }
 :root[data-theme] .landing-theme-toggle { background:var(--color-bg-tertiary); color:var(--color-text-primary); border-color:var(--color-border); }
+/* Restrained brand color, rather than a monochrome public face. */
+:root[data-theme] .landing-hero { background:linear-gradient(160deg,var(--color-hero-end),var(--color-bg-secondary)); }
+:root[data-theme] .landing-button-primary { border-radius:10px; box-shadow:var(--shadow-brand); }
+:root[data-theme] .landing-feature-card { border-radius:16px; box-shadow:var(--shadow-card); }
+:root[data-theme] .landing-feature-label,:root[data-theme] .landing-text-link { color:var(--color-text-link); }
+:root[data-theme] .landing-feature-list li::before { color:var(--color-success); }
+:root[data-theme] .landing-feature-visual { background:var(--color-bg-well); }

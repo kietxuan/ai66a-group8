@@ -8,6 +8,17 @@ import { Toast } from "../components/toast.js";
 import { api } from "../api.js";
 import { buildCalendarIcs } from "../utils/ical.js";
 
+function themePreview(theme) {
+  return createElement('span', { className: `theme-preview theme-preview-${theme}`, 'aria-hidden': 'true' }, [
+    createElement('span', { className: 'theme-preview-sidebar' }),
+    createElement('span', { className: 'theme-preview-content' }, [
+      createElement('span', { className: 'theme-preview-heading' }),
+      createElement('span', { className: 'theme-preview-cards' }),
+      createElement('span', { className: 'theme-preview-line' }),
+    ]),
+  ]);
+}
+
 export const settingsPage = {
   container: null,
   otpCountdownInterval: null,
@@ -464,10 +475,7 @@ export const settingsPage = {
               },
             },
             [
-              createElement("span", {
-                style: { fontSize: "26px" },
-                innerHTML: iconMarkup("sun", 26),
-              }),
+              themePreview('light'),
               createElement("span", {
                 style: { fontWeight: "700" },
                 textContent: "Chủ đề Sáng (Light)",
@@ -494,10 +502,7 @@ export const settingsPage = {
               },
             },
             [
-              createElement("span", {
-                style: { fontSize: "26px" },
-                innerHTML: iconMarkup("moon", 26),
-              }),
+              themePreview('dark'),
               createElement("span", {
                 style: { fontWeight: "700" },
                 textContent: "Chủ đề Tối (Dark)",
@@ -1169,6 +1174,10 @@ export const settingsPage = {
       ],
     );
 
+    inner.appendChild(createElement('div', { className: 'settings-heading' }, [
+      createElement('h1', { textContent: 'Cài đặt' }),
+      createElement('p', { textContent: 'Cá nhân hóa giao diện, tài khoản và cách nhận thông báo.' }),
+    ]));
     inner.appendChild(themeSection);
     inner.appendChild(categorySection);
     inner.appendChild(notificationSection);

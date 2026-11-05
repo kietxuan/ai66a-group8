@@ -95,6 +95,7 @@ body {
 }
 
 .btn-primary {
+  box-shadow: var(--shadow-brand);
   background-color: var(--color-accent);
   color: var(--color-accent-contrast);
 }
@@ -104,6 +105,7 @@ body {
 }
 
 .btn-secondary {
+  border: 1px solid var(--color-border);
   background-color: var(--color-bg-tertiary);
   color: var(--color-text-primary);
 }
@@ -204,3 +206,11 @@ button:disabled { cursor: wait; opacity: .65; }
 .form-group { min-width: 0; }
 h1, h2, h3, h4 { font-weight: 600; line-height: 1.35; }
 input, select, time, .todo-list-badge { font-variant-numeric: tabular-nums; }
+
+/* Keep controls distinct from data cards without moving content on hover. */
+.input,.textarea,.select { border-radius:10px; }
+.btn { border-radius:10px; }
+::selection { background:var(--color-bg-selected); color:var(--color-text-primary); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior:auto !important; transition-duration:.01ms !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; }
+}

@@ -169,7 +169,7 @@ export class TaskItem {
 
     const titleEl = createElement("span", {
       className: "task-title",
-      title: "Nhấp đúp chuột trái để sửa nhanh tiêu đề",
+      title: `${task.title}\nNhấp đúp chuột trái để sửa nhanh tiêu đề`,
       textContent: task.title,
       ondblclick: (e) => {
         e.stopPropagation();
@@ -282,7 +282,7 @@ export class TaskItem {
         {
           className: "task-tag-badge",
           style: {
-            backgroundColor: "var(--color-bg-tertiary)",
+            backgroundColor: `color-mix(in srgb, ${cat.color} 9%, var(--color-bg-card))`,
             color: "var(--color-text-secondary)",
             border: "1px solid var(--color-border)",
           },

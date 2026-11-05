@@ -30,6 +30,7 @@ export const calendarPage = {
   calendarStatusFilter: 'all',
 
   async render(container) {
+    this.drawerCleanup?.();
     const renderGeneration = (this.renderGeneration =
       (this.renderGeneration || 0) + 1);
     this.container = container;
@@ -47,6 +48,7 @@ export const calendarPage = {
     const sidebar = createElement("aside", {
       className: "calendar-sidebar",
       id: "calendar-sub-sidebar",
+      'aria-label': 'Lịch nhỏ và công việc chưa xếp lịch',
     });
 
     const createBigBtn = createElement("button", {
@@ -72,6 +74,14 @@ export const calendarPage = {
       className: "cal-unscheduled-tray",
     });
 
+    sidebar.appendChild(createElement('div', { className: 'cal-drawer-heading mobile-only' }, [
+      createElement('span', { textContent: 'Lịch cá nhân' }),
+      createElement('button', {
+        type: 'button', className: 'btn-icon', id: 'btn-cal-drawer-close',
+        'aria-label': 'Đóng lịch nhỏ', title: 'Đóng lịch nhỏ', 'data-icon': 'x',
+        onclick: () => this.setDrawerOpen?.(false),
+      }),
+    ]));
     sidebar.appendChild(createBigBtn);
     sidebar.appendChild(miniCalContainer);
     sidebar.appendChild(this.unscheduledContainer);
@@ -90,6 +100,49 @@ export const calendarPage = {
     page.appendChild(sidebar);
     page.appendChild(main);
     container.appendChild(page);
+
+    // The opener sits behind the mobile drawer, so provide an internal close
+    // control and keep hidden drawer controls out of the keyboard tab order.
+    const syncDrawer = () => {
+      const mobile = window.innerWidth <= 768;
+      if (!mobile) sidebar.classList.remove('mobile-open');
+      const open = mobile && sidebar.classList.contains('mobile-open');
+      sidebar.inert = mobile && !open;
+      sidebar.setAttribute('aria-hidden', String(mobile && !open));
+      const opener = page.querySelector('#btn-cal-mobile-drawer');
+      if (opener) {
+        opener.setAttribute('aria-expanded', String(open));
+        opener.setAttribute('aria-label', open ? 'Đóng lịch nhỏ & khay việc chưa xếp lịch' : 'Mở lịch nhỏ & khay việc chưa xếp lịch');
+      }
+    };
+    this.setDrawerOpen = (open, focus = true) => {
+      sidebar.classList.toggle('mobile-open', Boolean(open));
+      syncDrawer();
+      if (focus && window.innerWidth <= 768) {
+        page.querySelector(open ? '#btn-cal-drawer-close' : '#btn-cal-mobile-drawer')?.focus();
+      }
+    };
+    this.syncDrawer = syncDrawer;
+    const escapeDrawer = (event) => {
+      if (event.key === 'Escape' && sidebar.classList.contains('mobile-open') && !Modal.activeModal) {
+        event.preventDefault();
+        this.setDrawerOpen(false);
+      }
+    };
+    const outsideDrawer = (event) => {
+      if (sidebar.classList.contains('mobile-open') && !sidebar.contains(event.target) && !event.target.closest('#btn-cal-mobile-drawer')) {
+        this.setDrawerOpen(false, false);
+      }
+    };
+    window.addEventListener('resize', syncDrawer);
+    document.addEventListener('keydown', escapeDrawer);
+    page.addEventListener('pointerdown', outsideDrawer);
+    this.drawerCleanup = () => {
+      window.removeEventListener('resize', syncDrawer);
+      document.removeEventListener('keydown', escapeDrawer);
+      page.removeEventListener('pointerdown', outsideDrawer);
+    };
+    syncDrawer();
 
     // Initialize mini calendar
     this.miniCalendar = new MiniCalendar(miniCalContainer, {
@@ -236,7 +289,7 @@ export const calendarPage = {
                   flexShrink: "0",
                   marginLeft: "6px",
                   marginRight: "2px",
-                  boxShadow: `0 0 0 2px var(--color-bg-secondary), 0 0 6px ${t.color}88`,
+                  boxShadow: 'none',
                 },
                 title: `Thẻ phân loại (${t.color})`,
               })
@@ -303,7 +356,7 @@ export const calendarPage = {
     // Đã xóa nút "💡 Mẹo" và nút "T2-T6", đặt "Tháng" lên đầu làm mặc định
     toolbar.innerHTML = `
       <div class="calendar-nav-group">
-        <button class="btn-icon mobile-only" id="btn-cal-mobile-drawer" title="Mở lịch nhỏ & khay việc chưa xếp lịch">📅</button>
+        <button class="btn-icon mobile-only" id="btn-cal-mobile-drawer" aria-controls="calendar-sub-sidebar" aria-expanded="false" title="Mở lịch nhỏ & khay việc chưa xếp lịch">📅</button>
         <button class="btn btn-secondary btn-sm" id="btn-cal-today" style="font-weight:700;">📍 Hôm nay</button>
         <button class="btn-icon" id="btn-cal-prev" title="Trước">&#9664;</button>
         <button class="btn-icon" id="btn-cal-next" title="Tiếp">&#9654;</button>
@@ -340,8 +393,9 @@ export const calendarPage = {
       .getElementById("btn-cal-mobile-drawer")
       ?.addEventListener("click", () => {
         const subSidebar = document.getElementById("calendar-sub-sidebar");
-        if (subSidebar) subSidebar.classList.toggle("mobile-open");
+        if (subSidebar) this.setDrawerOpen?.(!subSidebar.classList.contains('mobile-open'));
       });
+    this.syncDrawer?.();
 
     document.getElementById("btn-cal-today")?.addEventListener("click", () => {
       store.set("selectedDate", businessNow());
@@ -465,6 +519,10 @@ export const calendarPage = {
   },
 
   destroy() {
+    this.drawerCleanup?.();
+    this.drawerCleanup = null;
+    this.setDrawerOpen = null;
+    this.syncDrawer = null;
     this.renderGeneration = (this.renderGeneration || 0) + 1;
     this.requestGeneration = (this.requestGeneration || 0) + 1;
     if (this.handleDataChanged) {

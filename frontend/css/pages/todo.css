@@ -764,8 +764,8 @@
 }
 
 .task-item.completed .task-checkbox {
-  background-color: var(--color-success);
-  border-color: var(--color-success);
+  background-color: var(--color-success-solid);
+  border-color: var(--color-success-solid);
 }
 
 .task-item.completed .task-title {
@@ -779,9 +779,13 @@
   font-size: 13.5px;
   font-weight: 500;
   color: var(--color-text-primary);
-  white-space: nowrap;
+  white-space: normal;
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
   user-select: text;
 }
 
@@ -1090,23 +1094,56 @@
   .task-col-tag:has(.task-col-empty) { display: none; }
 }
 
-/* One working surface for the heading, quick entry and filters. */
-.todo-header { padding:4px 0 12px; border:0; border-radius:0; background:transparent; margin-bottom:0; }
-.todo-input-bar-container { border-radius:8px; box-shadow:none; margin-bottom:8px; }
-.todo-table-header-bar { padding:8px 0 16px; border:0; border-radius:0; background:transparent; }
-.todo-header-counter-pill { border:0; background:transparent; padding:0; border-radius:0; font-size:12px; }
-.todo-filter-search-input,.todo-filter-btn { height:34px; font-size:13px; }
-.todo-title { font-size:20px; font-weight:600; }
+
+/* Comfortable working surfaces and status accents, not four painted columns. */
+.todo-header { padding:6px 0 16px; border:0; border-radius:0; background:transparent; margin-bottom:0; }
+.todo-title { font-size:24px; font-weight:650; letter-spacing:-.025em; }
+.todo-header-icon-btn { color:var(--color-text-link); background:var(--color-bg-selected); border-radius:10px; width:36px; height:36px; }
+.todo-header-counter-pill { border:1px solid var(--color-border-light); background:var(--color-bg-secondary); padding:5px 10px; border-radius:8px; font-size:12px; }
+.todo-input-bar-container { border-radius:12px; box-shadow:var(--shadow-card); margin-bottom:12px; }
+.todo-input-bar { padding:12px 14px; }
+.todo-input-bar > span:first-child { color:var(--color-text-link); }
+.todo-input-bar-container:focus-within { border-color:var(--color-border-focus); }
+.todo-table-header-bar { padding:10px; border:1px solid var(--color-border-light); border-radius:12px; background:var(--color-bg-secondary); margin-bottom:16px; gap:8px; }
+.todo-filter-search-input,.todo-filter-dropdown-btn,.todo-filter-star-btn { height:34px; font-size:13px; border-radius:8px; }
+.todo-th-time { width:145px; }
+.todo-th-tag { width:120px; }
+.todo-filter-star-btn.active { background:var(--color-warning-bg); color:var(--color-star); border-color:var(--color-star); }
 .todo-list-item { font-weight:400; min-height:36px; }
-.todo-list-item.active { color:var(--color-text-link); }
-.kanban-column { background:var(--color-bg-tertiary); border:0; min-height:180px; border-radius:10px; }
-.kanban-col-header { padding:12px; border-bottom:0; }
-.kanban-col-body { padding:0 8px 12px; gap:8px; overflow:visible; }
-.kanban-subtitle { font-size:12px; color:var(--color-text-secondary); margin-top:4px; }
-.kanban-empty { text-align:center; padding:24px 8px; font-size:13px; color:var(--color-text-secondary); }
-.task-item { box-shadow:none; border:1px solid var(--color-border); background:var(--color-bg-card); border-radius:8px; }
-.task-item:hover { box-shadow:none; background:var(--color-bg-hover); transform:none; }
-.task-title { font-size:14px; font-weight:500; line-height:1.5; }
-.task-time-cell,.task-col-time,.task-due-date { color:var(--color-text-secondary); font-size:12px; }
+.todo-list-item.active { color:var(--color-text-link); border-radius:8px; border-left:0; box-shadow:inset 3px 0 0 var(--color-accent); }
+.todo-list-item.active .todo-list-badge { background:var(--color-bg-secondary); }
+.todo-kanban-board { gap:14px; align-items:start; }
+.kanban-column { --column-color:var(--color-text-link); --column-tint:var(--color-bg-selected); background:var(--color-bg-well); border:1px solid var(--color-border-light); min-height:280px; border-radius:12px; }
+.kanban-column[data-status="today"] { --column-color:var(--color-warning); --column-tint:var(--color-warning-bg); }
+.kanban-column[data-status="overdue"] { --column-color:var(--color-danger); --column-tint:var(--color-danger-bg); }
+.kanban-column[data-status="completed"] { --column-color:var(--color-success); --column-tint:var(--color-success-bg); }
+.kanban-col-header { padding:14px 12px 12px; border-bottom:0; align-items:flex-start; flex-wrap:wrap; row-gap:10px; background:linear-gradient(180deg,var(--column-tint),var(--color-bg-well)); }
+.kanban-col-header > .flex { min-width:0; }
+.kanban-col-header .todo-list-badge { color:var(--column-color); background:var(--color-bg-card); border:1px solid var(--color-border-light); min-width:22px; text-align:center; margin-left:3px; }
+.kanban-col-header .btn-xs { min-height:28px; background:var(--color-bg-card); }
+.kanban-status-dot { width:7px; height:7px; border-radius:50%; background:var(--column-color); flex-shrink:0; margin-right:2px; }
+.kanban-col-body { padding:0 9px 12px; gap:10px; overflow:visible; }
+.kanban-subtitle { font-size:12px; color:var(--color-text-secondary); margin-top:6px; line-height:1.5; }
+.kanban-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center; padding:28px 12px; font-size:13px; line-height:1.6; color:var(--color-text-secondary); }
+.kanban-empty-icon { display:grid; place-items:center; width:40px; height:40px; border-radius:12px; background:var(--color-bg-card); color:var(--column-color); margin-bottom:4px; }
+.kanban-empty-hint { font-size:12px; color:var(--color-text-muted); }
+.task-item { box-shadow:var(--shadow-xs); border:1px solid var(--color-border); background:var(--color-bg-card); border-radius:10px; padding:12px; gap:9px; transition:border-color .15s,box-shadow .15s,background-color .15s; }
+.task-item:hover { box-shadow:var(--shadow-card); border-color:var(--color-border-focus); background:var(--color-bg-card); transform:none; }
+.task-title { font-size:14px; font-weight:550; line-height:1.5; }
+.task-col-main { align-items:flex-start; }
+.task-col-main > .input { min-width:0; }
+.task-checkbox { margin-top:1px; border-width:1.5px; }
+.task-col-star { align-self:start; }
+.task-time-cell,.task-col-time,.task-due-date { font-size:12px; }
 .task-item.completed { opacity:1; }
 .task-item.completed .task-title { color:var(--color-text-secondary); }
+.task-detail-container { box-shadow:-8px 0 24px rgba(12,24,50,.05); }
+.task-detail-panel { padding-bottom:env(safe-area-inset-bottom,0px); }
+@media(max-width:600px) { .todo-th-search { flex-basis:100%; } .todo-th-time { width:112px; } .todo-th-tag { width:96px; } }
+@media(max-width:768px) {
+  .todo-title { font-size:20px; }
+  .todo-input-bar { padding:10px 12px; gap:10px; }
+  .todo-table-header-bar { padding:8px; gap:8px; }
+  .todo-header-counter-pill { background:transparent; border:0; padding:0; }
+  .kanban-column { min-height:200px; }
+}

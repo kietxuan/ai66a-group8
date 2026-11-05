@@ -137,6 +137,7 @@ export const aiPage = {
       [
         createElement("div", { className: "flex items-center gap-sm" }, [
           createElement("span", {
+            className: "ai-workspace-mark",
             'data-icon': 'bot',
             'aria-hidden': 'true',
             style: { fontSize: "22px" },

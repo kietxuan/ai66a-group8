@@ -803,6 +803,7 @@ export class TaskListView {
     columns.forEach((col) => {
       const colEl = createElement("div", {
         className: "kanban-column",
+        dataset: { status: col.id },
         ondragover: (e) => {
           if (!col.onDropTask) return;
           e.preventDefault();
@@ -845,6 +846,7 @@ export class TaskListView {
         [
           createElement("div", { className: "flex flex-col" }, [
             createElement("div", { className: "flex items-center gap-xs" }, [
+              createElement("span", { className: "kanban-status-dot", "aria-hidden": "true" }),
               createElement("span", {
                 style: {
                   color: "var(--color-text-primary)",
@@ -904,17 +906,11 @@ export class TaskListView {
         colBody.appendChild(
           createElement("div", {
             className: "kanban-empty",
-            style: {
-              padding: "24px 8px",
-              textAlign: "center",
-              fontSize: "12px",
-              color: "var(--color-text-tertiary)",
-              border: "0",
-              borderRadius: "10px",
-              marginTop: "4px",
-            },
-            textContent: "Chưa có công việc. Kéo thả vào đây.",
-          }),
+          }, [
+            createElement("span", { className: "kanban-empty-icon", "aria-hidden": "true", innerHTML: iconMarkup("list", 22) }),
+            createElement("span", { textContent: "Chưa có công việc trong cột này" }),
+            createElement("span", { className: "kanban-empty-hint", textContent: "Kéo thả công việc vào đây" }),
+          ]),
         );
       } else {
         col.items.forEach((task) => {

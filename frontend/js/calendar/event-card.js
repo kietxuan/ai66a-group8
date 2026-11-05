@@ -23,7 +23,7 @@ export class EventCard {
     const card = createElement('div', {
       className: `event-card ${event.is_all_day ? 'all-day' : ''} ${event.is_completed ? 'completed opacity-60' : ''}`,
       style: {
-        backgroundColor: 'var(--color-bg-secondary)',
+        backgroundColor: `color-mix(in srgb, ${event.color || 'var(--color-event-default)'} 14%, var(--color-bg-card))`,
         color: 'var(--color-text-primary)',
         borderLeft: `3px solid ${event.color || 'var(--color-event-default)'}`,
         display: 'flex',
@@ -33,7 +33,7 @@ export class EventCard {
         borderRadius: '6px',
         cursor: 'pointer'
       },
-      title: 'Bấm chuột trái để chỉnh sửa đầy đủ • Bấm chuột phải để mở menu thao tác nhanh',
+      title: `${event.title}\n${formatDate(start, 'DD/MM/YYYY')} · ${timeStr}\nBấm để chỉnh sửa • Bấm chuột phải để mở thao tác nhanh`,
       onclick: (e) => {
         e.stopPropagation();
         if (card.dataset.justResized === 'true' || card.dataset.justDragged === 'true') {

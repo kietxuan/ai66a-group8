@@ -7,6 +7,7 @@ import { EventForm } from "../calendar/event-form.js";
 import { formatVietnameseDate } from "../utils/date.js";
 import { soundManager } from "../utils/sound.js";
 import { revisionOptions } from "../utils/revision.js";
+import { createIcon } from "../utils/icons.js";
 
 function uiColor(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#667085"; }
 
@@ -414,10 +415,10 @@ export const dashboardPage = {
       { className: "dash-hero-banner" },
       [
         createElement("div", { className: "dash-hero-left" }, [
-          createElement("div", {
-            style: { fontSize: "12px", fontWeight: "600", opacity: "0.9" },
-            textContent: formatVietnameseDate(businessNow(), true),
-          }),
+          createElement("div", { className: "dash-hero-date" }, [
+            createIcon("calendar-days", { size: 15 }),
+            createElement("span", { textContent: formatVietnameseDate(businessNow(), true) }),
+          ]),
           createElement("h1", {
             className: "dash-hero-greeting",
             textContent: `${greeting}, ${user.nickname || "bạn"}!`,
@@ -462,26 +463,31 @@ export const dashboardPage = {
       (breakdown.unscheduled || 0) + (breakdown.scheduled || 0);
     const kpiData = [
       {
+        tone: "todo", icon: "list",
         title: "Cần làm",
         value: `${needToDoCount}`,
         label: "Việc cần làm sắp tới",
       },
       {
+        tone: "today", icon: "sun",
         title: "Hôm nay",
         value: `${todayColumnCount}`,
         label: "Công việc & sự kiện hôm nay",
       },
       {
+        tone: "overdue", icon: "triangle-alert",
         title: "Quá hạn",
         value: `${s.overdue_count || 0}`,
         label: s.overdue_count > 0 ? "Cần xử lý ngay" : "Không có việc quá hạn",
       },
       {
+        tone: "completed", icon: "circle-check",
         title: "Đã hoàn thành",
         value: `${s.completed_tasks || 0}`,
         label: `Trên tổng số ${s.total_tasks || 0} việc (${s.completion_rate || 0}%)`,
       },
       {
+        tone: "important", icon: "star",
         title: "Quan trọng",
         value: `${s.important_pending_count || 0}`,
         label: "Việc quan trọng chưa xong",
@@ -492,12 +498,13 @@ export const dashboardPage = {
       "section",
       { className: "dash-kpi-grid" },
       kpiData.map((k) =>
-        createElement("div", { className: "dash-kpi-card" }, [
+        createElement("div", { className: "dash-kpi-card", dataset: { tone: k.tone } }, [
           createElement("div", { className: "dash-kpi-top" }, [
             createElement("span", {
               className: "dash-kpi-badge",
               textContent: k.title,
             }),
+            createElement("span", { className: "dash-kpi-icon" }, [createIcon(k.icon, { size: 18 })]),
           ]),
           createElement("div", {
             className: "dash-kpi-value",
@@ -518,7 +525,7 @@ export const dashboardPage = {
     const barCanvas = createElement("canvas", { id: "dash-weekly-bar-canvas" });
     const barChartCard = createElement(
       "div",
-      { className: "dash-panel-card" },
+      { className: "dash-panel-card dash-weekly-card" },
       [
         createElement("div", { className: "dash-panel-header" }, [
           createElement("div", {}, [
@@ -657,21 +664,25 @@ export const dashboardPage = {
 
     const quadrants = [
       {
+        tone: "today",
         title: "Công việc & sự kiện hôm nay",
         color: uiColor("--color-warning"),
         items: myDayTasks.filter((t) => !t.is_completed).slice(0, 4),
       },
       {
+        tone: "important",
         title: "Việc quan trọng",
         color: uiColor("--color-text-secondary"),
         items: impTasks.filter((t) => !t.is_completed).slice(0, 4),
       },
       {
+        tone: "overdue",
         title: "Công việc quá hạn cần xử lý",
         color: uiColor("--color-danger"),
         items: overdueTasks.slice(0, 4),
       },
       {
+        tone: "todo",
         title: "Việc cần làm sắp tới",
         color: uiColor("--color-primary"),
         items: (data?.tasks_todo || []).slice(0, 4),
@@ -680,7 +691,7 @@ export const dashboardPage = {
 
     const eisenhowerCard = createElement(
       "div",
-      { className: "dash-panel-card" },
+      { className: "dash-panel-card dash-summary-card" },
       [
         createElement("div", { className: "dash-panel-header" }, [
           createElement("div", {}, [
@@ -698,13 +709,13 @@ export const dashboardPage = {
           "div",
           { className: "eisenhower-grid" },
           quadrants.map((q) =>
-            createElement("div", { className: "eisenhower-quadrant" }, [
+            createElement("div", { className: "eisenhower-quadrant", dataset: { tone: q.tone } }, [
               createElement(
                 "div",
                 { className: "eisenhower-q-header", style: { color: q.title.includes("quá hạn") ? "var(--color-danger)" : "var(--color-text-primary)" } },
                 [
                   createElement("span", { textContent: q.title }),
-                  createElement("span", { textContent: `${q.items.length}` }),
+                  createElement("span", { className: "dash-summary-count", textContent: `${q.items.length}` }),
                 ],
               ),
               q.items.length === 0
@@ -760,7 +771,7 @@ export const dashboardPage = {
                             },
                           }),
                           createElement("span", {
-                            className: "dash-task-title truncate flex-1",
+                            className: "dash-task-title flex-1",
                             textContent: t.title,
                           }),
                         ],
@@ -838,13 +849,13 @@ export const dashboardPage = {
     const chartsRow = createElement(
       "section",
       { className: "dash-overview-grid" },
-      [eisenhowerCard, barChartCard],
+      [eisenhowerCard, listProgressCard],
     );
 
     const secondaryRow = createElement(
       "section",
       { className: "dash-secondary-grid" },
-      [donutCard, listProgressCard],
+      [barChartCard, donutCard],
     );
 
     pageEl.appendChild(heroBanner);
