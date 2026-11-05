@@ -4,6 +4,9 @@ import { ThemeManager } from "../theme.js";
 
 const PROJECT_GITHUB_URL = "https://github.com/kietxuan/ai66a-group8";
 const CONTACT_EMAIL = "planify.appvn@gmail.com";
+const FEATURE_IMAGE_VERSION = "20261106";
+const featureImageUrl = (image) =>
+  `/assets/landing/feature-${image}.png?v=${FEATURE_IMAGE_VERSION}`;
 
 export const landingPage = {
   container: null,
@@ -220,7 +223,7 @@ export const landingPage = {
             createElement("div", { className: "landing-feature-frame" }, [
               createElement("img", {
                 className: "landing-feature-image",
-                src: `/assets/landing/feature-${image}.png`,
+                src: featureImageUrl(image),
                 alt: imageAlt,
                 width: "940",
                 height: "550",
@@ -233,7 +236,7 @@ export const landingPage = {
                 textContent: "Giao diện minh họa · Dữ liệu mẫu",
               }),
               createElement("a", {
-                href: `/assets/landing/feature-${image}.png`,
+                href: featureImageUrl(image),
                 target: "_blank",
                 rel: "noopener noreferrer",
                 textContent: "Xem ảnh lớn ↗",
