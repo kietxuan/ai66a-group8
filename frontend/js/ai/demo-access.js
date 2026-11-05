@@ -122,7 +122,7 @@ export class AiDemoAccess {
       createElement('h2', { className: 'ai-payment-heading', textContent: 'Tiếp tục sử dụng Planify AI' }),
       createElement('p', { className: 'ai-payment-description', textContent: 'Hoàn tất thanh toán để tiếp tục trải nghiệm toàn bộ tính năng cao cấp.' }),
       createElement('div', { className: 'ai-payment-price' }, [
-        createElement('strong', { textContent: '$20.00' }), createElement('span', { textContent: '/ tháng' })
+        createElement('strong', { textContent: '$20.00' }), createElement('span', { textContent: '/ lần' })
       ]),
       methods,
       createElement('button', { type: 'button', className: 'ai-payment-pay', onclick: onPay }, [
