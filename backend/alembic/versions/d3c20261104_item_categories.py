@@ -9,10 +9,10 @@ branch_labels = depends_on = None
 
 
 def upgrade():
-    op.add_column("tasks", sa.Column("category", sa.String(length=50), nullable=True))
-    op.add_column("events", sa.Column("category", sa.String(length=50), nullable=True))
+    op.execute(sa.text("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS category VARCHAR(50)"))
+    op.execute(sa.text("ALTER TABLE events ADD COLUMN IF NOT EXISTS category VARCHAR(50)"))
 
 
 def downgrade():
-    op.drop_column("events", "category")
-    op.drop_column("tasks", "category")
+    op.execute(sa.text("ALTER TABLE events DROP COLUMN IF EXISTS category"))
+    op.execute(sa.text("ALTER TABLE tasks DROP COLUMN IF EXISTS category"))
