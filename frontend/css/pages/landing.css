@@ -20,7 +20,7 @@
 }
 
 .landing-container :is(a, button):focus-visible {
-  outline: 3px solid #866cf1;
+  outline: 2px solid var(--color-border-focus);
   outline-offset: 3px;
 }
 
@@ -611,3 +611,25 @@
 @media (prefers-reduced-motion: reduce) {
   .landing-button { transition: none; }
 }
+
+/* Public pages share the workspace identity, without changing their links or content. */
+:root[data-theme] .landing-container { background:var(--color-bg-secondary); color:var(--color-text-primary); }
+:root[data-theme] .landing-navbar { background:var(--color-bg-secondary); border-color:var(--color-border); backdrop-filter:none; }
+:root[data-theme] .landing-brand,:root[data-theme] .landing-title,:root[data-theme] .landing-section-heading h2,:root[data-theme] .landing-feature-card h3 { color:var(--color-text-primary); font-weight:600; }
+:root[data-theme] .landing-brand-icon { background:var(--color-accent); box-shadow:none; }
+:root[data-theme] .landing-title-highlight,:root[data-theme] .landing-eyebrow,:root[data-theme] .landing-section-kicker { color:var(--color-text-link); }
+:root[data-theme] .landing-nav-link,:root[data-theme] .landing-login-link,:root[data-theme] .landing-subtitle,:root[data-theme] .landing-feature-card p { color:var(--color-text-secondary); }
+:root[data-theme] .landing-hero,:root[data-theme] .landing-feature-visual { background:var(--color-bg-primary); }
+:root[data-theme] .landing-hero-glow { display:none; }
+:root[data-theme] .landing-button-primary { background:var(--color-accent); color:var(--color-accent-contrast); box-shadow:none; border-radius:8px; font-weight:500; }
+:root[data-theme] .landing-button-primary:hover { background:var(--color-accent-hover); transform:none; }
+:root[data-theme] .landing-feature-card,:root[data-theme] .landing-feature-frame { background:var(--color-bg-secondary); border-color:var(--color-border); box-shadow:none; }
+:root[data-theme] .landing-feature-icon { background:var(--color-bg-tertiary); color:var(--color-text-secondary); }
+:root[data-theme] .landing-theme-toggle { background:var(--color-bg-tertiary); color:var(--color-text-primary); border-color:var(--color-border); }
+/* Restrained brand color, rather than a monochrome public face. */
+:root[data-theme] .landing-hero { background:linear-gradient(160deg,var(--color-hero-end),var(--color-bg-secondary)); }
+:root[data-theme] .landing-button-primary { border-radius:10px; box-shadow:var(--shadow-brand); }
+:root[data-theme] .landing-feature-card { border-radius:16px; box-shadow:var(--shadow-card); }
+:root[data-theme] .landing-feature-label,:root[data-theme] .landing-text-link { color:var(--color-text-link); }
+:root[data-theme] .landing-feature-list li::before { color:var(--color-success); }
+:root[data-theme] .landing-feature-visual { background:var(--color-bg-well); }

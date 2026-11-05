@@ -8,6 +8,7 @@
 - To Do: Kanban theo trạng thái, danh sách tùy chỉnh, tìm kiếm, đánh dấu quan trọng, bước con, thời gian và lặp công việc.
 - Calendar: Tháng / Tuần / Ngày / Lịch biểu; kéo thả, resize và sự kiện lặp. Task có ngày dùng chung dữ liệu với To Do.
 - Dashboard, chat AI/workspace và NLP local, nhắc lịch, xuất ICS/JSON.
+- Mỗi lần rời AI sang trang khác rồi quay lại, giao diện gói $20/tháng hiển thị phương thức thanh toán; bấm “Thanh toán $20.00” rồi xác nhận để vào AI. Đây chỉ là giao diện mô phỏng: không thu tiền, không có cổng thanh toán hay ô nhập thông tin thẻ. Xác nhận chỉ có hiệu lực cho lần truy cập AI hiện tại, không lưu vào trình duyệt; tải lại trang hoặc đăng nhập lại cũng sẽ hiện thông báo.
 - Sự kiện trong bảng events giữ định danh riêng; AI không tạo thêm bản sao task không liên kết.
 
 Không có đồng bộ tài khoản Google/Outlook. Pomodoro đã được bỏ khỏi khởi tạo app. Không coi các tính năng được nhắc trong tài liệu lịch sử là chức năng đang bật.

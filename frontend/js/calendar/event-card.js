@@ -23,7 +23,9 @@ export class EventCard {
     const card = createElement('div', {
       className: `event-card ${event.is_all_day ? 'all-day' : ''} ${event.is_completed ? 'completed opacity-60' : ''}`,
       style: {
-        backgroundColor: event.color || (isAutoComplete ? '#4F46E5' : '#0B8043'),
+        backgroundColor: `color-mix(in srgb, ${event.color || 'var(--color-event-default)'} 14%, var(--color-bg-card))`,
+        color: 'var(--color-text-primary)',
+        borderLeft: `3px solid ${event.color || 'var(--color-event-default)'}`,
         display: 'flex',
         alignItems: 'center',
         gap: '4px',
@@ -31,7 +33,7 @@ export class EventCard {
         borderRadius: '6px',
         cursor: 'pointer'
       },
-      title: 'Bấm chuột trái để chỉnh sửa đầy đủ • Bấm chuột phải để mở menu thao tác nhanh',
+      title: `${event.title}\n${formatDate(start, 'DD/MM/YYYY')} · ${timeStr}\nBấm để chỉnh sửa • Bấm chuột phải để mở thao tác nhanh`,
       onclick: (e) => {
         e.stopPropagation();
         if (card.dataset.justResized === 'true' || card.dataset.justDragged === 'true') {
@@ -79,7 +81,7 @@ export class EventCard {
     if (!event.is_all_day) {
       card.appendChild(createElement('span', {
         className: 'event-card-time',
-        style: { fontSize: '10.5px', opacity: '0.92', fontWeight: '700', flexShrink: '0' },
+        style: { fontSize: '12px', opacity: '0.92', fontWeight: '500', flexShrink: '0' },
         textContent: formatDate(start, 'HH:mm')
       }));
     }
@@ -89,7 +91,7 @@ export class EventCard {
       style: {
         textDecoration: event.is_completed ? 'line-through' : 'none',
         fontWeight: '600',
-        fontSize: '11.5px',
+        fontSize: '12px',
         flex: '1'
       },
       textContent: event.title

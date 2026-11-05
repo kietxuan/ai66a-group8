@@ -261,7 +261,7 @@ export class AgendaView {
                 flexShrink: "0",
                 marginLeft: "6px",
                 marginRight: "2px",
-                boxShadow: `0 0 0 2px var(--color-bg-secondary), 0 0 6px ${item.color}88`,
+                boxShadow: 'none',
               },
               title: `Thẻ phân loại (${item.color})`,
             }));

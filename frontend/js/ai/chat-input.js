@@ -45,7 +45,7 @@ export class ChatInput {
     }
     if (this.sendBtnEl) {
       this.sendBtnEl.disabled = disabled;
-      this.sendBtnEl.textContent = disabled ? '...' : 'Gửi';
+      this.sendBtnEl.textContent = disabled ? 'Đang gửi...' : 'Gửi';
     }
   }
 

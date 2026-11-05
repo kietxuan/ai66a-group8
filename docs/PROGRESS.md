@@ -44,6 +44,15 @@
 - Kiểm tra UI trực tiếp chưa thực hiện được: browser access host không khả dụng; Computer Use dừng khi không xác minh được URL hiện tại của Edge. Chưa xác nhận render/CSS trực tiếp trong trình duyệt.
 - Phạm vi: bugfix trên source Vanilla JS sau import; không đổi stack, schema hoặc nghiệp vụ, không xác nhận lại toàn bộ acceptance của source import.
 
+## Local environment setup — 2026-11-02
+
+- Theo yêu cầu user, tạo .env ở root cho Docker Compose, không commit/push file này. Không đổi .env trong folder todo-list-pro gốc.
+- Dùng project ai66a-group8-local để tách network/volumes khỏi project cũ; frontend 3000, backend 8000, PostgreSQL host 15432, Redis host 16379. Cổng 5432 đang có PostgreSQL nên không dùng lại.
+- Tạo JWT secret, admin password và mật khẩu PostgreSQL/Redis ngẫu nhiên, không ghi giá trị vào tài liệu/log. Admin local dùng admin@example.com; mật khẩu xem trong .env.
+- AI_API_KEY trống vì file nguồn chưa có key thật; giữ model của source và dùng local NLP fallback. Gmail SMTP chưa cấu hình; email OTP/nhắc lịch thật chưa được xác minh.
+- docker compose config --quiet PASS; resolved config xác nhận backend dùng hostname db-postgre/redis trong Docker, ports và secrets tham chiếu nhất quán. git check-ignore xác nhận .env ignored và không tracked.
+- Chỉ đọc trạng thái Docker/cổng, không start/build containers, migrate/reset database, gửi email hoặc gọi API provider. Lệnh tiếp theo user chạy từ root: docker compose up -d --build. Không tuyên bố app đã chạy chỉ từ config validation.
+
 ## Source import hiện tại - 2026-11-02
 
 - User xác nhận thay source trên origin/main bằng project trong todo-list-pro/todo-list, giữ tài liệu cũ và lịch sử Git.

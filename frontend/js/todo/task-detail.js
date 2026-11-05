@@ -98,7 +98,7 @@ export class TaskDetail {
         className: 'flex items-center gap-xs',
         style: { fontSize: '14px', fontWeight: '700', color: 'var(--color-text-primary)' }
       }, [
-        createElement('span', { textContent: '📋' }),
+        createElement('span', { 'data-icon': 'list', 'aria-hidden': 'true' }),
         createElement('span', { textContent: 'Chi tiết công việc' })
       ]),
       createElement('button', {
@@ -127,8 +127,8 @@ export class TaskDetail {
         width: '22px',
         height: '22px',
         borderRadius: '50%',
-        border: t.is_completed ? '2px solid var(--color-success, #10B981)' : '2px solid var(--color-text-secondary)',
-        backgroundColor: t.is_completed ? 'var(--color-success, #10B981)' : 'transparent',
+        border: t.is_completed ? '2px solid var(--color-success-solid, #0f766e)' : '2px solid var(--color-text-secondary)',
+        backgroundColor: t.is_completed ? 'var(--color-success-solid, #0f766e)' : 'transparent',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -143,8 +143,8 @@ export class TaskDetail {
           t.is_completed = nextState;
           if (nextState) soundManager.playTaskComplete();
           titleInput.style.textDecoration = nextState ? 'line-through' : 'none';
-          completeCheckbox.style.borderColor = nextState ? 'var(--color-success, #10B981)' : 'var(--color-text-secondary)';
-          completeCheckbox.style.backgroundColor = nextState ? 'var(--color-success, #10B981)' : 'transparent';
+          completeCheckbox.style.borderColor = nextState ? 'var(--color-success-solid, #0f766e)' : 'var(--color-text-secondary)';
+          completeCheckbox.style.backgroundColor = nextState ? 'var(--color-success-solid, #0f766e)' : 'transparent';
           if (nextState) {
             completeCheckbox.replaceChildren(
               createElement('span', { style: { color: '#ffffff', fontSize: '12px', fontWeight: 'bold', lineHeight: '1' }, textContent: '✓' })

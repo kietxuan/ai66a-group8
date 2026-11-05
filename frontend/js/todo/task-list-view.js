@@ -1,3 +1,4 @@
+import { iconMarkup } from "../utils/icons.js";
 import { businessNow } from "../utils/date.js";
 import { createElement } from "../utils/dom.js";
 import {
@@ -254,7 +255,7 @@ export class TaskListView {
     const searchInput = createElement("input", {
       type: "text",
       className: "todo-filter-search-input",
-      placeholder: "🔍 Tìm kiếm việc cần làm...",
+      placeholder: "Tìm kiếm việc cần làm...",
       value: this.searchQuery || "",
       oninput: (e) => {
         this.searchQuery = e.target.value;
@@ -506,18 +507,18 @@ export class TaskListView {
           {
             className: "task-tag-badge",
             style: {
-              backgroundColor: `${activeCat.color}20`,
-              color: activeCat.color,
-              border: `1px solid ${activeCat.color}60`,
+              backgroundColor: "var(--color-bg-tertiary)",
+              color: "var(--color-text-secondary)",
+              border: "1px solid var(--color-border)",
               padding: "1px 6px",
-              fontSize: "11px",
+              fontSize: "12px",
               gap: "4px",
             },
           },
           [
             createElement("span", {
-              style: { display: "inline-flex", alignItems: "center" },
-              innerHTML: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
+              style: { display: "inline-flex", alignItems: "center", color: activeCat.color },
+              innerHTML: iconMarkup("tag", 10),
             }),
             createElement("span", { textContent: activeCat.name }),
           ],
@@ -635,7 +636,7 @@ export class TaskListView {
     const columns = [
       {
         id: "todo",
-        title: "📌 Cần làm",
+        title: "Cần làm",
         subtitle: "Chưa đặt giờ & tương lai",
         color: "#6366F1",
         items: this.sortTasks(colTodoItems, false),
@@ -670,7 +671,7 @@ export class TaskListView {
       },
       {
         id: "today",
-        title: "☀️ Hôm nay",
+        title: "Hôm nay",
         subtitle: "Công việc trong hôm nay",
         color: "#F59E0B",
         items: this.sortTasks(colTodayItems, false),
@@ -695,7 +696,7 @@ export class TaskListView {
       },
       {
         id: "overdue",
-        title: "⚠️ Quá hạn",
+        title: "Quá hạn",
         subtitle: "Đã quá thời gian quy định",
         color: "#EF4444",
         items: this.sortTasks(colOverdueItems, false),
@@ -742,7 +743,7 @@ export class TaskListView {
       },
       {
         id: "completed",
-        title: "✅ Hoàn thành",
+        title: "Hoàn thành",
         subtitle: "Các việc đã xong",
         color: "#10B981",
         items: this.sortTasks(colCompletedItems, true),
@@ -802,6 +803,7 @@ export class TaskListView {
     columns.forEach((col) => {
       const colEl = createElement("div", {
         className: "kanban-column",
+        dataset: { status: col.id },
         ondragover: (e) => {
           if (!col.onDropTask) return;
           e.preventDefault();
@@ -837,17 +839,18 @@ export class TaskListView {
         {
           className: "kanban-col-header",
           style: {
-            borderBottom: `2px solid ${col.color}40`,
+            borderBottom: "0",
             paddingBottom: "8px",
           },
         },
         [
           createElement("div", { className: "flex flex-col" }, [
             createElement("div", { className: "flex items-center gap-xs" }, [
+              createElement("span", { className: "kanban-status-dot", "aria-hidden": "true" }),
               createElement("span", {
                 style: {
-                  color: col.color,
-                  fontWeight: "800",
+                  color: "var(--color-text-primary)",
+                  fontWeight: "600",
                   fontSize: "14px",
                 },
                 textContent: col.title,
@@ -858,8 +861,9 @@ export class TaskListView {
               }),
             ]),
             createElement("span", {
+              className: "kanban-subtitle",
               style: {
-                fontSize: "11px",
+                fontSize: "12px",
                 color: "var(--color-text-secondary)",
                 fontWeight: "500",
               },
@@ -874,7 +878,7 @@ export class TaskListView {
                   width: "26px",
                   height: "26px",
                   fontSize: "15px",
-                  color: col.color,
+                  color: "var(--color-text-secondary)",
                 },
                 title: `Thêm mới vào cột ${col.title}`,
                 textContent: "＋",
@@ -885,7 +889,7 @@ export class TaskListView {
                   type: "button",
                   className: "btn btn-secondary btn-xs",
                   style: {
-                    fontSize: "10.5px",
+                    fontSize: "12px",
                     padding: "3px 7px",
                     whiteSpace: "nowrap",
                     flexShrink: "0",
@@ -901,17 +905,12 @@ export class TaskListView {
       if (col.items.length === 0) {
         colBody.appendChild(
           createElement("div", {
-            style: {
-              padding: "28px 12px",
-              textAlign: "center",
-              fontSize: "12px",
-              color: "var(--color-text-tertiary)",
-              border: "1px dashed var(--color-border-light)",
-              borderRadius: "10px",
-              marginTop: "4px",
-            },
-            textContent: "Trống - Kéo thả việc vào đây",
-          }),
+            className: "kanban-empty",
+          }, [
+            createElement("span", { className: "kanban-empty-icon", "aria-hidden": "true", innerHTML: iconMarkup("list", 22) }),
+            createElement("span", { textContent: "Chưa có công việc trong cột này" }),
+            createElement("span", { className: "kanban-empty-hint", textContent: "Kéo thả công việc vào đây" }),
+          ]),
         );
       } else {
         col.items.forEach((task) => {

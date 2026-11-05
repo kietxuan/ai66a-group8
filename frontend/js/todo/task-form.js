@@ -25,6 +25,8 @@ export class TaskForm {
 
     const inputRow = createElement('div', { className: 'todo-input-bar' });
     const addIcon = createElement('span', {
+      'data-icon': 'plus',
+      'aria-hidden': 'true',
       style: {
         fontSize: '18px',
         fontWeight: 'bold',

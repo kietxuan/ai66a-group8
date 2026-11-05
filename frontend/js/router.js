@@ -5,27 +5,27 @@ import { Modal } from './components/modal.js';
 
 const PAGE_META = {
   dashboard: {
-    title: "Dashboard",
+    title: "Tổng quan",
     subtitle: "Biểu đồ thống kê & tổng quan tiến độ công việc",
   },
   todo: {
-    title: "To Do",
-    subtitle: "Bảng quản lý chung các công việc & dự án",
+    title: "Công việc",
+    subtitle: "Danh sách và bảng công việc",
   },
   calendar: {
-    title: "Calendar",
+    title: "Lịch",
     subtitle: "Lịch biểu đồng bộ toàn bộ Công việc",
   },
   ai: {
-    title: "Trợ lý AI Agent",
-    subtitle: "Điều phối toàn bộ công việc & lịch trình bằng ngôn ngữ tự nhiên",
+    title: "Trợ lý AI",
+    subtitle: "Hỗ trợ công việc và lịch biểu",
   },
   guide: {
     title: "Hướng dẫn sử dụng",
     subtitle: "Cẩm nang thao tác & mẹo sử dụng Planify",
   },
   settings: {
-    title: "Cài đặt hệ thống",
+    title: "Cài đặt",
     subtitle:
       "Giao diện Sáng/Tối, thông báo nhắc lịch Email & bảo mật tài khoản",
   },
@@ -168,8 +168,8 @@ export class Router {
       if (titleEl) titleEl.textContent = meta.title;
       if (subEl) subEl.textContent = meta.subtitle;
 
-      // Update desktop sidebar & mobile bottom nav active state
-      document.querySelectorAll(".nav-item, .mobile-nav-item").forEach((el) => {
+      // One sidebar serves desktop navigation and the mobile drawer.
+      document.querySelectorAll(".nav-item").forEach((el) => {
         el.classList.toggle("active", el.dataset.page === path);
       });
 

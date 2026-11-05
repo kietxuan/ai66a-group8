@@ -1,0 +1,26 @@
+.app-icon {
+  display: inline-block;
+  width: var(--icon-size, 18px);
+  height: var(--icon-size, 18px);
+  flex: 0 0 auto;
+  vertical-align: -0.16em;
+  background-color: currentColor;
+  -webkit-mask: var(--icon-url) center / contain no-repeat;
+  mask: var(--icon-url) center / contain no-repeat;
+  pointer-events: none;
+}
+.icon-spin { animation: icon-spin 0.85s linear infinite; }
+@keyframes icon-spin { to { transform: rotate(360deg); } }
+.visually-hidden {
+  position: absolute !important; width: 1px !important; height: 1px !important;
+  padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important;
+}
+.nav-icon .app-icon, .logo-icon .app-icon { --icon-size: 20px !important; }
+.btn-icon, .dropdown-icon, .toast-icon { align-items: center; justify-content: center; }
+.btn-icon:not(.mobile-only) { display: inline-flex; }
+[role="status"] > .icon-spin { margin: 4px; }
+.empty-state[role="status"] { display: flex; align-items: center; justify-content: center; min-height: 160px; color: var(--color-accent); }
+.empty-state[role="status"] > .icon-spin { --icon-size: 26px !important; }
+button > .app-icon + .visually-hidden { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .icon-spin { animation-duration: 2s; } }

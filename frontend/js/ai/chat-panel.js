@@ -1,4 +1,5 @@
 import { createElement } from '../utils/dom.js';
+import { createIcon } from '../utils/icons.js';
 import { api } from '../api.js';
 import { Toast } from '../components/toast.js';
 import { store } from '../store.js';
@@ -198,10 +199,9 @@ export class ChatPanel {
       className: 'ai-message assistant'
     }, [
       createElement('div', { className: 'ai-avatar', textContent: '🤖' }),
-      createElement('div', { className: 'ai-bubble ai-typing-indicator' }, [
-        createElement('div', { className: 'ai-typing-dot' }),
-        createElement('div', { className: 'ai-typing-dot' }),
-        createElement('div', { className: 'ai-typing-dot' })
+      createElement('div', { className: 'ai-bubble ai-typing-indicator', role: 'status' }, [
+        createIcon('loader-circle', { spin: true }),
+        createElement('span', { className: 'visually-hidden', textContent: 'AI đang xử lý yêu cầu' })
       ])
     ]);
 

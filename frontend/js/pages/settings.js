@@ -1,3 +1,4 @@
+import { iconMarkup } from "../utils/icons.js";
 import { createElement } from "../utils/dom.js";
 import { store } from "../store.js";
 import { ThemeManager } from "../theme.js";
@@ -7,14 +8,29 @@ import { Toast } from "../components/toast.js";
 import { api } from "../api.js";
 import { buildCalendarIcs } from "../utils/ical.js";
 
+function themePreview(theme) {
+  return createElement('span', { className: `theme-preview theme-preview-${theme}`, 'aria-hidden': 'true' }, [
+    createElement('span', { className: 'theme-preview-sidebar' }),
+    createElement('span', { className: 'theme-preview-content' }, [
+      createElement('span', { className: 'theme-preview-heading' }),
+      createElement('span', { className: 'theme-preview-cards' }),
+      createElement('span', { className: 'theme-preview-line' }),
+    ]),
+  ]);
+}
+
 export const settingsPage = {
   container: null,
   otpCountdownInterval: null,
 
   async render(container) {
+    this.themeUnsubscribe?.();
+    this.themeUnsubscribe = null;
     const generation = (this.generation = (this.generation || 0) + 1);
     this.container = container;
     container.innerHTML = "";
+    const loading = createElement('div', { className: 'empty-state', role: 'status', textContent: 'Đang tải cài đặt…' });
+    container.appendChild(loading);
 
     const page = createElement("div", { className: "settings-page" });
     const inner = createElement("div", { className: "settings-inner" });
@@ -65,7 +81,7 @@ export const settingsPage = {
           flexShrink: "0",
           lineHeight: "1",
         },
-        innerHTML: `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" fill="currentColor" fill-opacity="0.22"></path><circle cx="7" cy="7" r="1.5" fill="currentColor"></circle></svg>`,
+        innerHTML: iconMarkup("tag", size),
       });
     }
 
@@ -448,20 +464,18 @@ export const settingsPage = {
         }),
         createElement("div", { className: "theme-options-grid" }, [
           createElement(
-            "div",
+            "button",
             {
+              type: "button",
+              dataset: { themeOption: "light" },
+              "aria-pressed": String(currentTheme !== "dark"),
               className: `theme-card ${currentTheme !== "dark" ? "active" : ""}`,
               onclick: () => {
                 ThemeManager.apply("light", true);
-                store.set("theme", "light");
-                settingsPage.render(container);
               },
             },
             [
-              createElement("span", {
-                style: { fontSize: "26px" },
-                textContent: "☀",
-              }),
+              themePreview('light'),
               createElement("span", {
                 style: { fontWeight: "700" },
                 textContent: "Chủ đề Sáng (Light)",
@@ -477,20 +491,18 @@ export const settingsPage = {
             ],
           ),
           createElement(
-            "div",
+            "button",
             {
+              type: "button",
+              dataset: { themeOption: "dark" },
+              "aria-pressed": String(currentTheme === "dark"),
               className: `theme-card ${currentTheme === "dark" ? "active" : ""}`,
               onclick: () => {
                 ThemeManager.apply("dark", true);
-                store.set("theme", "dark");
-                settingsPage.render(container);
               },
             },
             [
-              createElement("span", {
-                style: { fontSize: "26px" },
-                textContent: "☾",
-              }),
+              themePreview('dark'),
               createElement("span", {
                 style: { fontWeight: "700" },
                 textContent: "Chủ đề Tối (Dark)",
@@ -1162,18 +1174,34 @@ export const settingsPage = {
       ],
     );
 
-    inner.appendChild(categorySection);
+    inner.appendChild(createElement('div', { className: 'settings-heading' }, [
+      createElement('h1', { textContent: 'Cài đặt' }),
+      createElement('p', { textContent: 'Cá nhân hóa giao diện, tài khoản và cách nhận thông báo.' }),
+    ]));
     inner.appendChild(themeSection);
+    inner.appendChild(categorySection);
     inner.appendChild(notificationSection);
     inner.appendChild(accountSection);
     inner.appendChild(exportSection);
     inner.appendChild(securitySection);
     inner.appendChild(logoutSection);
     page.appendChild(inner);
+    loading.remove();
     container.appendChild(page);
+    const syncThemeCards = (theme) => {
+      themeSection.querySelectorAll('[data-theme-option]').forEach(card => {
+        const active = card.dataset.themeOption === theme;
+        card.classList.toggle('active', active);
+        card.setAttribute('aria-pressed', String(active));
+      });
+    };
+    syncThemeCards(store.get('theme'));
+    this.themeUnsubscribe = store.on('theme', syncThemeCards);
   },
 
   destroy() {
+    this.themeUnsubscribe?.();
+    this.themeUnsubscribe = null;
     this.generation = (this.generation || 0) + 1;
     if (this.otpCountdownInterval) {
       clearInterval(this.otpCountdownInterval);

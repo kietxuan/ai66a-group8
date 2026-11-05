@@ -1,4 +1,5 @@
 import { businessNow } from '../utils/date.js';
+import { iconMarkup } from '../utils/icons.js';
 import { createElement } from '../utils/dom.js';
 import { api } from '../api.js';
 import { store } from '../store.js';
@@ -9,6 +10,7 @@ import { SmartListsSidebar, HOUSE_SVG, INFINITY_SVG, LIST_3BARS_SVG, TabSync, is
 import { TaskListView } from '../todo/task-list-view.js';
 import { TaskForm } from '../todo/task-form.js';
 import { TaskDetail } from '../todo/task-detail.js';
+import { initTodoSidebarToggle } from '../todo/sidebar-toggle.js';
 import { revisionOptions } from '../utils/revision.js';
 import { isScheduleDismissal } from '../utils/api-error.js';
 
@@ -85,7 +87,7 @@ export const todoPage = {
   container: null,
   tasks: [],
   activeListId: "board",
-  activeListName: "All",
+  activeListName: "Tất cả",
   activeListIcon: HOUSE_SVG,
   activeTask: null,
   sortBy: "time",
@@ -113,7 +115,7 @@ export const todoPage = {
       ].includes(String(saved))
     ) {
       this.activeListId = "board";
-      this.activeListName = "All";
+      this.activeListName = "Tất cả";
       this.activeListIcon = HOUSE_SVG;
       store.set("activeTodoList", "board");
       return;
@@ -123,7 +125,7 @@ export const todoPage = {
       const lists = store.get("taskLists") || [];
       const defaultList = lists.find((l) => l.is_default || l.name?.toLowerCase() === "tasks");
       this.activeListId = defaultList ? defaultList.id : "tasks";
-      this.activeListName = "Tasks";
+      this.activeListName = "Công việc";
       this.activeListIcon = INFINITY_SVG;
       return;
     }
@@ -138,7 +140,7 @@ export const todoPage = {
       const matched = lists.find((l) => l.id === numId);
       if (matched) {
         const isTasks = isDefaultTasksList(matched.id, lists);
-        this.activeListName = matched.name;
+        this.activeListName = isTasks ? "Công việc" : matched.name;
         this.activeListIcon = isTasks ? INFINITY_SVG : (matched.icon && matched.icon !== '☰' ? matched.icon : LIST_3BARS_SVG);
       } else {
         this.activeListName = "Danh sách công việc";
@@ -146,7 +148,7 @@ export const todoPage = {
       }
     } else {
       this.activeListId = "board";
-      this.activeListName = "All";
+      this.activeListName = "Tất cả";
       this.activeListIcon = HOUSE_SVG;
     }
   },
@@ -204,13 +206,16 @@ export const todoPage = {
       onclick: () => this.startInlineTitleEdit(titleEl)
     });
 
+    const sidebarToggle = createElement('button', {
+      type: 'button',
+      id: 'btn-todo-sidebar-toggle',
+      className: 'btn-icon todo-sidebar-toggle',
+      innerHTML: iconMarkup('panel-left'),
+      'aria-controls': 'todo-sub-sidebar',
+      title: 'Thu gọn danh sách To Do',
+    });
     const titleRow = createElement("div", { className: "todo-title-row" }, [
-      createElement("button", {
-        className: "btn-icon mobile-only",
-        textContent: "☰",
-        title: "Mở danh sách To Do",
-        onclick: () => sidebarEl.classList.toggle("mobile-open"),
-      }),
+      sidebarToggle,
       iconBtn,
       titleEl
     ]);
@@ -249,6 +254,7 @@ export const todoPage = {
     page.appendChild(mainEl);
     page.appendChild(detailEl);
     container.appendChild(page);
+    this.sidebarToggleCleanup = initTodoSidebarToggle({ page, sidebar: sidebarEl, button: sidebarToggle });
 
     // Initialize sub-components
     this.sidebarComponent = new SmartListsSidebar({
@@ -537,19 +543,19 @@ export const todoPage = {
         this.sidebarComponent.listsLoaded = true;
         this.listsNeedRefresh = false;
         if (typeof this.activeListId === 'number' && !lists.some(l => l.id === this.activeListId)) {
-          this.switchList('board', 'All', HOUSE_SVG);
+          this.switchList('board', 'Tất cả', HOUSE_SVG);
         }
       }
 
       if (String(this.activeListId) === "board") {
-        this.activeListName = "All";
+        this.activeListName = "Tất cả";
         this.activeListIcon = HOUSE_SVG;
         const iconEl = document.getElementById("todo-header-icon");
         const titleEl = document.getElementById("todo-header-title");
         renderHeaderIcon(iconEl, this.activeListIcon);
         if (titleEl) titleEl.textContent = this.activeListName;
       } else if (isDefaultTasksList(this.activeListId, store.get("taskLists"))) {
-        this.activeListName = "Tasks";
+        this.activeListName = "Công việc";
         this.activeListIcon = INFINITY_SVG;
         const iconEl = document.getElementById("todo-header-icon");
         const titleEl = document.getElementById("todo-header-title");
@@ -834,6 +840,8 @@ export const todoPage = {
   },
 
   destroy() {
+    this.sidebarToggleCleanup?.();
+    this.sidebarToggleCleanup = null;
     this.savedFilters = this.taskListComponent?.getFilterState();
     this.requestGeneration = (this.requestGeneration || 0) + 1;
     if (this.keyHandler) {

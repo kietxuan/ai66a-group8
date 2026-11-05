@@ -61,13 +61,16 @@ export class MonthView {
       const isTodayCol = isCurrentMonthYear && idx === todayWeekdayIdx;
       return createElement('span', {
         style: isTodayCol ? {
-          color: '#6366F1',
-          fontWeight: '800',
-          textDecoration: 'underline',
+          color: 'var(--color-text-secondary)',
+          fontWeight: '600',
+          textDecoration: 'none',
           textUnderlineOffset: '4px'
         } : {},
-        textContent: isTodayCol ? `📍 ${label}` : label
-      });
+        title: label
+      }, [
+        createElement('span', { className: 'month-weekday-full', textContent: label }),
+        createElement('span', { className: 'month-weekday-short', textContent: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][idx] })
+      ]);
     }));
     // Lịch Tháng hiển thị vừa vặn không gian, không cuộn chuột chuyển tháng
     const monthGrid = createElement('div', {
@@ -87,15 +90,15 @@ export class MonthView {
         const dayCell = createElement('div', {
           className: `month-day-cell ${isTod ? 'is-today-cell' : ''} ${cell.isCurrentMonth ? '' : 'other-month-cell'}`,
           style: {
-            borderRight: isTod ? '2px solid #6366F1' : '1px solid var(--color-border-light)',
-            borderBottom: isTod ? '2px solid #6366F1' : '1px solid var(--color-border-light)',
-            borderTop: isTod ? '2px solid #6366F1' : 'none',
-            borderLeft: isTod ? '2px solid #6366F1' : 'none',
+            borderRight: '1px solid var(--color-border-light)',
+            borderBottom: '1px solid var(--color-border-light)',
+            borderTop: 'none',
+            borderLeft: 'none',
             padding: '6px',
             backgroundColor: isTod
-              ? 'rgba(99, 102, 241, 0.16)'
+              ? 'var(--color-today-bg)'
               : (cell.isCurrentMonth ? 'var(--color-bg-primary)' : 'var(--color-bg-secondary)'),
-            boxShadow: isTod ? 'inset 0 0 0 1px rgba(99, 102, 241, 0.35), 0 4px 14px rgba(99, 102, 241, 0.16)' : 'none',
+            boxShadow: 'none',
             display: 'flex',
             flexDirection: 'column',
             minHeight: '0',
@@ -178,34 +181,19 @@ export class MonthView {
         const dayNumber = createElement('div', {
           style: {
             fontSize: '12.5px',
-            fontWeight: isTod ? '800' : (cell.isCurrentMonth ? '700' : '500'),
+            fontWeight: '500',
             color: isTod ? '#ffffff' : (cell.isCurrentMonth ? 'var(--color-text-primary)' : 'var(--color-text-muted)'),
             width: '26px',
             height: '26px',
             lineHeight: '26px',
             textAlign: 'center',
             borderRadius: '999px',
-            backgroundColor: isTod ? '#6366F1' : 'transparent',
-            boxShadow: isTod ? '0 0 0 3px rgba(99, 102, 241, 0.32)' : 'none'
+            backgroundColor: isTod ? 'var(--color-accent)' : 'transparent',
+            boxShadow: 'none'
           },
           textContent: String(cell.date.getDate())
         });
         dayHeaderRow.appendChild(dayNumber);
-
-        if (isTod) {
-          dayHeaderRow.appendChild(createElement('span', {
-            style: {
-              fontSize: '10px',
-              fontWeight: '800',
-              padding: '2px 7px',
-              borderRadius: '999px',
-              backgroundColor: '#6366F1',
-              color: '#ffffff',
-              letterSpacing: '0.04em'
-            },
-            textContent: 'HÔM NAY'
-          }));
-        }
 
         dayCell.appendChild(dayHeaderRow);
 

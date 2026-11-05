@@ -1,3 +1,4 @@
+import { iconMarkup } from "../utils/icons.js";
 import { businessNow } from "../utils/date.js";
 import { createElement } from "../utils/dom.js";
 import { isToday, formatDate } from "../utils/date.js";
@@ -71,7 +72,6 @@ export class TaskItem {
 
     const item = createElement("div", {
       className: `task-item ${isCompleted ? "completed" : ""} ${isActiveDetail ? "active-task-open" : ""}`,
-      style: cat?.color ? { borderLeft: `3px solid ${cat.color}` } : {},
       draggable: "true",
       dataset: { taskId: task.id },
       title: isActiveDetail
@@ -169,7 +169,7 @@ export class TaskItem {
 
     const titleEl = createElement("span", {
       className: "task-title",
-      title: "Nhấp đúp chuột trái để sửa nhanh tiêu đề",
+      title: `${task.title}\nNhấp đúp chuột trái để sửa nhanh tiêu đề`,
       textContent: task.title,
       ondblclick: (e) => {
         e.stopPropagation();
@@ -282,9 +282,9 @@ export class TaskItem {
         {
           className: "task-tag-badge",
           style: {
-            backgroundColor: `${cat.color}18`,
-            color: cat.color,
-            border: `1px solid ${cat.color}55`,
+            backgroundColor: `color-mix(in srgb, ${cat.color} 9%, var(--color-bg-card))`,
+            color: "var(--color-text-secondary)",
+            border: "1px solid var(--color-border)",
           },
           title: `Phân loại: ${cat.name}`,
         },
@@ -292,11 +292,12 @@ export class TaskItem {
           createElement("span", {
             className: "task-tag-icon",
             style: {
+              color: cat.color,
               display: "inline-flex",
               alignItems: "center",
               marginRight: "2px",
             },
-            innerHTML: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
+            innerHTML: iconMarkup("tag", 11),
           }),
           createElement("span", {
             className: "task-tag-text",

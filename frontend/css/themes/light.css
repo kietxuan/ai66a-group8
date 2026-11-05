@@ -1,63 +1,59 @@
 [data-theme="light"] {
-  /* ===== BACKGROUNDS ===== */
-  --color-bg-primary: #f8fafc;
+  --color-bg-primary: #f5f7fb;
   --color-bg-secondary: #ffffff;
-  --color-bg-tertiary: #f1f5f9;
-  --color-bg-hover: #f1f5f9;
-  --color-bg-active: #e2e8f0;
-  --color-bg-selected: #e0e7ff;
-  --color-bg-sidebar: #ffffff;
+  --color-bg-tertiary: #eef2f8;
+  --color-bg-hover: #f0f2fb;
+  --color-bg-active: #e5e9f5;
+  --color-bg-selected: #eeedff;
+  --color-bg-sidebar: #fafbff;
   --color-bg-card: #ffffff;
   --color-surface: #ffffff;
   --color-bg-input: #ffffff;
   --color-bg-modal: #ffffff;
-
-  /* ===== TEXT COLORS ===== */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-tertiary: #64748b;
-  --color-text-muted: #94a3b8;
+  --color-text-primary: #172033;
+  --color-text-secondary: #5d6b82;
+  --color-text-tertiary: #65738a;
+  --color-text-muted: #65738a;
   --color-text-inverse: #ffffff;
   --color-text-link: #4f46e5;
-
-  /* ===== BORDER COLORS ===== */
-  --color-border: #e2e8f0;
-  --color-border-light: #e2e8f0;
-  --color-border-focus: #4f46e5;
-
-  /* ===== ACCENT & PRIMARY COLORS (Planify Indigo) ===== */
+  --color-border: #dfe5ef;
+  --color-border-light: #e8edf5;
+  --color-border-focus: #635bdf;
   --color-accent: #4f46e5;
   --color-accent-hover: #4338ca;
   --color-accent-active: #3730a3;
-  --color-accent-light: #eef2ff;
+  --color-accent-light: #eeedff;
   --color-accent-contrast: #ffffff;
   --color-primary: #4f46e5;
-  --color-primary-light: #eef2ff;
-  --shadow-xs: 0 1px 3px rgba(15, 23, 42, 0.06);
-
-  /* ===== SEMANTIC STATUS ===== */
-  --color-success: #16a34a;
-  --color-success-bg: #f0fdf4;
-  --color-warning: #d97706;
-  --color-warning-bg: #fffbeb;
-  --color-danger: #dc2626;
-  --color-danger-bg: #fef2f2;
-  --color-info: #0284c7;
-  --color-info-bg: #f0f9ff;
-
-  /* ===== SPECIAL HIGHLIGHTS ===== */
-  --color-star: #f59e0b;
+  --color-primary-light: #eeedff;
+  --color-success: #0f766e;
+  --color-success-bg: #e9f7f2;
+  --color-warning: #986014;
+  --color-warning-bg: #fff5df;
+  --color-danger: #bd3545;
+  --color-danger-bg: #fff0f1;
+  --color-info: #3b5fc0;
+  --color-info-bg: #edf3ff;
+  --color-star: #986014;
   --color-today: #4f46e5;
-  --color-today-bg: #eef2ff;
-  --color-overdue: #dc2626;
-
-  /* ===== CALENDAR GRID ===== */
-  --color-grid-line: #e2e8f0;
-  --color-grid-line-half: #f1f5f9;
-  --color-time-indicator: #ef4444;
+  --color-today-bg: #f0f1ff;
+  --color-overdue: #bd3545;
+  --color-grid-line: #e4e9f2;
+  --color-grid-line-half: #f0f3f9;
+  --color-time-indicator: #bd3545;
   --color-event-default: #4f46e5;
-
-  /* ===== SCROLLBAR ===== */
-  --color-scrollbar: #cbd5e1;
-  --color-scrollbar-hover: #94a3b8;
+  --color-scrollbar: #c5cbd3;
+  --color-scrollbar-hover: #98a2b3;
+  --color-bg-well: #edf1f8;
+  --color-brand-border: #dcdcf8;
+  --color-hero-start: #ececff;
+  --color-hero-end: #f8faff;
+  --color-success-solid: #0f766e;
+  --shadow-card: 0 3px 12px rgba(36, 50, 85, .045), 0 1px 2px rgba(36, 50, 85, .03);
+  --shadow-brand: 0 3px 8px rgba(79, 70, 229, .18);
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, .03);
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, .04);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, .08);
+  --shadow-lg: 0 12px 28px rgba(16, 24, 40, .12);
+  --shadow-xl: 0 16px 36px rgba(16, 24, 40, .16);
 }

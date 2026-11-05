@@ -125,7 +125,7 @@ export class CommandPalette {
               "div",
               { className: "flex items-center gap-sm truncate" },
               [
-                createElement("span", { textContent: icon }),
+                createElement("span", { className: "command-result-icon", textContent: icon }),
                 createElement("span", {
                   className: "truncate",
                   style: { fontSize: "13px", fontWeight: "600" },

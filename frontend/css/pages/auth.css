@@ -3,9 +3,7 @@
   height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
-  background:
-    radial-gradient(ellipse at 12% 15%, var(--color-accent-light), transparent 52%),
-    var(--color-bg-primary);
+  background: var(--color-bg-primary);
   padding: 0 40px;
 }
 
@@ -28,7 +26,7 @@
 
 .auth-brand {
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.6px;
 }
 
@@ -38,8 +36,9 @@
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  box-shadow: 0 4px 16px #4f46e526;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  box-shadow: none;
   font-size: 22px;
 }
 
@@ -50,7 +49,7 @@
 }
 
 .auth-home-link:hover {
-  color: var(--color-accent);
+  color: var(--color-text-link);
 }
 
 .auth-theme-button {
@@ -135,7 +134,7 @@
 
 .auth-logo-title {
   font-size: clamp(26px, 3vw, 32px);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -1px;
   line-height: 1.2;
   color: var(--color-text-primary);
@@ -154,10 +153,10 @@
 }
 
 .auth-card .form-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--color-text-secondary);
 }
 
@@ -181,13 +180,13 @@
 }
 
 .auth-card .input:focus {
-  border-color: var(--color-accent);
+  border-color: var(--color-text-link);
   box-shadow: 0 2px 0 -1px var(--color-accent);
 }
 
 .auth-card .btn {
   min-height: 44px;
-  border-radius: 999px;
+  border-radius: 8px;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -216,7 +215,7 @@
 
 .auth-forgot-button {
   align-self: flex-end;
-  color: var(--color-accent);
+  color: var(--color-text-link);
   font-size: 12px;
   font-weight: 600;
 }
@@ -230,7 +229,7 @@
 .auth-resend-button {
   align-self: center;
   padding: 6px;
-  color: var(--color-accent);
+  color: var(--color-text-link);
   font-size: 12px;
   font-weight: 600;
 }
@@ -266,7 +265,7 @@
   padding: 48px 32px;
   text-align: center;
   color: #fff;
-  background: linear-gradient(155deg, #4338ca 0%, #4f46e5 42%, #0284c7 100%);
+  background: var(--color-bg-tertiary);
   transition: transform 850ms cubic-bezier(0.65, 0, 0.35, 1);
 }
 
@@ -327,7 +326,7 @@
   min-height: 46px;
   padding: 10px 26px;
   border: 1px solid #ffffffb3;
-  border-radius: 999px;
+  border-radius: 8px;
   color: #fff;
   font-size: 13px;
   font-weight: 700;
@@ -374,7 +373,7 @@
 }
 
 .auth-link {
-  color: var(--color-accent);
+  color: var(--color-text-link);
   font-weight: 500;
   cursor: pointer;
 }
@@ -427,4 +426,23 @@
     animation: none !important;
   }
 }
+
+.auth-brand-icon,.auth-shell,.auth-card .btn-primary { box-shadow:none; }
+.auth-shell { border-radius:12px; }
+.auth-card .input { padding:10px 12px; border:1px solid var(--color-border); border-radius:8px; background:var(--color-bg-input); }
+.auth-card .input:focus { border-color:var(--color-border-focus); box-shadow:0 0 0 2px var(--color-accent-light); }
+.auth-invitation { color:var(--color-text-primary); }
+.auth-invitation::before,.auth-invitation::after { display:none; }
+.auth-invitation-copy h2 { font-size:28px; color:var(--color-text-primary); }
+.auth-invitation-copy p,.auth-invitation-caption { color:var(--color-text-secondary); }
+.auth-switch-button { color:var(--color-text-primary); border:1px solid var(--color-border); background:var(--color-bg-secondary); }
+.auth-switch-button:hover { background:var(--color-bg-hover); }
+/* Invitation accent complements the working app without adding imagery or fields. */
+.auth-shell { border-radius:20px; box-shadow:var(--shadow-card); border-color:var(--color-border-light); }
+.auth-brand-icon { border-radius:12px; box-shadow:var(--shadow-brand); }
+.auth-invitation { background:linear-gradient(155deg,var(--color-hero-start),var(--color-hero-end)); border-left:1px solid var(--color-brand-border); }
+.auth-card .input { min-height:46px; border:1px solid var(--color-border); padding:10px 12px; border-radius:10px; background:var(--color-bg-input); }
+.auth-card .input:focus { border-color:var(--color-border-focus); box-shadow:0 0 0 3px var(--color-accent-light); }
+.auth-card .btn-primary { box-shadow:var(--shadow-brand); border-radius:10px; }
+@media(max-width:768px) { .auth-invitation { border-left:0; border-top:1px solid var(--color-brand-border); } }
 

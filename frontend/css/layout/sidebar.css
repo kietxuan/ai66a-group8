@@ -31,13 +31,13 @@
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
-  color: #ffffff;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.28);
+  box-shadow: var(--shadow-brand);
 }
 
 .logo-brand-col {
@@ -47,23 +47,23 @@
 }
 
 .sidebar-header .logo-text {
-  font-weight: 800;
+  font-weight: 600;
   font-size: 16px;
   color: var(--color-text-primary);
   letter-spacing: -0.01em;
 }
 
 .sidebar-header .logo-subtext {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--color-accent);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .sidebar-section-label {
   padding: 16px 18px 8px 18px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--color-text-muted);
   letter-spacing: 0.08em;
@@ -76,18 +76,18 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 14px;
-  border-radius: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
   color: var(--color-text-secondary);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   transition: all var(--transition-fast);
   position: relative;
 }
@@ -95,14 +95,17 @@
 .nav-item:hover {
   background-color: var(--color-bg-hover);
   color: var(--color-text-primary);
-  transform: translateX(2px);
+  transform: none;
 }
 
 .nav-item.active {
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.16) 0%, rgba(124, 58, 237, 0.10) 100%);
-  color: var(--color-accent);
+  background: var(--color-bg-selected);
+  color: var(--color-text-link);
   box-shadow: inset 3px 0 0 var(--color-accent);
+  font-weight: 600;
 }
+
+.nav-item.active .nav-icon { color: var(--color-text-link); }
 
 .nav-item .nav-icon {
   font-size: 18px;
@@ -153,7 +156,7 @@
   padding: 2px 7px;
   border-radius: var(--radius-full);
   background-color: var(--color-accent-light);
-  color: var(--color-accent);
+  color: var(--color-text-link);
 }
 
 .sidebar-focus-timer {

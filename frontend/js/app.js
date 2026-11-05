@@ -3,9 +3,11 @@
  */
 
 import { ThemeManager } from './theme.js';
+import { initUiIcons } from './utils/icons.js';
 import { Toast } from './components/toast.js';
 import { AuthManager } from './auth.js';
 import { Sidebar } from './components/sidebar.js';
+import { initHeaderChat } from './components/header-chat.js';
 import { ReminderNotifier } from './components/reminder-notifier.js';
 import { CommandPalette } from './components/command-palette.js';
 import { router } from './router.js';
@@ -29,6 +31,7 @@ import { ContextMenu } from './components/contextmenu.js';
 
 class App {
   static async init() {
+    initUiIcons();
     // 1. Initialize Theme & Toast
     ThemeManager.init();
     Toast.init();
@@ -126,6 +129,7 @@ class App {
     if (store.get('isAiPanelOpen') && aiPanel) {
       aiPanel.classList.remove('hidden');
     }
+    initHeaderChat();
 
     // 8. Start SPA Router
     router.start();
