@@ -17,6 +17,32 @@
   overflow-y: auto;
 }
 
+.todo-sidebar-toggle {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+}
+
+.todo-sidebar-toggle:hover { background-color: var(--color-bg-hover); color: var(--color-accent); }
+.todo-sidebar-toggle:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+@media (min-width: 769px) {
+  .todo-sidebar { min-width: 0; transition: width 180ms ease, padding 180ms ease; }
+  .todo-sidebar-collapsed > .todo-sidebar {
+    width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    border-right-width: 0;
+    overflow: hidden;
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) { .todo-sidebar { transition: none; } }
+
 .todo-sidebar-section-title {
   font-size: 10px;
   font-weight: 700;

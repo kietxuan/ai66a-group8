@@ -10,6 +10,7 @@ import { SmartListsSidebar, HOUSE_SVG, INFINITY_SVG, LIST_3BARS_SVG, TabSync, is
 import { TaskListView } from '../todo/task-list-view.js';
 import { TaskForm } from '../todo/task-form.js';
 import { TaskDetail } from '../todo/task-detail.js';
+import { initTodoSidebarToggle } from '../todo/sidebar-toggle.js';
 import { revisionOptions } from '../utils/revision.js';
 import { isScheduleDismissal } from '../utils/api-error.js';
 
@@ -205,13 +206,16 @@ export const todoPage = {
       onclick: () => this.startInlineTitleEdit(titleEl)
     });
 
+    const sidebarToggle = createElement('button', {
+      type: 'button',
+      id: 'btn-todo-sidebar-toggle',
+      className: 'btn-icon todo-sidebar-toggle',
+      innerHTML: iconMarkup('panel-left'),
+      'aria-controls': 'todo-sub-sidebar',
+      title: 'Thu gọn danh sách To Do',
+    });
     const titleRow = createElement("div", { className: "todo-title-row" }, [
-      createElement("button", {
-        className: "btn-icon mobile-only",
-        innerHTML: iconMarkup('panel-left'),
-        title: "Mở danh sách To Do",
-        onclick: () => sidebarEl.classList.toggle("mobile-open"),
-      }),
+      sidebarToggle,
       iconBtn,
       titleEl
     ]);
@@ -250,6 +254,7 @@ export const todoPage = {
     page.appendChild(mainEl);
     page.appendChild(detailEl);
     container.appendChild(page);
+    this.sidebarToggleCleanup = initTodoSidebarToggle({ page, sidebar: sidebarEl, button: sidebarToggle });
 
     // Initialize sub-components
     this.sidebarComponent = new SmartListsSidebar({
@@ -835,6 +840,8 @@ export const todoPage = {
   },
 
   destroy() {
+    this.sidebarToggleCleanup?.();
+    this.sidebarToggleCleanup = null;
     this.savedFilters = this.taskListComponent?.getFilterState();
     this.requestGeneration = (this.requestGeneration || 0) + 1;
     if (this.keyHandler) {
