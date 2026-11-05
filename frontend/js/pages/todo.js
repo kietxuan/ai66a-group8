@@ -87,7 +87,7 @@ export const todoPage = {
   container: null,
   tasks: [],
   activeListId: "board",
-  activeListName: "All",
+  activeListName: "Tất cả",
   activeListIcon: HOUSE_SVG,
   activeTask: null,
   sortBy: "time",
@@ -115,7 +115,7 @@ export const todoPage = {
       ].includes(String(saved))
     ) {
       this.activeListId = "board";
-      this.activeListName = "All";
+      this.activeListName = "Tất cả";
       this.activeListIcon = HOUSE_SVG;
       store.set("activeTodoList", "board");
       return;
@@ -125,7 +125,7 @@ export const todoPage = {
       const lists = store.get("taskLists") || [];
       const defaultList = lists.find((l) => l.is_default || l.name?.toLowerCase() === "tasks");
       this.activeListId = defaultList ? defaultList.id : "tasks";
-      this.activeListName = "Tasks";
+      this.activeListName = "Công việc";
       this.activeListIcon = INFINITY_SVG;
       return;
     }
@@ -140,7 +140,7 @@ export const todoPage = {
       const matched = lists.find((l) => l.id === numId);
       if (matched) {
         const isTasks = isDefaultTasksList(matched.id, lists);
-        this.activeListName = matched.name;
+        this.activeListName = isTasks ? "Công việc" : matched.name;
         this.activeListIcon = isTasks ? INFINITY_SVG : (matched.icon && matched.icon !== '☰' ? matched.icon : LIST_3BARS_SVG);
       } else {
         this.activeListName = "Danh sách công việc";
@@ -148,7 +148,7 @@ export const todoPage = {
       }
     } else {
       this.activeListId = "board";
-      this.activeListName = "All";
+      this.activeListName = "Tất cả";
       this.activeListIcon = HOUSE_SVG;
     }
   },
@@ -543,19 +543,19 @@ export const todoPage = {
         this.sidebarComponent.listsLoaded = true;
         this.listsNeedRefresh = false;
         if (typeof this.activeListId === 'number' && !lists.some(l => l.id === this.activeListId)) {
-          this.switchList('board', 'All', HOUSE_SVG);
+          this.switchList('board', 'Tất cả', HOUSE_SVG);
         }
       }
 
       if (String(this.activeListId) === "board") {
-        this.activeListName = "All";
+        this.activeListName = "Tất cả";
         this.activeListIcon = HOUSE_SVG;
         const iconEl = document.getElementById("todo-header-icon");
         const titleEl = document.getElementById("todo-header-title");
         renderHeaderIcon(iconEl, this.activeListIcon);
         if (titleEl) titleEl.textContent = this.activeListName;
       } else if (isDefaultTasksList(this.activeListId, store.get("taskLists"))) {
-        this.activeListName = "Tasks";
+        this.activeListName = "Công việc";
         this.activeListIcon = INFINITY_SVG;
         const iconEl = document.getElementById("todo-header-icon");
         const titleEl = document.getElementById("todo-header-title");

@@ -305,7 +305,7 @@ export class SmartListsSidebar {
     // 1. KHÔNG GIAN CHUNG (All & Tasks)
     const boardHeader = createElement("div", {
       className: "todo-sidebar-section-title",
-      textContent: "KHÔNG GIAN CHUNG",
+      textContent: "Không gian chung",
     });
 
     const isBoardActive = String(this.activeListId) === "board";
@@ -318,14 +318,14 @@ export class SmartListsSidebar {
           this.activeListId = "board";
           this.render();
           if (this.onSelectList)
-            this.onSelectList("board", "All", HOUSE_SVG, null);
+            this.onSelectList("board", "Tất cả", HOUSE_SVG, null);
         },
       },
       [
         this.createIconSpan(HOUSE_SVG),
         createElement("span", {
           className: "flex-1 truncate font-semibold",
-          textContent: "All",
+          textContent: "Tất cả",
         }),
         allPendingCount > 0
           ? createElement("span", {
@@ -350,7 +350,7 @@ export class SmartListsSidebar {
             this.activeListId = tasksList.id;
             this.render();
             if (this.onSelectList)
-              this.onSelectList(tasksList.id, "Tasks", INFINITY_SVG, tasksList);
+              this.onSelectList(tasksList.id, "Công việc", INFINITY_SVG, tasksList);
           },
           ondragover: (e) => {
             e.preventDefault();
@@ -384,7 +384,7 @@ export class SmartListsSidebar {
           this.createIconSpan(INFINITY_SVG),
           createElement("span", {
             className: "flex-1 truncate font-semibold",
-            textContent: "Tasks",
+            textContent: "Công việc",
           }),
           tasksPendingCount > 0
             ? createElement("span", {
@@ -412,7 +412,7 @@ export class SmartListsSidebar {
       [
         createElement("span", {
           className: "todo-sidebar-section-title",
-          textContent: "DANH SÁCH CỦA TÔI",
+          textContent: "Danh sách của tôi",
         }),
         createElement("div", { className: "todo-sidebar-header-actions" }, [
           createElement(
@@ -931,7 +931,7 @@ export class SmartListsSidebar {
               if (String(this.activeListId) === String(list.id)) {
                 this.activeListId = "board";
                 if (this.onSelectList)
-                  this.onSelectList("board", "All", HOUSE_SVG, null);
+                  this.onSelectList("board", "Tất cả", HOUSE_SVG, null);
               }
               this.render();
               TabSync.broadcast("lists_updated");

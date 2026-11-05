@@ -67,30 +67,29 @@ export const aiPage = {
       onclick: () => this.startNewConversation(),
     });
 
-    const convSectionTitle = createElement("div", {
+    const history = createElement("details", { className: "ai-history" });
+    this.historyMedia = window.matchMedia("(max-width: 768px)");
+    this.historyMediaHandler = () => { history.open = !this.historyMedia.matches; };
+    this.historyMediaHandler();
+    this.historyMedia.addEventListener("change", this.historyMediaHandler);
+    const convSectionTitle = createElement("summary", {
       style: {
-        fontSize: "11px",
-        fontWeight: "700",
+        fontSize: "12px",
+        fontWeight: "500",
         color: "var(--color-text-muted)",
-        textTransform: "uppercase",
+        textTransform: "none",
       },
       textContent: "Lịch sử trò chuyện",
     });
 
     this.convListEl = createElement("div", {
-      className: "flex flex-col gap-xs",
-      style: { maxHeight: "180px", overflowY: "auto" },
+      className: "ai-conv-list flex flex-col gap-xs",
     });
 
     // Prompt Library Section
-    const promptSection = createElement("div", {
-      className: "flex flex-col gap-md",
-      style: {
-        borderTop: "1px solid var(--color-border-light)",
-        paddingTop: "12px",
-        marginTop: "4px",
-      },
-    });
+    const promptSection = createElement("details", { className: "ai-prompt-library" }, [
+      createElement("summary", { textContent: "Gợi ý câu lệnh" }),
+    ]);
 
     PROMPT_CATEGORIES.forEach((cat) => {
       const catBlock = createElement(
@@ -126,25 +125,15 @@ export const aiPage = {
     });
 
     sidebar.appendChild(newConvBtn);
-    sidebar.appendChild(convSectionTitle);
-    sidebar.appendChild(this.convListEl);
-    sidebar.appendChild(promptSection);
+    history.append(convSectionTitle, this.convListEl);
+    sidebar.appendChild(history);
 
     // 2. Main Chat Area
     const main = createElement("div", { className: "ai-workspace-main" });
 
     const header = createElement(
       "div",
-      {
-        style: {
-          padding: "12px 24px",
-          borderBottom: "1px solid var(--color-border)",
-          backgroundColor: "var(--color-bg-secondary)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        },
-      },
+      { className: "ai-workspace-header" },
       [
         createElement("div", { className: "flex items-center gap-sm" }, [
           createElement("span", {
@@ -156,12 +145,12 @@ export const aiPage = {
           createElement("div", {}, [
             createElement("div", {
               style: { fontWeight: "700", fontSize: "15px" },
-              textContent: "Planify AI Agent - Trung tâm Điều phối Thông minh",
+              textContent: "Trợ lý công việc",
             }),
             createElement("div", {
               style: { fontSize: "12px", color: "var(--color-text-secondary)" },
               textContent:
-                "Công cụ quản lý Lịch biểu, To Do, Subtasks & Thống kê. Kiểm tra kết quả trước khi tiếp tục.",
+                "Hỗ trợ sắp xếp công việc và lịch biểu.",
             }),
           ]),
         ]),
@@ -170,7 +159,7 @@ export const aiPage = {
 
     this.messagesListEl = createElement("div", {
       className: "ai-messages-container",
-      style: { maxWidth: "920px", width: "100%", margin: "0 auto" },
+      style: { maxWidth: "800px", width: "100%", margin: "0 auto" },
     });
 
     const inputEl = createElement("input", {
@@ -182,7 +171,7 @@ export const aiPage = {
 
     const sendBtnEl = createElement("button", {
       className: "btn btn-primary btn-sm",
-      textContent: "Gửi lệnh 🚀",
+      textContent: "Gửi",
     });
 
     const inputFooter = createElement(
@@ -190,7 +179,7 @@ export const aiPage = {
       {
         className: "ai-input-area",
         style: {
-          maxWidth: "920px",
+          maxWidth: "800px",
           width: "100%",
           margin: "0 auto",
           backgroundColor: "transparent",
@@ -198,11 +187,12 @@ export const aiPage = {
         },
       },
       [
+        promptSection,
         createElement(
           "div",
           {
             className: "ai-input-box",
-            style: { padding: "8px 14px", boxShadow: "var(--shadow-sm)" },
+            style: { padding: "8px 12px" },
           },
           [inputEl, sendBtnEl],
         ),
@@ -354,12 +344,12 @@ export const aiPage = {
       ChatMessage.create({
         role: "assistant",
         content:
-          "Xin chào! 👋 Tôi là **Planify AI Agent**.\n\n" +
+          "Bạn muốn xử lý công việc nào?\n\n" +
           "Tôi hỗ trợ các tác vụ dưới đây. Hãy kiểm tra kết quả; yêu cầu chưa rõ có thể cần bổ sung thông tin. Không xử lý mật khẩu hoặc tác vụ bảo mật.\n" +
           '- ✨ **Lập kế hoạch tự động**: *"Tự động lập kế hoạch hôm nay giúp tôi"*\n' +
           "- 📅 **Quản lý Lịch biểu**: Tạo sự kiện đơn/lặp lại, dời lịch, kiểm tra trùng lịch, tìm khung giờ trống.\n" +
           "- ✅ **Quản lý To Do**: Tạo việc cần làm gắn khung giờ Time-Blocking, đánh dấu quan trọng, thêm bước nhỏ (subtasks), dời việc quá hạn hàng loạt.\n\n" +
-          "Hãy chọn một kịch bản mẫu ở cột bên trái hoặc nhập yêu cầu của bạn vào ô bên dưới nhé!",
+          "Mở Gợi ý câu lệnh hoặc nhập yêu cầu ở bên dưới.",
         toolCalls: [],
       }),
     );
@@ -475,6 +465,9 @@ export const aiPage = {
   },
 
   destroy() {
+    this.historyMedia?.removeEventListener("change", this.historyMediaHandler);
+    this.historyMedia = null;
+    this.historyMediaHandler = null;
     this.renderGeneration = (this.renderGeneration || 0) + 1;
     this.generation = (this.generation || 0) + 1;
     this.currentConversationId = null;

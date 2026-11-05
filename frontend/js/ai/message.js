@@ -1,5 +1,6 @@
 import { createElement } from '../utils/dom.js';
 import { formatDate } from '../utils/date.js';
+import { createToolResult } from './tool-result.js';
 
 export class ChatMessage {
   /**
@@ -59,16 +60,7 @@ export class ChatMessage {
         style: { marginTop: '4px' }
       });
 
-      toolCalls.forEach(tc => {
-        const toolName = tc.name || tc.tool || 'Công cụ';
-        const badge = createElement('div', {
-          className: 'ai-tool-badge cursor-pointer',
-          title: tc.result?.code === 'SCHEDULE_CONFLICT' || /SCHEDULE_CONFLICT/.test(String(tc.result?.error || ''))
-            ? 'Khung giờ này trùng lịch' : tc.result?.success === false ? (tc.result.error || 'Công cụ chưa thực thi') : 'Kết quả công cụ',
-          textContent: `⚙️ ${tc.result?.code === 'SCHEDULE_CONFLICT' || /SCHEDULE_CONFLICT/.test(String(tc.result?.error || '')) ? 'Trùng lịch' : tc.result?.requires_confirmation ? 'Chờ xác nhận' : tc.result?.success === false ? 'Chưa thực hiện' : 'Đã gọi'}: ${toolName}`
-        });
-        toolBadgesContainer.appendChild(badge);
-      });
+      toolCalls.forEach(call => toolBadgesContainer.appendChild(createToolResult(call)));
 
       bubbleWrapper.appendChild(toolBadgesContainer);
     }
@@ -76,7 +68,7 @@ export class ChatMessage {
     // Timestamp
     const timeEl = createElement('span', {
       style: {
-        fontSize: '10px',
+        fontSize: '12px',
         color: 'var(--color-text-tertiary)',
         alignSelf: isUser ? 'flex-end' : 'flex-start',
         padding: '0 4px'

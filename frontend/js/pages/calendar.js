@@ -316,7 +316,7 @@ export const calendarPage = {
         <button class="view-toggle-btn ${curMode === "agenda" ? "active" : ""}" data-view="agenda">Lịch biểu</button>
       </div>
     `;
-    const filters = createElement('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' } });
+    const filters = createElement('div', { className: 'calendar-filters' });
     const listFilter = createElement('select', { className: 'input', 'aria-label': 'Lọc lịch theo danh sách', onchange: e => { this.calendarListFilter = e.target.value; this.updateView(); } }, [
       createElement('option', { value: 'all', textContent: 'Mọi danh sách và sự kiện' }),
       createElement('option', { value: 'events', textContent: 'Chỉ sự kiện' }),

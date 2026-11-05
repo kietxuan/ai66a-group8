@@ -1,63 +1,52 @@
 [data-theme="dark"] {
-  /* ===== BACKGROUNDS ===== */
-  --color-bg-primary: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-bg-tertiary: #334155;
-  --color-bg-hover: #334155;
-  --color-bg-active: #475569;
-  --color-bg-selected: #312e81;
-  --color-bg-sidebar: #0f172a;
-  --color-bg-card: #1e293b;
-  --color-surface: #1e293b;
-  --color-bg-input: #1e293b;
-  --color-bg-modal: #1e293b;
-
-  /* ===== TEXT COLORS ===== */
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #cbd5e1;
-  --color-text-tertiary: #94a3b8;
-  --color-text-muted: #64748b;
-  --color-text-inverse: #0f172a;
-  --color-text-link: #818cf8;
-
-  /* ===== BORDER COLORS ===== */
-  --color-border: #334155;
-  --color-border-light: #334155;
-  --color-border-focus: #818cf8;
-
-  /* ===== ACCENT & PRIMARY COLORS (Planify Indigo in Dark Mode) ===== */
-  --color-accent: #818cf8;
-  --color-accent-hover: #a5b4fc;
-  --color-accent-active: #c7d2fe;
-  --color-accent-light: rgba(99, 102, 241, 0.22);
-  --color-accent-contrast: #0f172a;
-  --color-primary: #818cf8;
-  --color-primary-light: rgba(99, 102, 241, 0.22);
-  --shadow-xs: 0 2px 6px rgba(0, 0, 0, 0.28);
-
-  /* ===== SEMANTIC STATUS ===== */
-  --color-success: #4ade80;
-  --color-success-bg: #052e16;
-  --color-warning: #fbbf24;
-  --color-warning-bg: #451a03;
-  --color-danger: #f87171;
-  --color-danger-bg: #450a0a;
-  --color-info: #38bdf8;
-  --color-info-bg: #082f49;
-
-  /* ===== SPECIAL HIGHLIGHTS ===== */
-  --color-star: #fbbf24;
-  --color-today: #818cf8;
-  --color-today-bg: rgba(99, 102, 241, 0.24);
-  --color-overdue: #f87171;
-
-  /* ===== CALENDAR GRID ===== */
-  --color-grid-line: #334155;
-  --color-grid-line-half: #1e293b;
-  --color-time-indicator: #f87171;
-  --color-event-default: #6366f1;
-
-  /* ===== SCROLLBAR ===== */
-  --color-scrollbar: #475569;
-  --color-scrollbar-hover: #64748b;
+  --color-bg-primary: #111315;
+  --color-bg-secondary: #1b1d21;
+  --color-bg-tertiary: #24272d;
+  --color-bg-hover: #272b32;
+  --color-bg-active: #343943;
+  --color-bg-selected: #1c2c45;
+  --color-bg-sidebar: #17191c;
+  --color-bg-card: #1b1d21;
+  --color-surface: #1b1d21;
+  --color-bg-input: #1b1d21;
+  --color-bg-modal: #1b1d21;
+  --color-text-primary: #e5e7eb;
+  --color-text-secondary: #a7b0bd;
+  --color-text-tertiary: #a7b0bd;
+  --color-text-muted: #9ca3af;
+  --color-text-inverse: #111315;
+  --color-text-link: #93c5fd;
+  --color-border: #30343b;
+  --color-border-light: #30343b;
+  --color-border-focus: #93c5fd;
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-accent-active: #1e40af;
+  --color-accent-light: #1c2c45;
+  --color-accent-contrast: #ffffff;
+  --color-primary: #93c5fd;
+  --color-primary-light: #1c2c45;
+  --color-success: #86d5a0;
+  --color-success-bg: #182b21;
+  --color-warning: #e6c16b;
+  --color-warning-bg: #302819;
+  --color-danger: #fda29b;
+  --color-danger-bg: #341e1c;
+  --color-info: #93c5fd;
+  --color-info-bg: #1c2c45;
+  --color-star: #e6c16b;
+  --color-today: #93c5fd;
+  --color-today-bg: #1c2c45;
+  --color-overdue: #fda29b;
+  --color-grid-line: #30343b;
+  --color-grid-line-half: #24272d;
+  --color-time-indicator: #fda29b;
+  --color-event-default: #2563eb;
+  --color-scrollbar: #454b55;
+  --color-scrollbar-hover: #667085;
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, .1);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .12);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, .22);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, .32);
+  --shadow-xl: 0 16px 36px rgba(0, 0, 0, .4);
 }

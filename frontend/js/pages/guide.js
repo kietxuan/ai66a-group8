@@ -1,41 +1,10 @@
 import { createElement } from '../utils/dom.js';
 
-const GUIDE_FALLBACK_CSS = `
-.guide-page { width:100%; height:100%; overflow-y:auto; padding:22px 26px 48px; display:flex; flex-direction:column; gap:18px; background-color:var(--color-bg-primary); }
-.guide-hero { background:linear-gradient(135deg,#312E81 0%,#4F46E5 55%,#2563EB 100%); border-radius:18px; padding:24px 28px; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; }
-.guide-hero-title { font-size:22px; font-weight:800; color:#fff; margin:0 0 6px; }
-.guide-hero-desc { font-size:13.5px; color:rgba(255,255,255,0.92); line-height:1.55; margin:0; max-width:700px; }
-.guide-tabs-bar { display:flex; gap:8px; flex-wrap:wrap; background:var(--color-bg-secondary); padding:8px; border-radius:14px; border:1px solid var(--color-border-light); }
-.guide-tab-btn { padding:9px 14px; border-radius:10px; font-size:13px; font-weight:700; color:var(--color-text-secondary); background:transparent; border:none; cursor:pointer; transition:all 0.15s ease; }
-.guide-tab-btn.active { background:var(--color-primary); color:#fff; box-shadow:0 4px 12px rgba(79,70,229,0.25); }
-.guide-section-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px; }
-.guide-feature-box { background:var(--color-surface); border:1px solid var(--color-border-light); border-radius:16px; padding:20px 22px; display:flex; flex-direction:column; gap:12px; }
-.guide-box-badge { font-size:11px; font-weight:800; padding:4px 10px; border-radius:999px; width:fit-content; }
-.guide-box-title { font-size:16px; font-weight:800; color:var(--color-text-primary); margin:0; }
-.guide-step-list { display:flex; flex-direction:column; gap:8px; }
-.guide-step-item { display:flex; align-items:flex-start; gap:8px; font-size:13px; color:var(--color-text-secondary); line-height:1.5; }
-.guide-step-bullet { color:var(--color-primary); font-weight:800; flex-shrink:0; }
-.guide-prompt-card { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; border-radius:12px; background:var(--color-bg-secondary); border:1px solid var(--color-border-light); cursor:pointer; }
-.guide-kbd-table { width:100%; border-collapse:collapse; margin-top:8px; }
-.guide-kbd-table th, .guide-kbd-table td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--color-border-light); font-size:13px; }
-.guide-kbd-pill { font-family:monospace; font-weight:700; padding:3px 8px; border-radius:6px; background:var(--color-bg-tertiary); border:1px solid var(--color-border); }
-`;
-
-function ensureGuideStyles() {
-  if (!document.getElementById('planify-guide-inline-css')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'planify-guide-inline-css';
-    styleEl.textContent = GUIDE_FALLBACK_CSS;
-    document.head.appendChild(styleEl);
-  }
-}
-
 export const guidePage = {
   container: null,
   activeTab: localStorage.getItem('planify_guide_tab') || 'overview',
 
   render(container) {
-    ensureGuideStyles();
     this.container = container;
     const saved = localStorage.getItem('planify_guide_tab') || 'overview';
     this.activeTab = ['overview', 'todo', 'mouse', 'calendar', 'ai'].includes(saved) ? saved : 'overview';
@@ -50,10 +19,10 @@ export const guidePage = {
 
     const hero = createElement('section', { className: 'guide-hero' }, [
       createElement('div', {}, [
-        createElement('h1', { className: 'guide-hero-title', textContent: '📖 Cẩm nang Hướng dẫn Sử dụng Planify Pro' }),
+        createElement('h1', { className: 'guide-hero-title', textContent: 'Hướng dẫn sử dụng' }),
         createElement('p', {
           className: 'guide-hero-desc',
-          textContent: 'Hướng dẫn trực quan cách sử dụng Bảng quản lý chung Kanban 4 cột, Biểu mẫu thống nhất Việc cần làm & Sự kiện, thao tác Chuột phải / Kéo thả và Thông báo nhắc lịch qua Email.'
+          textContent: 'Chọn một mục để xem cách quản lý công việc, lịch biểu và sử dụng trợ lý AI.'
         })
       ]),
       createElement('div', { className: 'flex gap-sm' }, [
@@ -63,11 +32,11 @@ export const guidePage = {
     ]);
 
     const tabs = [
-      { id: 'overview', icon: '🚀', label: '1. Tổng quan & Quản Lý Công Việc' },
-      { id: 'todo', icon: '📋', label: '2. Bảng Quản Lý Chung (Kanban 4 Cột)' },
-      { id: 'mouse', icon: '🖱️', label: '3. Chuột Phải, Chuột Trái & Kéo Thả' },
-      { id: 'calendar', icon: '📅', label: '4. Lịch Biểu & Lịch Tháng' },
-      { id: 'ai', icon: '🤖', label: '5. Kịch Bản AI Agent & Thông Báo Email' }
+      { id: 'overview', icon: '🚀', label: 'Tổng quan' },
+      { id: 'todo', icon: '📋', label: 'Công việc' },
+      { id: 'mouse', icon: '🖱️', label: 'Thao tác' },
+      { id: 'calendar', icon: '📅', label: 'Lịch' },
+      { id: 'ai', icon: '🤖', label: 'Trợ lý AI' }
     ];
 
     const tabsBar = createElement('div', { className: 'guide-tabs-bar' },
@@ -147,7 +116,7 @@ export const guidePage = {
           steps: [
             'Khi mở trang Calendar, hệ thống mặc định hiển thị Lịch Tháng (Month View) và ghi nhớ chế độ xem kể cả khi bạn nhấn F5 tải lại trang.',
             'Toàn bộ các tuần trong tháng được bố trí trực quan, vừa vặn không gian màn hình giúp bạn quan sát tổng thể toàn bộ tháng dễ dàng.',
-            'Ô ngày HÔM NAY (và cột Hôm nay trong Lịch Tuần) được đóng khung viền tím sáng kèm nhãn "HÔM NAY" nổi bật rõ ràng trong cả chế độ Sáng (Light Mode) và Tối (Dark Mode).'
+            'Ô ngày HÔM NAY (và cột Hôm nay trong Lịch Tuần) được nhận diện bằng màu nhấn và nền nhẹ trong cả chế độ Sáng (Light Mode) và Tối (Dark Mode).'
           ]
         },
         {
@@ -184,7 +153,7 @@ export const guidePage = {
             }
           }, [
             createElement('div', { className: 'flex flex-col gap-2xs' }, [
-              createElement('span', { style: { fontWeight: '700', color: 'var(--color-text-primary)' }, textContent: item.label }),
+              createElement('span', { style: { fontWeight: '600', color: 'var(--color-text-primary)' }, textContent: item.label }),
               createElement('span', { style: { fontSize: '12px', color: 'var(--color-text-secondary)' }, textContent: `Câu lệnh: "${item.prompt}"` })
             ]),
             createElement('span', { className: 'btn btn-primary btn-sm', textContent: 'Thử ngay →' })
@@ -195,16 +164,16 @@ export const guidePage = {
 
     return this.buildCardsGrid([
       {
-        badge: '✨ Điểm mới 1 • Quản Lý Công Việc Toàn Diện', bg: '#EEF2FF', color: '#4F46E5',
+        badge: '✨ Quản Lý Công Việc Toàn Diện', bg: '#EEF2FF', color: '#4F46E5',
         title: 'Biểu mẫu Công Việc Chi tiết & Linh hoạt',
         steps: [
-          'Quản lý công việc dễ dàng với biểu mẫu chi tiết đầy đủ thông tin: danh mục, độ ưu tiên, hạn chót và ghi chú.',
+          'Quản lý công việc dễ dàng với biểu mẫu chi tiết đầy đủ thông tin: danh sách, đánh dấu quan trọng, ngày giờ và ghi chú.',
           'Mặc định công việc được hoàn thành khi bạn tích chọn ô đánh dấu hoàn thành.',
           'Mặc định khi tạo mới có thể không cần đặt thời gian để nằm gọn trong cột Cần làm và có thể xếp lịch bất cứ lúc nào.'
         ]
       },
       {
-        badge: '📋 Điểm mới 2 • Bảng Quản Lý Chung 4 Cột', bg: '#ECFDF5', color: '#10B981',
+        badge: '📋 Bảng Quản Lý Chung 4 Cột', bg: '#ECFDF5', color: '#10B981',
         title: 'Kanban 4 Cột Tự động Sắp xếp theo Thời gian',
         steps: [
           '📌 Cần làm: Việc không đặt giờ hoặc việc cần làm trong tương lai.',
@@ -214,7 +183,7 @@ export const guidePage = {
         ]
       },
       {
-        badge: '🔔 Điểm mới 3 • Xác thực OTP & Nhắc lịch Email', bg: '#FFFBEB', color: '#F59E0B',
+        badge: '🔔 Xác thực OTP & Nhắc lịch Email', bg: '#FFFBEB', color: '#F59E0B',
         title: 'OTP Đăng ký, Quên mật khẩu & Thông báo Lịch hẹn',
         steps: [
           'Hỗ trợ gửi mã OTP 6 chữ số qua Email khi Đăng ký tài khoản mới và khi Quên mật khẩu.',
@@ -222,7 +191,7 @@ export const guidePage = {
         ]
       },
       {
-        badge: '📅 Điểm mới 4 • Lịch Tháng Trực Quan & Lưu Trạng Thái F5', bg: '#F5F3FF', color: '#7C3AED',
+        badge: '📅 Lịch Tháng Trực Quan & Lưu Trạng Thái F5', bg: '#F5F3FF', color: '#7C3AED',
         title: 'Mặc định Lịch Tháng, Làm nổi bật Hôm nay & Nhớ vị trí khi F5',
         steps: [
           'Trang Calendar mặc định mở Lịch Tháng trực quan, vừa vặn không gian màn hình và làm nổi bật rõ nét ô/cột HÔM NAY trong cả chế độ Dark Mode.',
@@ -235,7 +204,7 @@ export const guidePage = {
   buildCardsGrid(cards) {
     return createElement('div', { className: 'guide-section-grid' },
       cards.map(c => createElement('div', { className: 'guide-feature-box' }, [
-        createElement('span', { className: 'guide-box-badge', style: { backgroundColor: c.bg, color: c.color }, textContent: c.badge }),
+        createElement('span', { className: 'guide-box-badge', textContent: c.badge }),
         createElement('h3', { className: 'guide-box-title', textContent: c.title }),
         createElement('div', { className: 'guide-step-list' },
           c.steps.map(s => createElement('div', { className: 'guide-step-item' }, [

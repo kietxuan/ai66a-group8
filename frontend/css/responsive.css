@@ -10,16 +10,7 @@
   .dash-bottom-grid {
     grid-template-columns: 1fr;
   }
-  /* Make 4-column Kanban wrap into a clean 2x2 grid on medium screens so columns never get squished */
-  .todo-kanban-board {
-    grid-template-columns: repeat(2, minmax(240px, 1fr)) !important;
-    overflow-y: visible !important;
-    height: auto !important;
-    max-height: none;
-  }
-  .kanban-column {
-    min-height: 290px;
-  }
+  /* The Kanban container queries own the column count, including collapsed sidebars. */
 }
 
 /* 2. Tablet & Mobile Breakpoint (<= 768px) */
@@ -88,9 +79,7 @@
   }
 
   .dash-hero-banner {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 18px;
+    padding: 0 0 16px;
   }
 
   .dash-score-card {
@@ -200,8 +189,8 @@
   }
 
   .todo-header {
-    padding: 12px 14px;
-    margin-bottom: 12px;
+    padding: 0 0 12px;
+    margin-bottom: 0;
     flex-wrap: wrap;
     gap: 8px;
   }
@@ -215,7 +204,7 @@
     overflow-y: visible !important;
     height: auto !important;
     gap: 12px;
-    padding-bottom: 40px;
+    padding-bottom: 16px;
   }
 
   .kanban-column {
@@ -251,10 +240,27 @@
 
   .ai-workspace-sidebar {
     width: 100% !important;
-    max-height: 180px;
+    max-height: none;
+    position: relative;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    overflow: visible;
     border-right: none !important;
     border-bottom: 1px solid var(--color-border);
   }
+  .ai-workspace-sidebar > .btn { width: auto !important; font-size: 13px; white-space: nowrap; }
+  .ai-history { min-width: 0; }
+  .ai-history[open] .ai-conv-list { position: absolute; top: 100%; left: 12px; right: 12px; max-height: 42dvh; padding: 8px; margin: 0; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; box-shadow: var(--shadow-lg); z-index: 60; }
+  .ai-workspace-main { flex: 1; height: auto; min-height: 0; }
+  .ai-workspace-header { padding: 12px; }
+  .ai-workspace-header > div > div > div:last-child { display: none; }
+  .ai-messages-container { padding: 16px 12px; }
+  .ai-workspace-main .ai-input-area { padding: 8px 12px max(12px, env(safe-area-inset-bottom, 0px)); }
+  .ai-message { max-width: 100%; gap: 8px; }
+  .ai-message.user { max-width: 94%; }
+  .ai-avatar { width: 24px; height: 24px; }
 
   /* Modal Responsive on Mobile */
   .modal-content,

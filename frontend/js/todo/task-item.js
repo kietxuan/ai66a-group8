@@ -72,7 +72,6 @@ export class TaskItem {
 
     const item = createElement("div", {
       className: `task-item ${isCompleted ? "completed" : ""} ${isActiveDetail ? "active-task-open" : ""}`,
-      style: cat?.color ? { borderLeft: `3px solid ${cat.color}` } : {},
       draggable: "true",
       dataset: { taskId: task.id },
       title: isActiveDetail
@@ -283,9 +282,9 @@ export class TaskItem {
         {
           className: "task-tag-badge",
           style: {
-            backgroundColor: `${cat.color}18`,
-            color: cat.color,
-            border: `1px solid ${cat.color}55`,
+            backgroundColor: "var(--color-bg-tertiary)",
+            color: "var(--color-text-secondary)",
+            border: "1px solid var(--color-border)",
           },
           title: `Phân loại: ${cat.name}`,
         },
@@ -293,6 +292,7 @@ export class TaskItem {
           createElement("span", {
             className: "task-tag-icon",
             style: {
+              color: cat.color,
               display: "inline-flex",
               alignItems: "center",
               marginRight: "2px",

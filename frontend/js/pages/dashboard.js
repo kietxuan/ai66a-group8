@@ -8,71 +8,7 @@ import { formatVietnameseDate } from "../utils/date.js";
 import { soundManager } from "../utils/sound.js";
 import { revisionOptions } from "../utils/revision.js";
 
-const DASHBOARD_FALLBACK_CSS = `
-.dashboard-page { width:100%; height:100%; overflow-y:auto; overflow-x:hidden; padding:22px 26px 48px; display:flex; flex-direction:column; gap:20px; background-color:var(--color-bg-primary); }
-.dashboard-page > * { flex-shrink: 0; }
-.dash-hero-banner { background:linear-gradient(135deg,#4F46E5 0%,#2563EB 55%,#0EA5E9 100%); border-radius:18px; padding:24px 28px; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:24px; box-shadow:0 12px 28px -8px rgba(37,99,235,0.38); }
-.dash-hero-left { display:flex; flex-direction:column; gap:6px; max-width:860px; flex:1; }
-.dash-hero-greeting { font-size:24px; font-weight:800; color:#fff; margin:0; }
-.dash-hero-subtitle { font-size:13.5px; color:rgba(255,255,255,0.92); line-height:1.55; margin:0; text-wrap:pretty; }
-.dash-hero-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
-.btn-dash-white { background:#fff; color:#1E40AF; font-weight:700; font-size:13px; padding:9px 16px; border-radius:10px; border:none; cursor:pointer; }
-.btn-dash-glass { background:rgba(255,255,255,0.18); color:#fff; font-weight:600; font-size:13px; padding:9px 15px; border-radius:10px; border:1px solid rgba(255,255,255,0.32); cursor:pointer; }
-.dash-score-card { display:flex; align-items:center; gap:16px; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.28); border-radius:16px; padding:14px 20px; flex-shrink:0; }
-.dash-score-ring-wrap { width:72px; height:72px; display:flex; align-items:center; justify-content:center; }
-.dash-score-info { display:flex; flex-direction:column; gap:3px; }
-.dash-score-title { font-size:11px; font-weight:700; text-transform:uppercase; opacity:0.9; }
-.dash-score-status { font-size:17px; font-weight:800; color:#fff; }
-.dash-kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr)); gap:14px; }
-.dash-kpi-card { background:var(--color-surface); border:1px solid var(--color-border-light); border-radius:14px; padding:16px 18px; display:flex; flex-direction:column; gap:8px; }
-.dash-kpi-top { display:flex; align-items:center; justify-content:space-between; }
-.dash-kpi-badge { font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; }
-.dash-kpi-value { font-size:24px; font-weight:800; color:var(--color-text-primary); }
-.dash-kpi-label { font-size:12.5px; font-weight:600; color:var(--color-text-secondary); }
-.dash-charts-grid { display:grid; grid-template-columns:1.55fr 1fr; gap:18px; }
-.dash-secondary-grid { display:grid; grid-template-columns:1.35fr 1fr; gap:18px; }
-.dash-bottom-grid { display:grid; grid-template-columns:1fr; gap:18px; }
-.dash-panel-card { background:var(--color-surface); border:1px solid var(--color-border-light); border-radius:16px; padding:20px 22px; display:flex; flex-direction:column; gap:16px; min-width:0; }
-.dash-panel-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-.dash-panel-title { font-size:15.5px; font-weight:800; color:var(--color-text-primary); margin:0; }
-.dash-panel-subtitle { font-size:12px; color:var(--color-text-secondary); margin:3px 0 0; }
-.dash-bar-legend { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-.dash-legend-item { display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; color:var(--color-text-secondary); }
-.dash-legend-dot { width:10px; height:10px; border-radius:3px; display:inline-block; }
-.dash-canvas-box { width:100%; min-height:215px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-.dash-donut-layout { display:flex; align-items:center; justify-content:space-around; gap:20px; flex-wrap:wrap; }
-.dash-donut-legend { display:flex; flex-direction:column; gap:8px; flex:1; min-width:170px; }
-.dash-donut-legend-row { display:flex; align-items:center; justify-content:space-between; padding:7px 10px; border-radius:8px; background:var(--color-bg-secondary); font-size:12.5px; }
-.eisenhower-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-.eisenhower-quadrant { background:var(--color-bg-secondary); border:1px solid var(--color-border-light); border-radius:12px; padding:12px 14px; display:flex; flex-direction:column; gap:8px; min-height:110px; }
-.eisenhower-q-header { display:flex; align-items:center; justify-content:space-between; font-size:12.5px; font-weight:800; }
-.eisenhower-q-list { display:flex; flex-direction:column; gap:6px; }
-.eisenhower-task-pill { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px; background:var(--color-surface); border:1px solid var(--color-border-light); font-size:12.5px; transition:all 0.25s ease; }
-.eisenhower-task-pill.dash-completing { opacity:0; transform:scale(0.96); }
-.eisenhower-task-pill.dash-completing .dash-task-title { text-decoration:line-through; color:var(--color-text-tertiary); }
-.dash-kpi-badge { font-size:13px; font-weight:700; padding:4px 10px; border-radius:8px; }
-.dash-task-complete { width:22px; height:22px; border:1.5px solid var(--color-text-tertiary); border-radius:50%; background:transparent; cursor:pointer; flex-shrink:0; }
-.dash-task-complete:hover, .dash-task-complete:focus-visible { border-color:var(--color-primary); outline:2px solid var(--color-primary); outline-offset:2px; }
-.dash-task-complete:disabled { cursor:wait; opacity:0.5; }
-.dash-list-progress-items { display:flex; flex-direction:column; gap:12px; }
-.dash-list-prog-row { display:flex; flex-direction:column; gap:6px; padding:8px 10px; border-radius:10px; background:var(--color-bg-secondary); }
-.dash-list-prog-top { display:flex; align-items:center; justify-content:space-between; font-size:13px; font-weight:700; }
-.dash-list-prog-track { width:100%; height:8px; border-radius:999px; background:var(--color-border-light); overflow:hidden; }
-.dash-list-prog-fill { height:100%; border-radius:999px; }
-.dash-timeline-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:10px; }
-.dash-timeline-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 14px; border-radius:10px; background:var(--color-bg-secondary); border:1px solid var(--color-border-light); border-left:4px solid var(--color-primary); cursor:pointer; }
-@media (max-width: 1080px) { .dash-charts-grid, .dash-secondary-grid { grid-template-columns:1fr; } }
-@media (max-width: 768px) { .dashboard-page { padding:14px 14px 84px; } .dash-hero-banner { flex-direction:column; align-items:flex-start; } .eisenhower-grid { grid-template-columns:1fr; } }
-`;
-
-function ensureDashboardStyles() {
-  if (!document.getElementById("planify-dashboard-inline-css")) {
-    const styleEl = document.createElement("style");
-    styleEl.id = "planify-dashboard-inline-css";
-    styleEl.textContent = DASHBOARD_FALLBACK_CSS;
-    document.head.appendChild(styleEl);
-  }
-}
+function uiColor(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#667085"; }
 
 export const dashboardPage = {
   container: null,
@@ -82,7 +18,6 @@ export const dashboardPage = {
   resizeHandler: null,
 
   async render(container) {
-    ensureDashboardStyles();
     this.container = container;
     container.innerHTML = "";
 
@@ -227,7 +162,7 @@ export const dashboardPage = {
 
   drawScoreRingCanvas(canvas, score) {
     const dpr = window.devicePixelRatio || 1;
-    const size = 72;
+    const size = 48;
     canvas.width = size * dpr;
     canvas.height = size * dpr;
     canvas.style.width = `${size}px`;
@@ -238,12 +173,12 @@ export const dashboardPage = {
 
     const cx = size / 2;
     const cy = size / 2;
-    const r = 28;
+    const r = 18;
 
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
-    ctx.lineWidth = 6.5;
+    ctx.strokeStyle = uiColor("--color-border");
+    ctx.lineWidth = 4;
     ctx.stroke();
 
     if (score != null) {
@@ -252,15 +187,15 @@ export const dashboardPage = {
         startAngle + (Math.max(0, Math.min(100, score)) / 100) * Math.PI * 2;
       ctx.beginPath();
       ctx.arc(cx, cy, r, startAngle, endAngle);
-      ctx.strokeStyle = "#ffffff";
+      ctx.strokeStyle = uiColor("--color-primary");
       ctx.lineWidth = 6.5;
       ctx.lineCap = "round";
       ctx.stroke();
     }
 
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = uiColor("--color-text-primary");
     ctx.font =
-      '800 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      '600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(score == null ? "-" : String(score), cx, cy + 1);
@@ -346,17 +281,17 @@ export const dashboardPage = {
 
       // Thứ tự lần lượt: Số công việc trong ngày -> Quá hạn (Màu đỏ) -> Đã làm xong (Xanh lá)
       const series = [
-        { val: item.due_tasks || 0, color: "#F59E0B" },
-        { val: item.overdue_tasks || 0, color: "#EF4444" },
-        { val: item.completed_tasks || 0, color: "#10B981" },
+        { val: item.due_tasks || 0, color: uiColor("--color-warning") },
+        { val: item.overdue_tasks || 0, color: uiColor("--color-danger") },
+        { val: item.completed_tasks || 0, color: uiColor("--color-success") },
       ];
 
       series.forEach((ser, sIdx) => {
         const bx = startX + sIdx * (barW + 3);
         const rawH = (ser.val / maxVal) * chartH;
-        const bh = Math.max(5, rawH);
+        const bh = Math.max(0, rawH);
         const by = padTop + chartH - bh;
-        drawRoundedTopBar(bx, by, barW, bh, ser.color);
+        if (bh > 0) drawRoundedTopBar(bx, by, barW, bh, ser.color);
 
         if (ser.val > 0) {
           ctx.fillStyle = isDark ? "#E2E8F0" : "#334155";
@@ -454,6 +389,26 @@ export const dashboardPage = {
             : "Cần tăng tốc";
     const scoreCanvas = createElement("canvas");
 
+    const scoreCard = createElement("div", { className: "dash-score-card" }, [
+          createElement("div", { className: "dash-score-ring-wrap" }, [
+            scoreCanvas,
+          ]),
+          createElement("div", { className: "dash-score-info" }, [
+            createElement("span", {
+              className: "dash-score-title",
+              textContent: "Điểm Năng Suất",
+            }),
+            createElement("span", {
+              className: "dash-score-status",
+              textContent: scoreStatus,
+            }),
+            createElement("span", {
+              style: { fontSize: "12px", color: "var(--color-text-secondary)" },
+              textContent: `Hoàn thành hôm nay: ${s.completed_today_count || 0} mục`,
+            }),
+          ]),
+        ]);
+
     const heroBanner = createElement(
       "section",
       { className: "dash-hero-banner" },
@@ -483,7 +438,7 @@ export const dashboardPage = {
             }),
             createElement("button", {
               className: "btn-dash-glass",
-              textContent: "📋 Mở Bảng Quản Lý Chung",
+              textContent: "Mở Công việc",
               onclick: () => {
                 store.set("activeTodoList", "board");
                 window.location.hash = "#todo";
@@ -491,30 +446,11 @@ export const dashboardPage = {
             }),
             createElement("button", {
               className: "btn-dash-glass",
-              textContent: "📅 Mở Lịch Tháng",
+              textContent: "Mở Lịch",
               onclick: () => {
                 store.set("calendarView", "month");
                 window.location.hash = "#calendar";
               },
-            }),
-          ]),
-        ]),
-        createElement("div", { className: "dash-score-card" }, [
-          createElement("div", { className: "dash-score-ring-wrap" }, [
-            scoreCanvas,
-          ]),
-          createElement("div", { className: "dash-score-info" }, [
-            createElement("span", {
-              className: "dash-score-title",
-              textContent: "Điểm Năng Suất",
-            }),
-            createElement("span", {
-              className: "dash-score-status",
-              textContent: scoreStatus,
-            }),
-            createElement("span", {
-              style: { fontSize: "11px", opacity: "0.88" },
-              textContent: `Hoàn thành hôm nay: ${s.completed_today_count || 0} mục`,
             }),
           ]),
         ]),
@@ -526,36 +462,26 @@ export const dashboardPage = {
       (breakdown.unscheduled || 0) + (breakdown.scheduled || 0);
     const kpiData = [
       {
-        bg: "rgba(99, 102, 241, 0.15)",
-        color: "#6366F1",
         title: "Cần làm",
         value: `${needToDoCount}`,
         label: "Việc cần làm sắp tới",
       },
       {
-        bg: "rgba(245, 158, 11, 0.15)",
-        color: "#F59E0B",
         title: "Hôm nay",
         value: `${todayColumnCount}`,
         label: "Công việc & sự kiện hôm nay",
       },
       {
-        bg: "rgba(239, 68, 68, 0.15)",
-        color: "#EF4444",
         title: "Quá hạn",
         value: `${s.overdue_count || 0}`,
         label: s.overdue_count > 0 ? "Cần xử lý ngay" : "Không có việc quá hạn",
       },
       {
-        bg: "rgba(16, 185, 129, 0.15)",
-        color: "#10B981",
         title: "Đã hoàn thành",
         value: `${s.completed_tasks || 0}`,
         label: `Trên tổng số ${s.total_tasks || 0} việc (${s.completion_rate || 0}%)`,
       },
       {
-        bg: "rgba(236, 72, 153, 0.15)",
-        color: "#EC4899",
         title: "Quan trọng",
         value: `${s.important_pending_count || 0}`,
         label: "Việc quan trọng chưa xong",
@@ -570,7 +496,6 @@ export const dashboardPage = {
           createElement("div", { className: "dash-kpi-top" }, [
             createElement("span", {
               className: "dash-kpi-badge",
-              style: { backgroundColor: k.bg, color: k.color },
               textContent: k.title,
             }),
           ]),
@@ -611,21 +536,21 @@ export const dashboardPage = {
             createElement("div", { className: "dash-legend-item" }, [
               createElement("span", {
                 className: "dash-legend-dot",
-                style: { backgroundColor: "#F59E0B" },
+                style: { backgroundColor: uiColor("--color-warning") },
               }),
               createElement("span", { textContent: "Việc trong ngày" }),
             ]),
             createElement("div", { className: "dash-legend-item" }, [
               createElement("span", {
                 className: "dash-legend-dot",
-                style: { backgroundColor: "#EF4444" },
+                style: { backgroundColor: uiColor("--color-danger") },
               }),
               createElement("span", { textContent: "Quá hạn" }),
             ]),
             createElement("div", { className: "dash-legend-item" }, [
               createElement("span", {
                 className: "dash-legend-dot",
-                style: { backgroundColor: "#10B981" },
+                style: { backgroundColor: uiColor("--color-success") },
               }),
               createElement("span", { textContent: "Đã làm xong" }),
             ]),
@@ -650,25 +575,25 @@ export const dashboardPage = {
         key: "todo",
         label: "Cần làm",
         count: needToDoCount,
-        color: "#6366F1",
+        color: uiColor("--color-primary"),
       },
       {
         key: "today",
         label: "Hôm nay",
         count: todayColumnCount,
-        color: "#F59E0B",
+        color: uiColor("--color-warning"),
       },
       {
         key: "overdue",
         label: "Quá hạn",
         count: s.overdue_count || 0,
-        color: "#EF4444",
+        color: uiColor("--color-danger"),
       },
       {
         key: "completed",
         label: "Hoàn thành",
         count: breakdown.completed || 0,
-        color: "#10B981",
+        color: uiColor("--color-success"),
       },
     ];
 
@@ -715,7 +640,7 @@ export const dashboardPage = {
                   ],
                 ),
                 createElement("span", {
-                  style: { fontWeight: "800" },
+                  style: { fontWeight: "600" },
                   textContent: `${seg.count}`,
                 }),
               ],
@@ -725,12 +650,6 @@ export const dashboardPage = {
       ]),
     ]);
 
-    const chartsRow = createElement(
-      "section",
-      { className: "dash-charts-grid" },
-      [barChartCard, donutCard],
-    );
-
     // 4. SECONDARY ROW: PRIORITY OVERVIEW & CUSTOM LISTS PROGRESS
     const myDayTasks = data?.tasks_my_day || [];
     const impTasks = data?.tasks_important || [];
@@ -739,22 +658,22 @@ export const dashboardPage = {
     const quadrants = [
       {
         title: "Công việc & sự kiện hôm nay",
-        color: "#F59E0B",
+        color: uiColor("--color-warning"),
         items: myDayTasks.filter((t) => !t.is_completed).slice(0, 4),
       },
       {
         title: "Việc quan trọng",
-        color: "#EC4899",
+        color: uiColor("--color-text-secondary"),
         items: impTasks.filter((t) => !t.is_completed).slice(0, 4),
       },
       {
         title: "Công việc quá hạn cần xử lý",
-        color: "#EF4444",
+        color: uiColor("--color-danger"),
         items: overdueTasks.slice(0, 4),
       },
       {
         title: "Việc cần làm sắp tới",
-        color: "#6366F1",
+        color: uiColor("--color-primary"),
         items: (data?.tasks_todo || []).slice(0, 4),
       },
     ];
@@ -782,7 +701,7 @@ export const dashboardPage = {
             createElement("div", { className: "eisenhower-quadrant" }, [
               createElement(
                 "div",
-                { className: "eisenhower-q-header", style: { color: q.color } },
+                { className: "eisenhower-q-header", style: { color: q.title.includes("quá hạn") ? "var(--color-danger)" : "var(--color-text-primary)" } },
                 [
                   createElement("span", { textContent: q.title }),
                   createElement("span", { textContent: `${q.items.length}` }),
@@ -904,7 +823,7 @@ export const dashboardPage = {
                           className: "dash-list-prog-fill",
                           style: {
                             width: `${lst.completion_rate}%`,
-                            backgroundColor: lst.color || "#4F46E5",
+                            backgroundColor: lst.color || uiColor("--color-accent"),
                           },
                         }),
                       ],
@@ -916,16 +835,23 @@ export const dashboardPage = {
       ],
     );
 
+    const chartsRow = createElement(
+      "section",
+      { className: "dash-overview-grid" },
+      [eisenhowerCard, barChartCard],
+    );
+
     const secondaryRow = createElement(
       "section",
       { className: "dash-secondary-grid" },
-      [eisenhowerCard, listProgressCard],
+      [donutCard, listProgressCard],
     );
 
     pageEl.appendChild(heroBanner);
     pageEl.appendChild(kpiGrid);
     pageEl.appendChild(chartsRow);
     pageEl.appendChild(secondaryRow);
+    pageEl.appendChild(scoreCard);
 
     requestAnimationFrame(() => {
       this.drawScoreRingCanvas(scoreCanvas, score);

@@ -13,6 +13,8 @@ export const settingsPage = {
   otpCountdownInterval: null,
 
   async render(container) {
+    this.themeUnsubscribe?.();
+    this.themeUnsubscribe = null;
     const generation = (this.generation = (this.generation || 0) + 1);
     this.container = container;
     container.innerHTML = "";
@@ -451,13 +453,14 @@ export const settingsPage = {
         }),
         createElement("div", { className: "theme-options-grid" }, [
           createElement(
-            "div",
+            "button",
             {
+              type: "button",
+              dataset: { themeOption: "light" },
+              "aria-pressed": String(currentTheme !== "dark"),
               className: `theme-card ${currentTheme !== "dark" ? "active" : ""}`,
               onclick: () => {
                 ThemeManager.apply("light", true);
-                store.set("theme", "light");
-                settingsPage.render(container);
               },
             },
             [
@@ -480,13 +483,14 @@ export const settingsPage = {
             ],
           ),
           createElement(
-            "div",
+            "button",
             {
+              type: "button",
+              dataset: { themeOption: "dark" },
+              "aria-pressed": String(currentTheme === "dark"),
               className: `theme-card ${currentTheme === "dark" ? "active" : ""}`,
               onclick: () => {
                 ThemeManager.apply("dark", true);
-                store.set("theme", "dark");
-                settingsPage.render(container);
               },
             },
             [
@@ -1165,8 +1169,8 @@ export const settingsPage = {
       ],
     );
 
-    inner.appendChild(categorySection);
     inner.appendChild(themeSection);
+    inner.appendChild(categorySection);
     inner.appendChild(notificationSection);
     inner.appendChild(accountSection);
     inner.appendChild(exportSection);
@@ -1175,9 +1179,20 @@ export const settingsPage = {
     page.appendChild(inner);
     loading.remove();
     container.appendChild(page);
+    const syncThemeCards = (theme) => {
+      themeSection.querySelectorAll('[data-theme-option]').forEach(card => {
+        const active = card.dataset.themeOption === theme;
+        card.classList.toggle('active', active);
+        card.setAttribute('aria-pressed', String(active));
+      });
+    };
+    syncThemeCards(store.get('theme'));
+    this.themeUnsubscribe = store.on('theme', syncThemeCards);
   },
 
   destroy() {
+    this.themeUnsubscribe?.();
+    this.themeUnsubscribe = null;
     this.generation = (this.generation || 0) + 1;
     if (this.otpCountdownInterval) {
       clearInterval(this.otpCountdownInterval);
