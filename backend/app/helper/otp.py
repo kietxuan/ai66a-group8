@@ -218,20 +218,20 @@ def _get_reminder_html_content(
     return subject, html
 
 
-def _get_admin_email_credentials() -> tuple[str, str]:
-    """Lấy email và mật khẩu trực tiếp từ tài khoản ADMIN trong .env"""
-    sender_email = (getattr(settings, "ADMIN_EMAIL", "") or "").strip()
-    raw_password = (getattr(settings, "ADMIN_PASSWORD", "") or "").strip()
+def _get_smtp_credentials() -> tuple[str, str]:
+    """Mail credentials must never double as the bootstrap admin password."""
+    sender_email = settings.SMTP_EMAIL.strip()
+    raw_password = settings.SMTP_PASSWORD.strip()
     sender_password = raw_password.replace(" ", "")
     return sender_email, sender_password
 
 
 def _send_email_sync(to_email: str, subject: str, html_content: str, debug_tag: str = "") -> bool:
-    """Hàm gửi email đồng bộ chạy trong worker thread qua tài khoản ADMIN (fallback)"""
-    sender_email, sender_password = _get_admin_email_credentials()
+    """Hàm gửi email đồng bộ chạy trong worker thread (fallback)."""
+    sender_email, sender_password = _get_smtp_credentials()
 
     if not sender_email or not sender_password or sender_password in ["YOUR_SECRET_PASSWORD", "MAT_KHAU_ADMIN"]:
-        logger.warning("ADMIN_EMAIL hoặc ADMIN_PASSWORD chưa được cấu hình hợp lệ trong .env; không thể gửi email.")
+        logger.warning("SMTP_EMAIL hoặc SMTP_PASSWORD chưa được cấu hình hợp lệ; không thể gửi email.")
         return False
 
     message = MIMEMultipart("alternative")
@@ -270,11 +270,11 @@ def _send_email_sync(to_email: str, subject: str, html_content: str, debug_tag: 
 
 
 async def _send_email_async(to_email: str, subject: str, html_content: str, debug_tag: str = "") -> bool:
-    """Hàm gửi email bất đồng bộ qua tài khoản ADMIN (ưu tiên aiosmtplib, fallback qua thread pool)"""
-    sender_email, sender_password = _get_admin_email_credentials()
+    """Hàm gửi email bất đồng bộ (ưu tiên aiosmtplib, fallback qua thread pool)."""
+    sender_email, sender_password = _get_smtp_credentials()
 
     if not sender_email or not sender_password or sender_password in ["YOUR_SECRET_PASSWORD", "MAT_KHAU_ADMIN"]:
-        logger.warning("ADMIN_EMAIL hoặc ADMIN_PASSWORD chưa được cấu hình hợp lệ trong .env; không thể gửi email.")
+        logger.warning("SMTP_EMAIL hoặc SMTP_PASSWORD chưa được cấu hình hợp lệ; không thể gửi email.")
         return False
 
     message = MIMEMultipart("alternative")

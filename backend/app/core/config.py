@@ -1,15 +1,18 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
+from pydantic import Field
 
 class Settings(BaseSettings):
     # 1. Cấu hình API chung
     PROJECT_NAME: str = "Planify Pro API"
     API_V1_STR: str = "/api/v1"
 
-    # 2. Tài khoản Admin (Dùng đăng nhập Admin và gửi email xác thực/thông báo)
+    # 2. Tài khoản Admin (không dùng mật khẩu này để gửi mail)
     ADMIN_USERNAME: str = "Admin"
     ADMIN_EMAIL: str = "admin@planify.local"
     ADMIN_PASSWORD: str = ""
+    SMTP_EMAIL: str = ""
+    SMTP_PASSWORD: str = ""
 
     # 3. Cấu hình Bảo mật (JWT)
     SECRET_KEY: str = ""
@@ -22,6 +25,9 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = "web_base"
     HOST_PORT_DB: str = "5432"
     DATABASE_URL: Optional[str] = None
+    DATABASE_SSL: bool = False
+    DATABASE_POOL_SIZE: int = Field(default=20, ge=1)
+    DATABASE_MAX_OVERFLOW: int = Field(default=10, ge=0)
 
     # 5. Cấu hình kết nối Redis
     HOST_PORT_REDIS: str = "6379"

@@ -1,9 +1,12 @@
 import asyncio
+from pathlib import Path
 from datetime import datetime, date
 from app.core.time import local_now, BUSINESS_TZ
 from app.services.task_service import task_service
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from admin import create_admin_user
 from contextlib import asynccontextmanager
 from fastapi.exceptions import RequestValidationError
@@ -125,8 +128,15 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(Exception, unhandled_exception_handler)
 
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+if (FRONTEND_DIR / "index.html").is_file():
+    for directory in ("css", "js", "assets"):
+        app.mount(f"/{directory}", StaticFiles(directory=FRONTEND_DIR / directory), name=directory)
+
 @app.get("/", tags=["Root"])
 def read_root():
+    if (FRONTEND_DIR / "index.html").is_file():
+        return FileResponse(FRONTEND_DIR / "index.html", headers={"Cache-Control": "no-store"})
     return {"success": f"Welcome to {settings.PROJECT_NAME} API!"}
 
 @app.get("/health", tags=["Health"])

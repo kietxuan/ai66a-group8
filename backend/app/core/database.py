@@ -2,6 +2,7 @@ from typing import AsyncGenerator
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from app.core.config import settings
+from app.core.db_connection import database_connect_args
 
 # 1. Lấy chuỗi kết nối (Tự động thích ứng Docker hoặc Local)
 DATABASE_URL = settings.get_database_url
@@ -12,8 +13,9 @@ engine = create_async_engine(
     echo=False,
     future=True,
 
-    pool_size=20,          # Giữ tối đa 10 kết nối luôn mở sẵn trong bộ nhớ để dùng ngay
-    max_overflow=10,       # Khi tải tăng đột biến, cho phép mở thêm tối đa 10 kết nối tạm thời
+    connect_args=database_connect_args(),
+    pool_size=settings.DATABASE_POOL_SIZE,
+    max_overflow=settings.DATABASE_MAX_OVERFLOW,
     pool_timeout=30,       # Nếu pool bị đầy, request phải chờ tối đa 30 giây trước khi báo lỗi timeout
     pool_recycle=1800,     # Tự động đóng và giải phóng kết nối sau 30 phút để tránh lỗi Postgres ngắt kết nối idle (treo mạng)
     pool_pre_ping=True,    # Cơ chế "bắt tay trước" - tự động kiểm tra kết nối còn sống không trước khi giao cho app

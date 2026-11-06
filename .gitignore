@@ -49,6 +49,7 @@ Thumbs.db
 # Local secrets and generated artifacts (repository safeguards)
 .env.*
 !.env.example
+!.env.koyeb.example
 .venv/
 .pytest_cache/
 .mypy_cache/
