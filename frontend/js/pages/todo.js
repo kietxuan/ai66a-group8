@@ -13,6 +13,7 @@ import { TaskDetail } from '../todo/task-detail.js';
 import { initTodoSidebarToggle } from '../todo/sidebar-toggle.js';
 import { revisionOptions } from '../utils/revision.js';
 import { isScheduleDismissal } from '../utils/api-error.js';
+import { createLoadingState } from '../components/loading.js';
 
 export const POPULAR_ICONS = [
   { icon: '📋', name: 'Bảng, Kế hoạch, Công việc' },
@@ -523,7 +524,7 @@ export const todoPage = {
     const generation = this.requestGeneration = (this.requestGeneration || 0) + 1;
     const listContainer = this.taskListComponent?.container;
     if (this.matchCountEl) this.matchCountEl.textContent = 'Đang tải…';
-    if (listContainer && !this.tasks?.length) listContainer.replaceChildren(createElement('div', { role: 'status', className: 'empty-state', textContent: 'Đang tải công việc…' }));
+    if (listContainer && !this.tasks?.length) listContainer.replaceChildren(createLoadingState('Đang tải công việc…'));
     try {
       const [tasks, refreshedLists, refreshedCategories] = await Promise.all([
         api.get('/tasks'),

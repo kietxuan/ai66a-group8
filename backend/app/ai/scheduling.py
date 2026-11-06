@@ -31,11 +31,33 @@ def read_date(value):
     return date(int(parts[2]) if len(parts) == 3 else business_today().year, int(parts[1]), int(parts[0]))
 
 
+def requested_weekdays(text):
+    """Read Vietnamese names, shared-prefix lists (thứ 2,4,6) and ranges."""
+    token = r'(?:hai|ba|tu|nam|sau|bay|[2-7])'
+    matches = list(re.finditer(r'\b(?:thu\s*(' + token + r')|t([2-7])|(chu nhat|cn))\b', text))
+    def day_index(match):
+        return 6 if match[3] else DAY_NAMES[match[1] or match[2]]
+    days = {day_index(m) for m in matches}
+    for match in matches:
+        tail = re.match(r'(?:\s*(?:,|/|&|va)\s*(?:thu\s*)?' + token + r'\b)+', text[match.end():])
+        if tail:
+            days.update(DAY_NAMES[v] for v in re.findall(r'\b' + token + r'\b', tail[0]))
+    if re.search(r'\b(?:chu nhat|cn)\b', text):
+        days.add(6)
+    # Only a connector directly between weekday tokens denotes a range;
+    # a time range between two separately named weekdays must not expand it.
+    if len(matches) == 2 and re.fullmatch(r'\s*(?:den|toi|-)\s*', text[matches[0].end():matches[1].start()]):
+        first, last = day_index(matches[0]), day_index(matches[1])
+        days = {(first + i) % 7 for i in range((last - first) % 7 + 1)}
+    return days
+
+
 def recurrence_request(text):
     # A quoted title is data; e.g. "Báo cáo hàng ngày" must not turn into a rule.
     clean = fold(re.sub(r'''["“”'‘’][^"“”'‘’]*["“”'‘’]''', '', text or ''))
     today = business_today()
     start = None
+    week_anchor = False
     date_pattern = r'(\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}(?:/\d{4})?)'
     explicit_start = re.search(r'bat dau\s*(?:tu|vao)?\s*(?:ngay\s*)?' + date_pattern, clean)
     if explicit_start:
@@ -44,6 +66,10 @@ def recurrence_request(text):
         start = today
     elif re.search(r'\bngay mai\b', clean):
         start = today + timedelta(days=1)
+    elif (next_week := re.search(r'\b(?:tuan sau|tuan toi|next week)\b', clean)) and not re.search(r'\b(?:den|toi)(?:\s+het)?\s*$', clean[:next_week.start()]):
+        # Vietnamese calendar weeks start on Monday, not today + seven days.
+        start = today + timedelta(days=7 - today.weekday())
+        week_anchor = True
 
     parts = {}
     freqs = [('DAILY', r'(?:moi|hang)\s+ngay|daily'),
@@ -56,16 +82,14 @@ def recurrence_request(text):
             break
     if re.search(r'cac ngay trong tuan|(?:t2|thu 2)\s*(?:den|toi)\s*(?:t6|thu 6)', clean):
         parts.update(FREQ='WEEKLY', BYDAY='MO,TU,WE,TH,FR')
-    recurring = bool(parts) or bool(re.search(r'lap (?:lai\s*)?|(?:moi|cach)\s+\d+\s+(?:ngay|tuan|thang|nam)', clean))
+    before_start = clean.split('bat dau')[0]
+    days_text = before_start if requested_weekdays(before_start) else clean
+    days = requested_weekdays(days_text)
+    # "vào thứ Hai, Tư, Sáu ... kéo dài 3 tuần" implies weekly recurrence
+    # even without the words "hàng tuần". Do not defer explicit days to the LLM.
+    weekly_span = days and re.search(r'\b(?:keo dai|trong|den|toi)\s*(?:het\s*)?(?:\d+|mot|hai|ba|bon|nam|sau|bay|tam|chin|muoi)\s+(?:ngay|tuan|thang|nam)\b', clean)
+    recurring = bool(parts) or bool(weekly_span) or bool(re.search(r'lap (?:lai\s*)?|(?:moi|cach)\s+\d+\s+(?:ngay|tuan|thang|nam)', clean))
     if recurring:
-        days_text = clean.split('bat dau')[0] if 'bat dau' in clean and re.search(r'moi|hang|lap', clean.split('bat dau')[0]) else clean
-        matches = list(re.finditer(r'\bthu\s*(hai|ba|tu|nam|sau|bay|[2-7])\b', days_text))
-        days = {DAY_NAMES[m[1]] for m in matches}
-        if re.search(r'chu nhat|\bcn\b', days_text):
-            days.add(6)
-        if len(matches) == 2 and re.search(r'\b(?:den|toi)\b', days_text[matches[0].end():matches[1].start()]):
-            first, last = DAY_NAMES[matches[0][1]], DAY_NAMES[matches[1][1]]
-            days = {(first + i) % 7 for i in range((last-first) % 7 + 1)}
         if days and not parts.get('BYDAY'):
             parts.setdefault('FREQ', 'WEEKLY')
             parts['BYDAY'] = ','.join(DAY_CODES[d] for d in sorted(days))
@@ -79,14 +103,17 @@ def recurrence_request(text):
     explicit_end = re.search(r'(?:den|toi|ket thuc)\s*(?:het\s*)?(?:vao\s*)?(?:ngay\s*)?' + date_pattern, clean)
     if explicit_end:
         until = read_date(explicit_end[1])
-    duration = re.search(r'(?:den|toi|trong|keo dai)\s*(?:het\s*)?(\d+|mot|hai|ba|bon|nam|sau|bay|tam|chin|muoi)\s+(ngay|tuan|thang|nam)(?:\s+(?:sau|toi))?', clean)
+    duration = re.search(r'(den|toi|trong|keo dai)\s*(?:het\s*)?(\d+|mot|hai|ba|bon|nam|sau|bay|tam|chin|muoi)\s+(ngay|tuan|thang|nam)(?:\s+(?:sau|toi))?', clean)
     if duration:
-        n = int(duration[1]) if duration[1].isdigit() else NUMBERS[duration[1]]
+        n = int(duration[2]) if duration[2].isdigit() else NUMBERS[duration[2]]
         if not 1 <= n <= 1200:
             raise ValueError('Vui lòng chọn thời hạn lặp hợp lệ.')
         anchor = start or today
-        unit = duration[2]
+        unit = duration[3]
         until = add_months(anchor, n * (12 if unit == 'nam' else 1)) if unit in {'thang','nam'} else anchor + timedelta(days=n * (7 if unit == 'tuan' else 1))
+        if duration[1] in {'trong', 'keo dai'}:
+            # UNTIL is inclusive: three weeks must not include Monday of week four.
+            until -= timedelta(days=1)
     count = re.search(r'(?:lap(?: lai)?\s*(?:tong cong\s*)?|trong\s+)(\d+)\s+lan\b', clean)
     if until and count:
         raise ValueError('Bạn hãy chọn giới hạn theo ngày kết thúc hoặc số lần lặp, không đồng thời cả hai.')
@@ -94,6 +121,8 @@ def recurrence_request(text):
         parts['UNTIL'] = until.strftime('%Y%m%d')
     if count:
         parts['COUNT'] = count[1]
+    if week_anchor and days and not recurring:
+        start += timedelta(days=min((day - start.weekday()) % 7 for day in days))
     return parts, start
 
 

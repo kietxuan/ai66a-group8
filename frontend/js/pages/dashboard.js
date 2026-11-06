@@ -8,6 +8,7 @@ import { formatVietnameseDate } from "../utils/date.js";
 import { soundManager } from "../utils/sound.js";
 import { revisionOptions } from "../utils/revision.js";
 import { createIcon } from "../utils/icons.js";
+import { createLoadingState } from "../components/loading.js";
 
 function uiColor(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#667085"; }
 
@@ -107,11 +108,7 @@ export const dashboardPage = {
     const generation = (this.generation = (this.generation || 0) + 1);
     if (!silent && !this.stats) {
       pageEl.replaceChildren(
-        createElement("div", {
-          className: "dash-panel-card",
-          role: "status",
-          textContent: "Đang tải thống kê…",
-        }),
+        createLoadingState("Đang tải thống kê…"),
       );
     }
     try {

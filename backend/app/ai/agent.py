@@ -294,7 +294,7 @@ class PlanifyAgent:
 
         # Strip trailing time/date metadata clauses
         cleaned = re.sub(
-            r"\s+(bắt đầu từ|vào mỗi|mỗi thứ|hàng tuần|hàng ngày|hàng tháng|hàng năm|từ\s+\d|lúc\s+\d|vào\s+lúc|vào\s+ngày|hạn\s+chót|ngày\s+\d{4}-\d{2}-\d{2}|ngày\s+\d{1,2}/\d{1,2}|hôm nay|ngày mai| và đánh dấu| lặp lại).*$",
+            r"\s+(bắt đầu từ|vào mỗi|vào thứ|vào chủ nhật|mỗi thứ|hàng tuần|hàng ngày|hàng tháng|hàng năm|từ\s+\d|lúc\s+\d|vào\s+lúc|vào\s+ngày|hạn\s+chót|ngày\s+\d{4}-\d{2}-\d{2}|ngày\s+\d{1,2}/\d{1,2}|hôm nay|ngày mai| và đánh dấu| lặp lại).*$",
             "",
             cleaned,
             flags=re.IGNORECASE
@@ -303,6 +303,8 @@ class PlanifyAgent:
 
     def _extract_date_from_text(self, text: str) -> Optional[date]:
         recurrence, start = recurrence_request(text)
+        if start is not None:
+            return start
         if recurrence.get('FREQ'):
             return start or business_today()
         lower = text.lower()
@@ -338,9 +340,6 @@ class PlanifyAgent:
             return today + timedelta(days=1)
         if "hôm nay" in lower or "today" in lower or "tối nay" in lower or "chiều nay" in lower or "sáng nay" in lower:
             return today
-        if "tuần sau" in lower or "tuần tới" in lower:
-            return today + timedelta(days=7)
-
         return None
 
     def _extract_datetimes_or_times(self, text: str, base_date: date):

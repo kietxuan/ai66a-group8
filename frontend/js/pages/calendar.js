@@ -20,6 +20,7 @@ import { AgendaView } from "../calendar/agenda-view.js";
 import { EventForm } from "../calendar/event-form.js";
 import { RRuleParser } from "../calendar/rrule.js";
 import { adaptTasksForCalendar } from "../calendar/task-adapter.js";
+import { createLoadingState } from "../components/loading.js";
 
 export const calendarPage = {
   container: null,
@@ -417,7 +418,7 @@ export const calendarPage = {
     });
 
     try {
-      viewContainer.replaceChildren(createElement('div', { role: 'status', className: 'empty-state', textContent: 'Đang tải lịch…' }));
+      viewContainer.replaceChildren(createLoadingState('Đang tải lịch…'));
       const [events, allTasks, lists] = await Promise.all([
         api.get('/events', { start: `${toLocalISOString(startDt)}+07:00`, end: `${toLocalISOString(endDt)}+07:00` }),
         api.get('/tasks'),

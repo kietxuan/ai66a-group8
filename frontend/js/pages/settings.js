@@ -7,6 +7,7 @@ import { ReminderNotifier } from "../components/reminder-notifier.js";
 import { Toast } from "../components/toast.js";
 import { api } from "../api.js";
 import { buildCalendarIcs } from "../utils/ical.js";
+import { createLoadingState } from "../components/loading.js";
 
 function themePreview(theme) {
   return createElement('span', { className: `theme-preview theme-preview-${theme}`, 'aria-hidden': 'true' }, [
@@ -29,7 +30,7 @@ export const settingsPage = {
     const generation = (this.generation = (this.generation || 0) + 1);
     this.container = container;
     container.innerHTML = "";
-    const loading = createElement('div', { className: 'empty-state', role: 'status', textContent: 'Đang tải cài đặt…' });
+    const loading = createLoadingState('Đang tải cài đặt…');
     container.appendChild(loading);
 
     const page = createElement("div", { className: "settings-page" });
