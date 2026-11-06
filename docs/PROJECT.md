@@ -12,13 +12,14 @@ Cập nhật ngày 06/11/2026. Tài liệu này mô tả code trong repository; 
 | Dữ liệu | `backend/app/models/`, `backend/alembic/`: SQLAlchemy async + asyncpg trên PostgreSQL. |
 | OTP/giới hạn yêu cầu | Redis; OTP 6 chữ số có hạn 5 phút, tối đa 5 lần nhập sai và thời gian chờ gửi lại 60 giây. |
 | Chạy local | `docker-compose.yml`: frontend, backend, PostgreSQL, Redis; `backend/entrypoint.sh` chạy Alembic trước API. |
-| Chuẩn bị Koyeb | `Dockerfile.koyeb`: frontend + API trong một container, PostgreSQL/Redis bên ngoài qua TLS; cấu hình theo `.env.koyeb.example` và README. |
+| Koyeb (cũ) | `Dockerfile.koyeb` giữ để tương thích; tài khoản mới cần gói trả phí, không phải hướng deploy Free hiện tại. |
+| Deploy Render | `Dockerfile.render`, `render.yaml`: một Web Service, frontend + API chung origin, Neon/Upstash TLS, email qua Brevo HTTPS. Quy trình end to end trong README. |
 
-Frontend lưu Bearer token trong `localStorage` và gọi `/api/v1` cùng origin (qua Nginx ở local, trực tiếp FastAPI trong image Koyeb). Dữ liệu task, event, list và conversation phải được giới hạn theo tài khoản đã xác thực. Không dùng mô tả JWT cookie/CSRF, React/Vite, FullCalendar hay `/api/chat` của bản kế hoạch trước để suy ra hành vi source này. Hướng dẫn deploy hiện tại nằm trong README.
+Frontend lưu Bearer token trong `localStorage` và gọi `/api/v1` cùng origin (qua Nginx ở local, trực tiếp FastAPI trong image cloud). Dữ liệu task, event, list và conversation phải được giới hạn theo tài khoản đã xác thực. Không dùng mô tả JWT cookie/CSRF, React/Vite, FullCalendar hay `/api/chat` của bản kế hoạch trước để suy ra hành vi source này. Hướng dẫn deploy hiện tại nằm trong README.
 
 ## Chức năng hiện có
 
-- **Auth:** `/otp/send`, `/otp/verify`, `/auth/register`, `/auth/login`, `/auth/reset-password`, `/users/me` và đổi mật khẩu. OTP dùng Gmail SMTP STARTTLS cổng 587 với `SMTP_EMAIL` và `SMTP_PASSWORD`; tách riêng với thông tin bootstrap admin. Khi nâng cấp, chuyển cấu hình mail cũ sang `SMTP_*` (xem README).
+- **Auth:** `/otp/send`, `/otp/verify`, `/auth/register`, `/auth/login`, `/auth/reset-password`, `/users/me` và đổi mật khẩu. `MAIL_PROVIDER=smtp` (mặc định) dùng Gmail STARTTLS 587 với `SMTP_EMAIL`/`SMTP_PASSWORD` ở local; `MAIL_PROVIDER=brevo` dùng HTTPS API với `BREVO_API_KEY`/`MAIL_FROM_EMAIL` trên Render. OTP và reminder dùng chung transport; không fallback SMTP khi Brevo lỗi. Credentials mail tách riêng với bootstrap admin.
 - **To Do:** CRUD list, task, step; hoàn thành/mở lại; tìm kiếm và lọc; ngày giờ, reminder, recurrence và kiểm tra trùng lịch.
 - **Calendar:** CRUD calendar và event; bốn chế độ xem ở frontend, kéo thả và xử lý sự kiện lặp. Task đã xếp lịch được hiển thị cùng lịch.
 - **Dashboard:** tổng hợp hôm nay và thống kê từ dữ liệu tài khoản.

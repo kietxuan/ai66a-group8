@@ -1,5 +1,6 @@
 import asyncio
 import smtplib
+import httpx
 from html import escape
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -269,8 +270,43 @@ def _send_email_sync(to_email: str, subject: str, html_content: str, debug_tag: 
                 pass
 
 
+async def _send_brevo_email(to_email: str, subject: str, html_content: str) -> bool:
+    """HTTPS transport for hosts that block SMTP. Never retry ambiguous sends."""
+    api_key = settings.BREVO_API_KEY.strip()
+    sender = settings.MAIL_FROM_EMAIL.strip()
+    if not api_key or not sender:
+        logger.warning("Brevo requires BREVO_API_KEY and a verified MAIL_FROM_EMAIL.")
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=5.0)) as client:
+            response = await client.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={"api-key": api_key, "accept": "application/json"},
+                json={
+                    "sender": {"name": settings.MAIL_FROM_NAME, "email": sender},
+                    "to": [{"email": to_email}],
+                    "subject": subject,
+                    "htmlContent": html_content,
+                },
+            )
+        if response.status_code != 201:
+            # Provider bodies can contain addresses or credentials: do not log them.
+            logger.warning("Brevo did not accept the email (HTTP %s).", response.status_code)
+            return False
+        message_id = response.json().get("messageId")
+        if not isinstance(message_id, str) or not message_id.strip():
+            logger.warning("Brevo returned an invalid send acknowledgement.")
+            return False
+        return True  # Accepted by provider, not proof of inbox delivery.
+    except (httpx.HTTPError, ValueError, AttributeError):
+        logger.warning("Brevo email request failed or returned an invalid response; not retried.")
+        return False
+
+
 async def _send_email_async(to_email: str, subject: str, html_content: str, debug_tag: str = "") -> bool:
     """Hàm gửi email bất đồng bộ (ưu tiên aiosmtplib, fallback qua thread pool)."""
+    if settings.MAIL_PROVIDER == "brevo":
+        return await _send_brevo_email(to_email, subject, html_content)
     sender_email, sender_password = _get_smtp_credentials()
 
     if not sender_email or not sender_password or sender_password in ["YOUR_SECRET_PASSWORD", "MAT_KHAU_ADMIN"]:

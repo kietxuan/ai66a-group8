@@ -25,7 +25,72 @@ docker compose ps
 
 Frontend gọi API cùng origin qua Nginx (`/api/v1`). Backend chạy Alembic khi container khởi động. Trước khi thay đổi migration trên database có dữ liệu, hãy sao lưu; không dùng `docker compose down -v` để sửa lỗi migration.
 
-## Chuẩn bị Koyeb (một container)
+## Deploy Render + Brevo (khuyến nghị cho bản demo)
+
+Image `Dockerfile.render` đóng gói frontend và FastAPI chung origin, chạy Alembic trước API, một worker, non-root, không `--reload`, lắng nghe `0.0.0.0:${PORT:-10000}`. Không thay đổi cách chạy Compose local. `render.yaml` là Blueprint chỉ tạo một Web Service Free, **không tạo database trả phí**. Credentials thật phải điền trên Render, không commit `.env`.
+
+### 1. PostgreSQL trên Neon
+
+- Tạo project/giữ project đã có tại Frankfurt; chọn Direct connection (tắt pooling) vì app và Alembic dùng chung URL.
+- Lấy chuỗi tại Connect. Đổi đầu `postgresql://` thành `postgresql+asyncpg://`, bỏ query `?sslmode=require&channel_binding=require`, đặt `DATABASE_SSL=true` để app và Alembic xác minh TLS. Giữ nguyên host, user, tên database. Percent-encode ký tự đặc biệt trong password, không encode lại phần đã encode.
+- Nếu từng chia sẻ chuỗi chứa mật khẩu, reset password của role rồi dùng chuỗi mới. Database mới trống; dữ liệu local không tự chuyển lên cloud. Không tự tạo bảng: Alembic sẽ chạy khi container khởi động.
+
+### 2. Redis trên Upstash
+
+- Giữ database Redis đã có hoặc tạo mới, ưu tiên gần Frankfurt. Lấy Redis protocol URL `rediss://default:PASSWORD@HOST:6379/0` (dùng đúng host/port của tài khoản), **không** dùng REST URL/token. TLS phải được giữ.
+- Không dùng database Redis QA hoặc tài khoản của người khác; Redis lưu OTP, rate limit và các dữ liệu tạm.
+
+### 3. Tài khoản gửi email Brevo
+
+1. Đăng ký tại https://www.brevo.com/, chọn Free nếu có, xác minh email và hoàn tất thông tin tài khoản. Hoàn thành xét duyệt/kích hoạt Transactional emails nếu Brevo yêu cầu; chưa active thì app không thể tự khắc phục.
+2. Vào Settings → Senders, Domains, IPs → Senders → Add a sender. From name: `Planify Pro`; From email: email bạn kiểm soát. Nhập mã Brevo gửi tới email đó để Verify sender. `MAIL_FROM_EMAIL` phải trùng địa chỉ đã xác minh này.
+3. Nếu có domain riêng, thêm domain và cấu hình DNS DKIM/DMARC theo Brevo để tăng khả năng vào inbox. Gmail/Yahoo không thể được bạn xác thực domain; Brevo có thể thay địa chỉ gửi bằng địa chỉ tương thích. Không cam kết mail luôn vào inbox, cần kiểm tra Spam và delivery logs.
+4. Vào Settings → SMTP & API → API Keys (hoặc API Keys & MCP) → Generate API key, đặt tên `planify-render`, chọn thời hạn phù hợp. Nếu dùng Restricted permissions, cấp quyền gửi transactional email (`POST /v3/smtp/email`); không cần bật MCP. Lưu key riêng tư; dùng **API key**, không phải SMTP key/password. Không cần tạo template Brevo: app gửi nội dung HTML sẵn có qua HTTPS.
+
+Tài liệu: [sender](https://help.brevo.com/hc/en-us/articles/208836149-Create-a-new-sender-From-name-and-From-email), [API gửi email](https://developers.brevo.com/docs/send-a-transactional-email), [yêu cầu sender](https://help.brevo.com/hc/en-us/articles/14925263522578-Comply-with-Gmail-Yahoo-and-Microsoft-s-requirements-for-email-senders).
+
+### 4. Tạo dịch vụ Render bằng Blueprint
+
+1. Đăng nhập https://dashboard.render.com/ bằng GitHub; cấp quyền đọc repo `kietxuan/ai66a-group8`.
+2. New → Blueprint; chọn repo và branch **`deploy/render-brevo`**, Blueprint path `render.yaml`. Chưa dùng `main` nếu chưa merge nhánh deploy.
+3. Kiểm tra service là `planify-pro`, Docker runtime, Free, Frankfurt; không thêm Postgres/Redis từ Render. File YAML tự sinh `SECRET_KEY` ngẫu nhiên và cấu hình TLS, pool, Brevo, `/health`.
+4. Điền các giá trị được hỏi: `DATABASE_URL`, `REDIS_URL`, `BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `AI_API_KEY` (Groq key cho AI thật; nếu chưa dùng, có thể bỏ giá trị và bổ sung sau trên service Environment). Không paste cả lệnh `psql`/`redis-cli`, không thêm dấu nháy bao ngoài giá trị trên UI.
+5. Review → Deploy/Apply. Không nhập thẻ/nâng cấp gói nếu chỉ muốn dùng Free. Nếu UI yêu cầu xác minh tài khoản, hoàn thành theo Render; không giả định mọi tài khoản đều được duyệt.
+
+**Cách thủ công thay thế (chỉ chọn một cách, không tạo hai service):** New → Web Service → repo → branch `deploy/render-brevo`; Language/Runtime Docker; Root directory để trống; Dockerfile path `./Dockerfile.render`; Docker context gốc repo; Docker Command để mặc định; Region Frankfurt; Instance Free; Health Check Path `/health`. Nhập các biến trong `.env.render.example`; tạo `SECRET_KEY` riêng bằng `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Không dùng giá trị mẫu làm secret thật. Giữ `ADMIN_PASSWORD` trống/không khai báo. Không cần Build command, `npm run build`, Nginx hay cài Neon CLI.
+
+### 5. Kiểm tra end to end sau deploy
+
+1. Xem Events/Logs: build thành công, Alembic upgrade không lỗi, Uvicorn lắng nghe cổng Render cấp, service Live. Lỗi build và runtime là hai bước khác nhau.
+2. Mở URL `https://TEN_SERVICE.onrender.com/health`: cần HTTP 200 và `{"status":"healthy"}`. Sau đó mở `/`: phải thấy giao diện, JS/CSS không 404.
+3. Đăng ký bằng một email bạn kiểm soát. Gửi OTP, xem Brevo Transactional → Logs (tên menu có thể thay đổi), kiểm tra inbox/Spam. API nhận gửi thành công **không có nghĩa đã giao vào inbox**. Đợi 60 giây trước khi gửi lại; OTP có hạn 5 phút.
+4. Nhập OTP → đăng ký → đăng nhập. Tạo/sửa/hoàn thành/xóa một công việc thử; kiểm tra Dashboard, To Do, Calendar. Đăng xuất/đăng nhập lại để xác nhận dữ liệu vẫn còn trên Neon.
+5. Đăng xuất, thử quên mật khẩu với tài khoản QA riêng và OTP mới, đặt lại mật khẩu; đăng nhập bằng mật khẩu mới. Không dùng tài khoản cá nhân để thử phá luồng.
+6. Nếu đã cấu hình Groq, gửi một yêu cầu thử không nhạy cảm, xác nhận kết quả trong To Do/Calendar. Có thể tiêu quota Groq. Kiểm tra thông báo email thử trong Settings nếu cần; nhắc lịch chạy nền không bảo đảm đúng giờ trên Free.
+
+| Triệu chứng | Kiểm tra |
+|---|---|
+| Build không tìm thấy file | Branch đúng, Dockerfile.render, root/context gốc repo |
+| Không mở được port | Không ghi đè Docker Command; app dùng PORT do Render cấp |
+| Migration/health lỗi PostgreSQL | URL asyncpg, password mới/đã encode, không query sslmode/channel_binding, DATABASE_SSL=true |
+| Health lỗi Redis | URL rediss, đúng credentials/port; không dùng REST endpoint |
+| Brevo HTTP 401 | API key sai/thu hồi, hoặc đang dùng SMTP key |
+| Brevo HTTP 400/403 | Sender chưa hợp lệ, tài khoản/transactional chưa được duyệt, hoặc chính sách IP/domain; xem Brevo dashboard |
+| Brevo HTTP 429 | Rate limit/quota; đợi reset/kiểm tra plan, không gửi liên tiếp |
+| API gửi thành công nhưng chưa nhận OTP | Delivery logs, bounce/blocked/Spam; không đồng nghĩa gửi vào inbox |
+| AI không dùng được | AI_API_KEY/model và quota Groq; không liên quan key Brevo |
+
+### 6. Giới hạn Free và cập nhật về sau
+
+- Render Free ngủ sau 15 phút không có request; lần mở đầu có thể chờ khoảng một phút. SMTP 25/465/587 bị chặn, nên bắt buộc dùng `MAIL_PROVIDER=brevo` trên Render Free. Không dùng cơ chế ping liên tục để né giới hạn Free.
+- Nhắc lịch nền chỉ chạy lúc service đang thức. Muốn nhắc đúng giờ 24/7 cần dịch vụ luôn chạy hoặc scheduler ngoài; chưa thêm ở bản này.
+- Brevo Free hiện giới hạn 300 email/ngày, còn phụ thuộc trạng thái tài khoản. Neon/Upstash/Groq cũng có quota. Kiểm tra usage và điều khoản hiện tại, không tự nâng cấp trả phí.
+- Auto-deploy theo nhánh đã chọn: khi cần phát hành thay đổi, push vào nhánh đó. Nếu sau này merge vào main, đổi cả Source branch trên Render và `branch` trong render.yaml sang main. Không thay SECRET_KEY tùy tiện vì sẽ buộc đăng nhập lại; thay key đã lộ thì phải redeploy.
+- Xem [Render Free](https://render.com/docs/free), [Docker](https://render.com/docs/docker), [Blueprint](https://render.com/docs/blueprint-spec), [Brevo plans](https://help.brevo.com/hc/en-us/articles/208589409-About-Brevo-s-pricing-plans).
+
+## Koyeb (phương án cũ, không dùng cho tài khoản Free mới)
+
+Koyeb thông báo tài khoản mới cần gói trả phí; không tiếp tục hướng này nếu muốn Free. `Dockerfile.koyeb` được giữ để tương thích, hướng deploy hiện tại là Render + Brevo ở trên.
 
 `Dockerfile.koyeb` đóng gói FastAPI và frontend chung origin; không thay thế Docker Compose local. Build context phải là **gốc repository**, Dockerfile path là `Dockerfile.koyeb` (không chọn working directory `backend`). Cấu hình một Web Service, một instance, HTTP port `8000`, health check HTTP `GET /health`; giữ nguyên entrypoint/command của image. Entrypoint chạy Alembic trước Uvicorn, không có `--reload`.
 

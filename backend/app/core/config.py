@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import Field
 
 class Settings(BaseSettings):
@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = ""
     SMTP_EMAIL: str = ""
     SMTP_PASSWORD: str = ""
+    MAIL_PROVIDER: Literal["smtp", "brevo"] = "smtp"
+    BREVO_API_KEY: str = ""
+    MAIL_FROM_EMAIL: str = ""
+    MAIL_FROM_NAME: str = "Planify Pro"
 
     # 3. Cấu hình Bảo mật (JWT)
     SECRET_KEY: str = ""

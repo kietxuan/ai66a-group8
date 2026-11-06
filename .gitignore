@@ -50,6 +50,7 @@ Thumbs.db
 .env.*
 !.env.example
 !.env.koyeb.example
+!.env.render.example
 .venv/
 .pytest_cache/
 .mypy_cache/

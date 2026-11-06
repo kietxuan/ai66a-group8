@@ -1,0 +1,18 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /app/backend
+
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --uid 10001 planify
+COPY backend/requirements.lock ./requirements.lock
+RUN pip install --no-cache-dir -r requirements.lock
+COPY --chown=planify:planify backend/ ./
+COPY --chown=planify:planify frontend/ /app/frontend/
+RUN sed -i 's/\r$//' entrypoint.sh && chown planify:planify /app/backend
+
+USER planify
+EXPOSE 10000
+ENTRYPOINT ["sh", "/app/backend/entrypoint.sh"]
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000} --workers 1"]
