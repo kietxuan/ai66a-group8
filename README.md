@@ -52,12 +52,12 @@ Tài liệu: [sender](https://help.brevo.com/hc/en-us/articles/208836149-Create-
 ### 4. Tạo dịch vụ Render bằng Blueprint
 
 1. Đăng nhập https://dashboard.render.com/ bằng GitHub; cấp quyền đọc repo `kietxuan/ai66a-group8`.
-2. New → Blueprint; chọn repo và branch **`deploy/render-brevo`**, Blueprint path `render.yaml`. Chưa dùng `main` nếu chưa merge nhánh deploy.
+2. New → Blueprint; chọn repo và branch **`main`**, Blueprint path `render.yaml`.
 3. Kiểm tra service là `planify-pro`, Docker runtime, Free, Frankfurt; không thêm Postgres/Redis từ Render. File YAML tự sinh `SECRET_KEY` ngẫu nhiên và cấu hình TLS, pool, Brevo, `/health`.
 4. Điền các giá trị được hỏi: `DATABASE_URL`, `REDIS_URL`, `BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `AI_API_KEY` (Groq key cho AI thật; nếu chưa dùng, có thể bỏ giá trị và bổ sung sau trên service Environment). Không paste cả lệnh `psql`/`redis-cli`, không thêm dấu nháy bao ngoài giá trị trên UI.
 5. Review → Deploy/Apply. Không nhập thẻ/nâng cấp gói nếu chỉ muốn dùng Free. Nếu UI yêu cầu xác minh tài khoản, hoàn thành theo Render; không giả định mọi tài khoản đều được duyệt.
 
-**Cách thủ công thay thế (chỉ chọn một cách, không tạo hai service):** New → Web Service → repo → branch `deploy/render-brevo`; Language/Runtime Docker; Root directory để trống; Dockerfile path `./Dockerfile.render`; Docker context gốc repo; Docker Command để mặc định; Region Frankfurt; Instance Free; Health Check Path `/health`. Nhập các biến trong `.env.render.example`; tạo `SECRET_KEY` riêng bằng `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Không dùng giá trị mẫu làm secret thật. Giữ `ADMIN_PASSWORD` trống/không khai báo. Không cần Build command, `npm run build`, Nginx hay cài Neon CLI.
+**Cách thủ công thay thế (chỉ chọn một cách, không tạo hai service):** New → Web Service → repo → branch `main`; Language/Runtime Docker; Root directory để trống; Dockerfile path `./Dockerfile.render`; Docker context gốc repo; Docker Command để mặc định; Region Frankfurt; Instance Free; Health Check Path `/health`. Nhập các biến trong `.env.render.example`; tạo `SECRET_KEY` riêng bằng `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Không dùng giá trị mẫu làm secret thật. Giữ `ADMIN_PASSWORD` trống/không khai báo. Không cần Build command, `npm run build`, Nginx hay cài Neon CLI.
 
 ### 5. Kiểm tra end to end sau deploy
 
@@ -85,7 +85,7 @@ Tài liệu: [sender](https://help.brevo.com/hc/en-us/articles/208836149-Create-
 - Render Free ngủ sau 15 phút không có request; lần mở đầu có thể chờ khoảng một phút. SMTP 25/465/587 bị chặn, nên bắt buộc dùng `MAIL_PROVIDER=brevo` trên Render Free. Không dùng cơ chế ping liên tục để né giới hạn Free.
 - Nhắc lịch nền chỉ chạy lúc service đang thức. Muốn nhắc đúng giờ 24/7 cần dịch vụ luôn chạy hoặc scheduler ngoài; chưa thêm ở bản này.
 - Brevo Free hiện giới hạn 300 email/ngày, còn phụ thuộc trạng thái tài khoản. Neon/Upstash/Groq cũng có quota. Kiểm tra usage và điều khoản hiện tại, không tự nâng cấp trả phí.
-- Auto-deploy theo nhánh đã chọn: khi cần phát hành thay đổi, push vào nhánh đó. Nếu sau này merge vào main, đổi cả Source branch trên Render và `branch` trong render.yaml sang main. Không thay SECRET_KEY tùy tiện vì sẽ buộc đăng nhập lại; thay key đã lộ thì phải redeploy.
+- Nhánh phát hành là `main`; `render.yaml` đã đặt `branch: main`. Với app trước đây chạy từ `deploy/render-brevo`, đổi nhánh liên kết của Blueprint trên Render sang `main`, sync Blueprint và kiểm tra Source branch của service cũng là `main`. Giữ nguyên service và credentials, không tạo lại Blueprint/database. Những lần cập nhật tiếp theo nên review PR rồi merge vào main để auto-deploy. Không thay SECRET_KEY tùy tiện vì sẽ buộc đăng nhập lại; thay key đã lộ thì phải redeploy.
 - Xem [Render Free](https://render.com/docs/free), [Docker](https://render.com/docs/docker), [Blueprint](https://render.com/docs/blueprint-spec), [Brevo plans](https://help.brevo.com/hc/en-us/articles/208589409-About-Brevo-s-pricing-plans).
 
 ## Koyeb (phương án cũ, không dùng cho tài khoản Free mới)

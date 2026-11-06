@@ -4,7 +4,7 @@ services:
     runtime: docker
     plan: free
     region: frankfurt
-    branch: deploy/render-brevo
+    branch: main
     dockerfilePath: ./Dockerfile.render
     dockerContext: .
     healthCheckPath: /health
