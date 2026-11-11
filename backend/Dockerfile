@@ -11,10 +11,9 @@ RUN apt-get update \
     && apt-get -y install libpq-dev gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements và cài đặt
-COPY requirements.txt requirements.lock /app/
-# Nếu bạn đã bỏ comment các thư viện trong requirements.txt, hãy chạy lệnh dưới:
-RUN pip install --no-cache-dir -r requirements.lock
+# Cài đặt dependencies từ một file requirements.txt
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy toàn bộ source code
 COPY . /app/

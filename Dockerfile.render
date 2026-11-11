@@ -6,8 +6,8 @@ WORKDIR /app/backend
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 10001 planify
-COPY backend/requirements.lock ./requirements.lock
-RUN pip install --no-cache-dir -r requirements.lock
+COPY backend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 COPY --chown=planify:planify backend/ ./
 COPY --chown=planify:planify frontend/ /app/frontend/
 RUN sed -i 's/\r$//' entrypoint.sh && chown planify:planify /app/backend

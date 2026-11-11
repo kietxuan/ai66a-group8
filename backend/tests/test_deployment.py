@@ -67,7 +67,7 @@ def test_frontend_routes_do_not_expose_backend_or_secrets():
     assert root.status_code == 200
     assert "text/html" in root.headers["content-type"]
     assert root.headers["cache-control"] == "no-store"
-    for path in ("/.env", "/backend/main.py", "/requirements.lock", "/assets/../backend/main.py"):
+    for path in ("/.env", "/backend/main.py", "/requirements.txt", "/assets/../backend/main.py"):
         assert client.get(path).status_code == 404
     assert client.get("/js/api.js").status_code == 200
     assert client.get("/openapi.json").status_code == 200
