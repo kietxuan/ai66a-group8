@@ -13,7 +13,6 @@ export class EventCard {
   static create({ event, onUpdate = null }) {
     const isTask = !!event.is_task;
     const rawTask = event.raw_task || null;
-    const isAutoComplete = Boolean(rawTask?.auto_complete || !isTask);
     const isImportant = Boolean(rawTask?.is_important);
 
     const start = new Date(event.start_at);

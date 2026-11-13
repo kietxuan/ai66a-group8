@@ -1,4 +1,4 @@
-import { businessNow } from "../utils/date.js";
+import { businessNow, isEventCompleted } from "../utils/date.js";
 import { createElement } from "../utils/dom.js";
 import { store } from "../store.js";
 import { api } from "../api.js";
@@ -31,6 +31,7 @@ export const calendarPage = {
   calendarStatusFilter: 'all',
 
   async render(container) {
+    clearInterval(this.completionTimer);
     this.drawerCleanup?.();
     const renderGeneration = (this.renderGeneration =
       (this.renderGeneration || 0) + 1);
@@ -158,6 +159,9 @@ export const calendarPage = {
     if (renderGeneration !== this.renderGeneration || !this.container) return;
 
     this.handleDataChanged = () => this.updateView();
+    this.completionTimer = setInterval(() => {
+      if (!document.hidden && this.completionWatchEvents?.some(event => isEventCompleted(event) !== event.is_completed)) this.updateView();
+    }, 30000);
     window.addEventListener("planify:data-changed", this.handleDataChanged);
     document.addEventListener("task-changed", this.handleDataChanged);
   },
@@ -444,8 +448,13 @@ export const calendarPage = {
         this.activeView.destroy();
       }
 
-      const expandedEvents = (this.calendarListFilter === 'all' || this.calendarListFilter === 'events') && this.calendarStatusFilter !== 'completed'
-        ? RRuleParser.expandAll(events, startDt, endDt) : [];
+      const eventNow = businessNow();
+      this.completionWatchEvents = RRuleParser.expandAll(events, startDt, endDt)
+        .map(event => ({ ...event, is_completed: isEventCompleted(event, eventNow) }));
+      const expandedEvents = (this.calendarListFilter === 'all' || this.calendarListFilter === 'events')
+        ? this.completionWatchEvents
+          .filter(event => this.calendarStatusFilter === 'all' || (this.calendarStatusFilter === 'completed') === event.is_completed)
+        : [];
       const firstDate = formatDate(startDt, 'YYYY-MM-DD');
       const lastDate = formatDate(endDt, 'YYYY-MM-DD');
       const adaptedTasks = this.calendarListFilter === 'events' ? [] : adaptTasksForCalendar(allTasks.filter(task =>
@@ -520,6 +529,8 @@ export const calendarPage = {
   },
 
   destroy() {
+    clearInterval(this.completionTimer);
+    this.completionWatchEvents = null;
     this.drawerCleanup?.();
     this.drawerCleanup = null;
     this.setDrawerOpen = null;

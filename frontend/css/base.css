@@ -154,6 +154,21 @@ body {
   box-shadow: 0 0 0 2px var(--color-accent-light);
 }
 
+.item-notes-field { display: flex; flex-direction: column; gap: 8px; }
+.item-notes-input {
+  display: block;
+  min-height: 144px;
+  height: auto;
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.item-notes-error { color: var(--color-danger, #dc2626); font-size: 12px; line-height: 1.5; }
+.item-notes-error:empty { display: none; }
+
 .password-field {
   position: relative;
   width: 100%;

@@ -193,7 +193,7 @@ class ToolExecutor:
                 raise ValueError('Bạn đang yêu cầu xem thông tin, nên mình không thực hiện thay đổi dữ liệu.')
             self._validate_arguments(tool_name, arguments)
             arguments = constrain_creation(tool_name, arguments, self.request_text)
-            tool_name, arguments = self._normalize_creation(tool_name, dict(arguments))
+            tool_name, arguments = self._normalize_creation(tool_name, dict(arguments), self.request_text)
             tool_name, arguments = await self._normalize_event_action(tool_name, arguments)
             if self.confirmed_overlap_action == (tool_name, arguments):
                 arguments = {**arguments, "allow_overlap": True}
@@ -237,13 +237,14 @@ class ToolExecutor:
         return result
 
     @staticmethod
-    def _normalize_creation(name, args):
+    def _normalize_creation(name, args, request_text=None):
         """Match the unified form: ordinary calendar activities are scheduled Tasks.
 
         Explicit calendar groups and multi-day events still need the legacy Event model.
         Never create a second record merely to make an item visible in another view.
         """
-        if name != "create_event" or args.get("calendar_id") or args.get("calendar_name"):
+        explicit_event = re.search(r'\b(?:su kien|tu dong hoan thanh)\b', fold(request_text or ''))
+        if name != "create_event" or args.get("calendar_id") or args.get("calendar_name") or explicit_event:
             return name, args
         from app.services.recurrence import aware
         if not args.get("start_at"):
@@ -258,7 +259,7 @@ class ToolExecutor:
         normalized = {
             "title": args.get("title"), "note": args.get("description"),
             "location": args.get("location"), "due_date": start.date().isoformat(),
-            "is_all_day": all_day, "auto_complete": True,
+            "is_all_day": all_day, "auto_complete": False,
             "is_in_my_day": start.date() == business_today(),
             "recurrence_rule": args.get("recurrence_rule"), "color": args.get("color"),
         }
@@ -673,7 +674,7 @@ class ToolExecutor:
             title=title,
             note=kwargs.get("note"),
             location=kwargs.get("location"),
-            auto_complete=kwargs.get("auto_complete", False),
+            auto_complete=False,
             reminder_minutes=kwargs.get("reminder_minutes", 15),
             list_id=list_id_val,
             due_date=due_date_val,

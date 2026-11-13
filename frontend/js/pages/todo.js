@@ -1,5 +1,5 @@
 import { businessNow } from '../utils/date.js';
-import { iconMarkup } from '../utils/icons.js';
+import { iconMarkup, createIcon, resolveListIcon } from '../utils/icons.js';
 import { createElement } from '../utils/dom.js';
 import { api } from '../api.js';
 import { store } from '../store.js';
@@ -11,6 +11,7 @@ import { TaskListView } from '../todo/task-list-view.js';
 import { TaskForm } from '../todo/task-form.js';
 import { TaskDetail } from '../todo/task-detail.js';
 import { initTodoSidebarToggle } from '../todo/sidebar-toggle.js';
+import { initTodoSidebarResize } from '../todo/sidebar-resize.js';
 import { revisionOptions } from '../utils/revision.js';
 import { isScheduleDismissal } from '../utils/api-error.js';
 import { createLoadingState } from '../components/loading.js';
@@ -80,7 +81,7 @@ function renderHeaderIcon(el, icon) {
       svg.setAttribute("height", "24");
     }
   } else {
-    el.textContent = icon || "☰";
+    el.replaceChildren(createIcon(resolveListIcon(icon), { size: 24 }));
   }
 }
 
@@ -252,10 +253,13 @@ export const todoPage = {
     });
 
     page.appendChild(sidebarEl);
+    const resizeHandle = createElement('div', { className: 'todo-sidebar-resizer' });
+    page.appendChild(resizeHandle);
     page.appendChild(mainEl);
     page.appendChild(detailEl);
     container.appendChild(page);
     this.sidebarToggleCleanup = initTodoSidebarToggle({ page, sidebar: sidebarEl, button: sidebarToggle });
+    this.sidebarResizeCleanup = initTodoSidebarResize({ page, handle: resizeHandle });
 
     // Initialize sub-components
     this.sidebarComponent = new SmartListsSidebar({
@@ -366,7 +370,7 @@ export const todoPage = {
           type: 'button',
           className: 'list-icon-option',
           title: item.name,
-          textContent: item.icon,
+          'aria-label': item.name,
           style: {
             fontSize: '20px',
             height: '42px',
@@ -393,12 +397,13 @@ export const todoPage = {
               }
               TabSync.broadcast('lists_updated');
               Modal.close();
-              Toast.success(`Đã đổi biểu tượng thành ${item.icon}`);
+              Toast.success('Đã đổi biểu tượng danh sách');
             } catch (err) {
               Toast.error(err.message || 'Lỗi khi cập nhật biểu tượng');
             }
           }
         });
+        btn.appendChild(createIcon(resolveListIcon(item.icon), { size: 20 }));
         gridContainer.appendChild(btn);
       });
     };
@@ -842,6 +847,8 @@ export const todoPage = {
   },
 
   destroy() {
+    this.sidebarResizeCleanup?.();
+    this.sidebarResizeCleanup = null;
     this.sidebarToggleCleanup?.();
     this.sidebarToggleCleanup = null;
     this.savedFilters = this.taskListComponent?.getFilterState();

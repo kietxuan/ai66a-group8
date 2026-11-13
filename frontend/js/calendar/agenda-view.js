@@ -164,8 +164,7 @@ export class AgendaView {
         group.items.forEach(item => {
           const isEvent = item._type === 'event';
           const isTask = item._type === 'task' || !!item.is_task;
-          const isAutoEvent = isTask && !!item.auto_complete;
-          const eventLabel = isEvent || isAutoEvent;
+          const eventLabel = isEvent;
           const location = item.location || item.raw_task?.location;
           const recurrenceRule = item.recurrence_rule || item.raw_task?.recurrence_rule;
           const startTimeStr = item.is_all_day ? 'Cả ngày' : formatDate(item._dateObj, 'HH:mm');
@@ -242,7 +241,7 @@ export class AgendaView {
           // Type Pill
           const typePill = createElement('span', {
             className: `agenda-type-pill ${eventLabel ? 'event' : 'task'}`,
-            textContent: isAutoEvent ? 'Sự kiện (Tự hoàn thành)' : isEvent ? 'Sự kiện' : 'Việc cần làm'
+            textContent: isEvent ? 'Sự kiện (Tự hoàn thành)' : 'Việc cần làm'
           });
 
           itemCard.appendChild(timeBadge);

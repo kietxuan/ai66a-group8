@@ -144,7 +144,6 @@ export class ReminderNotifier {
       // 2. Local browser check for tasks/events happening today within notify_minutes_before
       const tasks = await api.get("/tasks");
       if (Array.isArray(tasks)) {
-        let autoCompletedAny = false;
         for (const t of tasks) {
           if (t.is_completed) continue;
 
@@ -173,26 +172,8 @@ export class ReminderNotifier {
             }
           }
 
-          // Frontend auto-complete check for events (auto_complete=true)
-          if (t.auto_complete && t.due_date) {
-            const dateStr =
-              typeof t.due_date === "string" ? t.due_date.split("T")[0] : "";
-            const rawEnd = String(
-              t.end_time || t.due_time || t.start_time || "23:59",
-            ).substring(0, 5);
-            const endAt = new Date(`${dateStr}T${rawEnd}:00`).getTime();
-            if (!isNaN(endAt) && nowMs >= endAt) {
-              await api
-                .patch(`/tasks/${t.id}/complete`, { is_completed: true })
-                .catch(() => {});
-              autoCompletedAny = true;
-            }
-          }
         }
 
-        if (autoCompletedAny) {
-          window.dispatchEvent(new CustomEvent("planify:data-changed"));
-        }
       }
     } catch (_) {}
   }

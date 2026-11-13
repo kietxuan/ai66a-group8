@@ -28,6 +28,12 @@ const glyphs = new Map(Object.entries({
 const iconNames = new Set([...glyphs.values(), 'layout-dashboard','loader-circle','folder-plus','send','wallet','landmark','list-filter','check-check','panel-left','history','calendar','eye','eye-off']);
 const iconUrl = name => new URL(`../../assets/icons/lucide/${name}.svg`, import.meta.url).href;
 
+// Keep legacy emoji values in saved lists, but render the same Lucide set everywhere.
+export function resolveListIcon(value) {
+  if (!value || value === '☰') return 'list';
+  return glyphs.get(value) || (iconNames.has(value) ? value : 'list');
+}
+
 export function createIcon(name, { size = 18, spin = false } = {}) {
   if (!iconNames.has(name)) name = 'circle-help';
   const icon = document.createElement('span');
@@ -41,6 +47,32 @@ export function createIcon(name, { size = 18, spin = false } = {}) {
 
 export function iconMarkup(name, size = 18) {
   return createIcon(name, { size }).outerHTML;
+}
+
+const glyphTokens = [...glyphs.keys()].sort((a, b) => b.length - a.length);
+
+// Explicitly render icons inside static UI copy, including the middle of a sentence.
+// Callers opt in; user titles, notes and chat messages are not scanned.
+export function createIconText(value, { size = 16 } = {}) {
+  const nodes = [];
+  let remaining = String(value);
+  while (remaining) {
+    let index = -1;
+    let token;
+    for (const candidate of glyphTokens) {
+      const found = remaining.indexOf(candidate);
+      if (found >= 0 && (index < 0 || found < index)) {
+        index = found;
+        token = candidate;
+        if (index === 0) break;
+      }
+    }
+    if (index < 0) { nodes.push(remaining); break; }
+    if (index > 0) nodes.push(remaining.slice(0, index));
+    nodes.push(createIcon(glyphs.get(token), { size }));
+    remaining = remaining.slice(index + token.length);
+  }
+  return nodes;
 }
 
 const uiSelector = 'button, h1, h2, h3, h4, [role="status"], [data-icon], [aria-hidden="true"], .nav-icon, .logo-icon, .auth-brand-icon, .landing-brand-icon, .dropdown-icon, .toast-icon, .sidebar-icon-wrap, .theme-icon-light, .theme-icon-dark, .landing-theme-icon-light, .landing-theme-icon-dark, .ai-avatar, .ai-suggestion-icon, .ai-tool-badge, .ai-payment-method-icon, .ai-prompt-category, .guide-icon, .guide-col-title, .guide-box-badge, .guide-card-title > span, .guide-hero a, .command-result-icon, .settings-section-icon, .dash-kpi-icon, .kanban-col-header span, .calendar-view-btn, .ai-header-title > span, .command-search-trigger > span';

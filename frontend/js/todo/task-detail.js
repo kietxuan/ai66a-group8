@@ -10,6 +10,7 @@ import { revisionOptions } from '../utils/revision.js';
 import { isScheduleDismissal } from '../utils/api-error.js';
 import { getAvailableCategories, resolveCategoryForTask } from './task-item.js';
 import { TaskSteps } from './task-steps.js';
+import { combinedItemNotes, buildNotesUpdate } from '../utils/item-notes.js';
 
 export class TaskDetail {
   constructor(container, { onUpdate = null, onClose = null } = {}) {
@@ -214,9 +215,8 @@ export class TaskDetail {
       titleRow
     ]);
 
-    // 3. Tùy chọn Tự động hoàn thành & Quan trọng (Thứ tự và style giống modal form)
+    // Task hoàn thành thủ công; chỉ giữ tùy chọn Quan trọng.
     let isImportant = Boolean(t.is_important);
-    let isAutoComplete = Boolean(t.auto_complete);
 
     const checkRow = createElement('div', {
       style: {
@@ -226,33 +226,6 @@ export class TaskDetail {
         padding: '2px 0'
       }
     });
-
-    const autoCompleteCheck = createElement('input', {
-      type: 'checkbox',
-      checked: isAutoComplete,
-      style: { width: '16px', height: '16px', accentColor: 'var(--color-primary)', cursor: 'pointer' },
-      onchange: (e) => {
-        isAutoComplete = e.target.checked;
-        t.auto_complete = isAutoComplete;
-        this.saveDirectly({ auto_complete: isAutoComplete });
-      }
-    });
-
-    const autoCompleteLabel = createElement('label', {
-      style: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '8px',
-        fontSize: '13px',
-        fontWeight: '600',
-        color: 'var(--color-text-primary)',
-        cursor: 'pointer',
-        userSelect: 'none'
-      }
-    }, [
-      autoCompleteCheck,
-      createElement('span', { textContent: 'Tự động hoàn thành' })
-    ]);
 
     const importantCheck = createElement('input', {
       type: 'checkbox',
@@ -297,7 +270,6 @@ export class TaskDetail {
       this.saveDirectly({ is_important: isImportant });
     };
 
-    checkRow.appendChild(autoCompleteLabel);
     checkRow.appendChild(importantLabel);
 
     // 4. Thuộc danh sách & Phân loại (Lưới 2 cột giống modal form)
@@ -572,34 +544,43 @@ export class TaskDetail {
     scheduleBox.appendChild(scheduleHeader);
     scheduleBox.appendChild(scheduleGrid);
 
-    // 6. Địa điểm & Ghi chú (Giống 100% modal form, không cần nhãn thừa)
-    const locationInput = createElement('input', {
-      type: 'text',
-      className: 'input',
-      placeholder: 'Địa điểm hoặc liên kết họp (tùy chọn)...',
-      value: t.location || '',
-      style: { fontSize: '13px' },
-      onchange: () => {
-        t.location = locationInput.value.trim() || null;
-        this.saveDirectly({ location: t.location });
+    // One multiline field for notes, locations and meeting links.
+    const notesError = createElement('small', { id: 'task-detail-notes-error', className: 'item-notes-error', role: 'alert' });
+    const getNotesUpdate = () => {
+      try {
+        const fields = buildNotesUpdate(notesTextarea.value);
+        notesError.textContent = '';
+        notesTextarea.setAttribute('aria-invalid', 'false');
+        return fields;
+      } catch (error) {
+        notesError.textContent = error.message;
+        notesTextarea.setAttribute('aria-invalid', 'true');
+        return null;
       }
-    });
-
+    };
     const notesTextarea = createElement('textarea', {
-      className: 'textarea',
-      rows: 3,
-      placeholder: 'Ghi chú chi tiết nội dung công việc...',
-      value: t.note || '',
-      style: { fontSize: '12.5px', resize: 'vertical' },
+      id: 'task-detail-notes',
+      className: 'textarea item-notes-input',
+      'aria-describedby': 'task-detail-notes-error',
+      rows: 5,
+      placeholder: 'Nhập ghi chú, địa điểm hoặc liên kết họp…',
+      value: combinedItemNotes(t),
       oninput: () => {
-        t.note = notesTextarea.value.trim() || null;
-        this.debouncedSave({ note: t.note });
+        if (this.saveTimer) clearTimeout(this.saveTimer);
+        const fields = getNotesUpdate();
+        if (fields) this.debouncedSave(fields);
       },
       onchange: () => {
-        t.note = notesTextarea.value.trim() || null;
-        this.saveDirectly({ note: t.note });
+        if (this.saveTimer) clearTimeout(this.saveTimer);
+        const fields = getNotesUpdate();
+        if (fields && (fields.note !== t.note || t.location)) this.saveDirectly(fields);
       }
     });
+    const notesSection = createElement('div', { className: 'form-group item-notes-field' }, [
+      createElement('label', { className: 'form-label', for: 'task-detail-notes', textContent: 'Ghi chú & địa điểm' }),
+      notesTextarea,
+      notesError
+    ]);
 
     // 7. Nút Xóa công việc
     const deleteBtn = createElement('button', {
@@ -634,8 +615,7 @@ export class TaskDetail {
     this.stepsComponent = new TaskSteps(t, { onChange: () => this.notifyChanged('steps', { preserveDetail: true }) });
     panel.appendChild(this.stepsComponent.element);
     panel.appendChild(scheduleBox);
-    panel.appendChild(locationInput);
-    panel.appendChild(notesTextarea);
+    panel.appendChild(notesSection);
     panel.appendChild(actionsContainer);
 
     this.container.appendChild(panel);

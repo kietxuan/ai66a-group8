@@ -1,4 +1,13 @@
-import { createElement } from '../utils/dom.js';
+import { createElement as createDomElement } from '../utils/dom.js';
+import { createIconText } from '../utils/icons.js';
+
+// All copy on this page is static guide text. Render its inline symbols explicitly
+// so badges, instructions and AI examples use the same icons as the rest of the app.
+function createElement(tag, attrs = {}, children = []) {
+  if (typeof attrs.textContent !== 'string') return createDomElement(tag, attrs, children);
+  const { textContent, ...attributes } = attrs;
+  return createDomElement(tag, attributes, createIconText(textContent));
+}
 
 export const guidePage = {
   container: null,

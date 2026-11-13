@@ -147,7 +147,7 @@ export class CommandPalette {
       };
 
       matchedTasks.forEach((t) => {
-        const icon = t.is_completed ? "✅" : t.auto_complete ? "⚡" : "📌";
+        const icon = t.is_completed ? "✅" : "📌";
         const label = t.due_date
           ? `Lịch: ${t.due_date}`
           : "Cột Cần làm (Vĩnh viễn)";

@@ -7,7 +7,7 @@
 }
 
 .todo-sidebar {
-  width: 216px;
+  width: var(--todo-sidebar-width, 216px);
   border-right: 1px solid var(--color-border);
   background-color: var(--color-bg-secondary);
   display: flex;
@@ -16,6 +16,27 @@
   flex-shrink: 0;
   overflow-y: auto;
 }
+
+.todo-sidebar-resizer {
+  position: relative;
+  flex: 0 0 6px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.todo-sidebar-resizer::after {
+  content: '';
+  position: absolute;
+  inset: 0 2px;
+  background: transparent;
+}
+.todo-sidebar-resizer:hover::after,
+.todo-sidebar-resizer:focus-visible::after,
+.todo-sidebar-resizing .todo-sidebar-resizer::after { background: var(--color-accent, #6366f1); }
+.todo-sidebar-resizer:focus-visible { outline: 2px solid var(--color-accent, #6366f1); outline-offset: -2px; }
+.todo-sidebar-resizing { user-select: none; cursor: col-resize; }
+.todo-sidebar-resizing > .todo-sidebar { transition: none; }
+.todo-sidebar-collapsed > .todo-sidebar-resizer { display: none; }
+@media (max-width: 768px) { .todo-sidebar-resizer { display: none; } }
 
 .todo-sidebar-toggle {
   width: 32px;
@@ -1077,6 +1098,9 @@
   animation: slide-in-right var(--transition-normal) forwards;
   z-index: var(--z-detail-panel);
 }
+
+/* Keep natural section heights; the panel scrolls instead of crushing the editor. */
+.task-detail-panel > * { flex-shrink: 0; min-width: 0; }
 
 .task-item.task-drag-over {
   border: 2px dashed var(--color-accent);

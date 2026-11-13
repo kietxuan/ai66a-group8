@@ -20,13 +20,15 @@ Frontend lưu Bearer token trong `localStorage` và gọi `/api/v1` cùng origin
 ## Chức năng hiện có
 
 - **Auth:** `/otp/send`, `/otp/verify`, `/auth/register`, `/auth/login`, `/auth/reset-password`, `/users/me` và đổi mật khẩu. `MAIL_PROVIDER=smtp` (mặc định) dùng Gmail STARTTLS 587 với `SMTP_EMAIL`/`SMTP_PASSWORD` ở local; `MAIL_PROVIDER=brevo` dùng HTTPS API với `BREVO_API_KEY`/`MAIL_FROM_EMAIL` trên Render. OTP và reminder dùng chung transport; không fallback SMTP khi Brevo lỗi. Credentials mail tách riêng với bootstrap admin.
-- **To Do:** CRUD list, task, step; hoàn thành/mở lại; tìm kiếm và lọc; ngày giờ, reminder, recurrence và kiểm tra trùng lịch.
-- **Calendar:** CRUD calendar và event; bốn chế độ xem ở frontend, kéo thả và xử lý sự kiện lặp. Task đã xếp lịch được hiển thị cùng lịch.
+- **To Do:** CRUD list, task, step; hoàn thành/mở lại thủ công; tìm kiếm và lọc; ngày giờ, reminder, recurrence và kiểm tra trùng lịch. Icon danh sách dùng Lucide đồng bộ; kéo đường phân cách để đổi độ rộng danh sách trên desktop, lưu theo trình duyệt.
+- **Calendar:** CRUD calendar và event; bốn chế độ xem ở frontend, kéo thả và xử lý sự kiện lặp. Task đã xếp lịch được hiển thị cùng lịch. Chỉ Event tự hoàn thành theo giờ kết thúc của từng lần diễn ra; Task quá hạn vẫn cần người dùng tích hoàn thành. Giữ cột `tasks.auto_complete` để tương thích dữ liệu cũ, API luôn trả/ghi false và không chạy tự hoàn thành Task; thay đổi này không cần migration schema.
 - **Dashboard:** tổng hợp hôm nay và thống kê từ dữ liệu tài khoản.
 - **AI:** conversation và chat thông qua service/tool backend; provider/model lấy từ cấu hình. Màn hình thanh toán trước AI là lời xác nhận mô phỏng, không có cổng thanh toán.
 - **Settings:** profile, theme, múi giờ và tùy chọn nhắc việc.
 
 Source không có đồng bộ Google/Outlook hoặc Pomodoro đang hoạt động.
+
+Ô **Ghi chú & địa điểm** trong chi tiết Task và form Task/Event dùng chung một vùng nhập nhiều dòng. Dữ liệu cũ ở `location` và `note`/`description` được hiển thị đầy đủ cùng nhau; khi lưu từ ô này, toàn bộ nội dung được ghi vào `note` (Task) hoặc `description` (Event), và `location` được đặt null để tránh lặp. Không đổi schema database; nội dung kết hợp vượt 5.000 ký tự được báo lỗi để người dùng chỉnh sửa, không tự cắt dữ liệu.
 
 ## API chính
 

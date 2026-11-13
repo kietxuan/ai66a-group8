@@ -88,7 +88,7 @@ def summarize_tool(name, arguments, result):
     data = data or {}
     title = data.get("title") or data.get("name") or arguments.get("title") or arguments.get("name") or "mục đã chọn"
     if name in {"create_task", "update_task", "schedule_task_on_calendar", "create_event", "update_event", "reschedule_event"}:
-        event = name.endswith("event") or data.get("auto_complete")
+        event = name.endswith("event")
         kind = "sự kiện" if event else "công việc"
         verb = "tạo" if name.startswith("create_") else "xếp lịch cho" if name == "schedule_task_on_calendar" else "cập nhật"
         text = f"Đã {verb} {kind} **{title}**{_when(data)}."

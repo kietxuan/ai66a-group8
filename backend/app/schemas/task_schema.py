@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Optional, List
 from datetime import datetime, date, time
 from app.schemas.validation import InputValidation
@@ -74,6 +74,12 @@ class TaskBase(BaseModel):
     reminder_minutes: Optional[int] = 15
     recurrence_rule: Optional[str] = Field(None, max_length=500)
 
+    @field_validator('auto_complete')
+    @classmethod
+    def manual_completion_only(cls, value):
+        # Accept older clients while disabling the retired Task behavior.
+        return False
+
 class TaskCreate(TaskBase, InputValidation):
     note: Optional[str] = Field(None, max_length=5000)
     steps: Optional[List[TaskStepCreate]] = None
@@ -90,6 +96,7 @@ class TaskUpdate(InputValidation):
     is_important: Optional[bool] = None
     is_in_my_day: Optional[bool] = None
     auto_complete: Optional[bool] = None
+
     due_date: Optional[date] = None
     due_time: Optional[time] = None
     start_time: Optional[time] = None
@@ -103,6 +110,11 @@ class TaskUpdate(InputValidation):
     reminder_sent: Optional[bool] = None
     recurrence_rule: Optional[str] = Field(None, max_length=500)
     position: Optional[int] = None
+
+    @field_validator('auto_complete')
+    @classmethod
+    def manual_completion_only(cls, value):
+        return False
 
 class TaskResponse(TaskBase):
     id: int

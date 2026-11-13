@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from app.core.time import business_today, local_now, BUSINESS_TZ
-from app.services.recurrence import occurrences, parse_rule, parse_until, is_task_overdue
+from app.services.recurrence import occurrences, parse_rule, parse_until
 from app.crud.task_crud import task_crud
 from app.crud.task_list_crud import task_list_crud
 from app.models.task_model import Task, TaskStep
@@ -14,42 +14,21 @@ from app.schemas.task_schema import (
 )
 
 class TaskService:
-    async def evaluate_auto_complete(self, db: AsyncSession, tasks: List[Task]) -> List[Task]:
-        """
-        Tự động đánh dấu hoàn thành đối với các mục có auto_complete=True (Sự kiện)
-        khi thời gian kết thúc đã qua.
-        """
-        now = local_now()
-        today = now.date()
+    async def evaluate_daily_state(self, db: AsyncSession, tasks: List[Task]) -> List[Task]:
+        """Reset yesterday's My Day selection without completing overdue Tasks."""
+        today = business_today()
         changed = False
-        from app.services.write_lock import lock_owner
         owners = {t.user_id for t in tasks if
-            (t.is_in_my_day and t.my_day_date != today) or
-            (t.auto_complete and is_task_overdue(t, now))}
+            t.is_in_my_day and t.my_day_date != today}
         for owner in sorted(owners):
             await lock_owner(db, owner)
 
         evaluated = list(tasks)
-        seen = {t.id for t in tasks}
-        # Bound transaction size; further expired cycles are handled on the next tick/read.
-        transitions = 0
         for t in evaluated:
             if t.is_in_my_day and t.my_day_date != today:
                 t.is_in_my_day = False
                 t.my_day_date = None
                 changed = True
-            if t.auto_complete and is_task_overdue(t, now) and transitions < 1000:
-                await self._complete_transition(db, t.id, t.user_id, True)
-                transitions += 1
-                changed = True
-                # Include existing successors too: a retry must not create duplicates.
-                from sqlalchemy.orm import selectinload
-                successor = (await db.execute(select(Task).where(
-                    Task.recurrence_source_id == t.id, Task.user_id == t.user_id
-                ).options(selectinload(Task.steps)))).scalars().first()
-                if successor is not None and successor.id not in seen:
-                    seen.add(successor.id)
-                    evaluated.append(successor)
 
         if changed:
             await db.commit()
@@ -70,9 +49,6 @@ class TaskService:
     ) -> List[Task]:
         if due_before and due_after and due_after > due_before:
             raise HTTPException(422, "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.")
-        # Catch up before applying a date/view filter, otherwise old series are invisible.
-        candidates = await task_crud.get_by_filters(db, user_id=user_id, is_completed=False, due_before=business_today())
-        await self.evaluate_auto_complete(db, [t for t in candidates if t.auto_complete])
         tasks = await task_crud.get_by_filters(
             db,
             user_id=user_id,
@@ -82,8 +58,7 @@ class TaskService:
             due_before=due_before,
             due_after=due_after
         )
-        # Re-query after catch-up so successors obey the requested filters and ordering.
-        await self.evaluate_auto_complete(db, tasks)
+        await self.evaluate_daily_state(db, tasks)
         return await task_crud.get_by_filters(
             db, user_id=user_id, list_id=list_id, view=view, is_completed=is_completed,
             due_before=due_before, due_after=due_after
@@ -93,7 +68,7 @@ class TaskService:
         task = await task_crud.get_with_steps(db, task_id=task_id)
         if not task or task.user_id != user_id:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy công việc này.")
-        await self.evaluate_auto_complete(db, [task])
+        await self.evaluate_daily_state(db, [task])
         return task
 
     @serialized_write
@@ -129,7 +104,7 @@ class TaskService:
                 return await task_crud.get_with_steps(db, existing)
         await check_task_overlap(db, user_id, task_in, allowed=task_in.allow_overlap)
         task = await task_crud.create(db, user_id=user_id, obj_in=task_in)
-        await self.evaluate_auto_complete(db, [task])
+        await self.evaluate_daily_state(db, [task])
         return task
 
     @serialized_write
@@ -140,6 +115,7 @@ class TaskService:
         if "list_id" in task_in.model_fields_set:
             await self._check_list(db, task_in.list_id, user_id)
         payload = task_in.model_dump(exclude_unset=True)
+        payload['auto_complete'] = False
         allow_overlap = payload.pop("allow_overlap", False)
         completed = payload.pop("is_completed", None)
         merged = {key: getattr(task, key) for key in TaskCreate.model_fields if key not in ("steps", "allow_overlap", "client_request_id")}
@@ -162,7 +138,7 @@ class TaskService:
         updated = await task_crud.update(db, db_obj=task, obj_in=task_in)
         if completed is not None:
             updated = await self.toggle_complete(db, task_id, user_id, completed, allow_overlap=allow_overlap)
-        await self.evaluate_auto_complete(db, [updated])
+        await self.evaluate_daily_state(db, [updated])
         return updated
 
     @serialized_write

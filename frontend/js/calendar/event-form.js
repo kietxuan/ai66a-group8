@@ -10,6 +10,7 @@ import { confirmDeleteItem } from '../utils/confirm-delete.js';
 import { newRequestId } from '../utils/request-id.js';
 import { buildEventRange, readEventRange, shiftEventDate } from './event-range.js';
 import { TaskSteps } from '../todo/task-steps.js';
+import { combinedItemNotes, buildNotesUpdate, NOTES_LIMIT } from '../utils/item-notes.js';
 
 const PRESET_COLORS = [
   '#4F46E5', '#2563EB', '#0EA5E9', '#10B981',
@@ -30,7 +31,7 @@ export class EventForm {
   /**
    * Biểu mẫu thống nhất cho Việc cần làm & Sự kiện (Unified Task & Event Modal)
    * - Mặc định: Phải tích mới hoàn thành (auto_complete = false)
-   * - Nếu tích chọn "⚡ Sự kiện (Tự động hoàn thành khi hết thời gian)" -> auto_complete = true
+   * - Task hoàn thành thủ công; Event tự hoàn thành khi hết thời gian.
    * - Mặc định không để thời gian (Vĩnh viễn -> nằm ở cột Cần làm và có thể kéo thả vào Lịch)
    *   trừ khi người dùng bật "Đặt thời gian" hoặc đang chỉnh sửa mục đã có lịch.
    */
@@ -85,10 +86,6 @@ export class EventForm {
     // Trạng thái ban đầu của các trường
     let selectedColor = existingItem?.color || '#4F46E5';
     let isImportant = Boolean(existingItem?.is_important);
-    // Mặc định là phải tích mới hoàn thành (auto_complete = false)
-    let isAutoComplete = isEdit
-      ? Boolean(existingItem?.auto_complete || isLegacyEvent)
-      : false;
 
     // Mặc định KHÔNG để thời gian (để nằm ở cột Cần làm & kéo vào lịch),
     // trừ khi đang sửa mục đã có due_date hoặc chọn trực tiếp từ ô trên lịch
@@ -159,9 +156,9 @@ export class EventForm {
 
     const autoCompleteCheck = createElement('input', {
       type: 'checkbox',
-      checked: isAutoComplete,
-      style: { width: '16px', height: '16px', accentColor: 'var(--color-primary)', cursor: 'pointer' },
-      onchange: (e) => { isAutoComplete = e.target.checked; }
+      checked: true,
+      disabled: true,
+      style: { width: '16px', height: '16px', accentColor: 'var(--color-primary)' }
     });
 
     const autoCompleteLabel = createElement('label', {
@@ -175,7 +172,7 @@ export class EventForm {
         cursor: 'pointer',
         userSelect: 'none'
       }
-    }, [autoCompleteCheck, createElement('span', { textContent: 'Tự động hoàn thành' })]);
+    }, [autoCompleteCheck, createElement('span', { textContent: 'Tự động hoàn thành khi sự kiện kết thúc' })]);
 
     const importantCheck = createElement('input', {
       type: 'checkbox',
@@ -439,7 +436,8 @@ export class EventForm {
       dateGroup.querySelector('label').textContent = eventMode ? 'Ngày bắt đầu' : 'Ngày';
       dateInput.setAttribute('aria-label', eventMode ? 'Ngày bắt đầu' : 'Ngày');
       endDateInput.min = dateInput.value;
-      checkRow.style.display = eventMode ? 'none' : 'flex';
+      autoCompleteLabel.style.display = eventMode ? 'inline-flex' : 'none';
+      importantLabel.style.display = eventMode ? 'none' : 'inline-flex';
       listAndCategoryGrid.children[0].style.display = eventMode ? 'none' : '';
       listAndCategoryGrid.style.gridTemplateColumns = eventMode ? '1fr' : '1fr 1fr';
       dateGroup.style.order = '0';
@@ -512,28 +510,21 @@ export class EventForm {
     scheduleBox.appendChild(scheduleHeader);
     scheduleBox.appendChild(scheduleFieldsGrid);
 
-    // 5. Địa điểm & Ghi chú
-    const locInput = createElement('input', {
-      'aria-label': 'Địa điểm hoặc đường dẫn họp',
-      type: 'text',
-      className: 'input',
-      value: existingItem?.location || '',
-      placeholder: 'Địa điểm hoặc liên kết họp (tùy chọn)...'
-    });
-    const locError = createElement('small', { role: 'alert', style: { color: 'var(--color-danger, #dc2626)' } });
-
+    // 5. One field shared by Task notes and Event descriptions.
     const descInput = createElement('textarea', {
-      'aria-label': 'Ghi chú chi tiết',
-      className: 'input',
-      rows: 2,
-      placeholder: 'Ghi chú chi tiết nội dung công việc...'
+      id: 'item-form-notes',
+      'aria-describedby': 'item-form-notes-error',
+      className: 'textarea item-notes-input',
+      rows: 5,
+      placeholder: 'Nhập ghi chú, địa điểm hoặc liên kết họp…'
     });
-    descInput.value = existingItem?.note || existingItem?.description || '';
-    const noteError = createElement('small', { role: 'alert', style: { color: 'var(--color-danger, #dc2626)' } });
+    descInput.value = combinedItemNotes(existingItem || {});
+    const noteError = createElement('small', { id: 'item-form-notes-error', role: 'alert', className: 'item-notes-error' });
     titleInput.addEventListener('input', () => { titleError.textContent = [...titleInput.value].length > titleLimit() ? `Tiêu đề tối đa ${titleLimit()} ký tự.` : ''; });
-    locInput.addEventListener('input', () => { locError.textContent = [...locInput.value].length > 300 ? 'Địa điểm tối đa 300 ký tự.' : ''; });
     descInput.addEventListener('input', () => {
-      noteError.textContent = [...descInput.value].length > 5000 ? 'Ghi chú tối đa 5.000 ký tự.' : '';
+      const invalid = [...descInput.value.trim()].length > NOTES_LIMIT;
+      noteError.textContent = invalid ? 'Ghi chú và địa điểm tối đa 5.000 ký tự.' : '';
+      descInput.setAttribute('aria-invalid', String(invalid));
     });
 
     const formContent = createElement('div', {
@@ -547,9 +538,8 @@ export class EventForm {
       checkRow,
       listAndCategoryGrid,
       scheduleBox,
-      createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr', gap: '10px' } }, [
-        locInput,
-        locError,
+      createElement('div', { className: 'form-group item-notes-field' }, [
+        createElement('label', { className: 'form-label', for: 'item-form-notes', textContent: 'Ghi chú & địa điểm' }),
         descInput,
         noteError
       ])
@@ -580,13 +570,9 @@ export class EventForm {
         titleInput.focus();
         return;
       }
-      if ([...locInput.value.trim()].length > 300) {
-        locError.textContent = 'Địa điểm tối đa 300 ký tự.';
-        locInput.focus();
-        return;
-      }
-      if ([...descInput.value].length > 5000) {
-        noteError.textContent = 'Ghi chú tối đa 5.000 ký tự.';
+      if ([...descInput.value.trim()].length > NOTES_LIMIT) {
+        noteError.textContent = 'Ghi chú và địa điểm tối đa 5.000 ký tự.';
+        descInput.setAttribute('aria-invalid', 'true');
         descInput.focus();
         return;
       }
@@ -633,12 +619,11 @@ export class EventForm {
       const todayStr = formatDate(businessNow(), 'YYYY-MM-DD');
       const taskPayload = {
         title,
-        note: descInput.value.trim() || null,
-        location: locInput.value.trim() || null,
+        ...buildNotesUpdate(descInput.value),
         list_id: listSelect.value ? Number(listSelect.value) : null,
         is_important: isImportant,
         is_in_my_day: dueDateVal === todayStr,
-        auto_complete: isAutoComplete,
+        auto_complete: false,
         due_date: dueDateVal,
         due_time: dueTimeVal,
         start_time: startTimeVal,
@@ -745,7 +730,7 @@ export class EventForm {
 
     const snapshot = () => JSON.stringify({
       fields: [...formContent.querySelectorAll('input, textarea, select')].filter(input => !input.closest('.task-steps')).map(input => input.type === 'checkbox' ? input.checked : input.value),
-      scheduleEnabled, isAllDay, isImportant, isAutoComplete, selectedColor
+      scheduleEnabled, isAllDay, isImportant, selectedColor
     });
     const original = snapshot();
     modalRef.beforeClose = () => {

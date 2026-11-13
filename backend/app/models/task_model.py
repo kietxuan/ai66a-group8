@@ -41,8 +41,7 @@ class Task(Base):
     is_in_my_day = Column(Boolean, default=False, nullable=False, index=True)
     my_day_date = Column(Date, nullable=True)
 
-    # auto_complete=True means "Sự kiện (Tự động chuyển sang Hoàn thành khi hết thời gian)"
-    # auto_complete=False (default) means "Phải tích mới hoàn thành"
+    # Legacy column retained for deployed databases/older clients. Tasks now complete manually.
     auto_complete = Column(Boolean, default=False, nullable=False)
 
     due_date = Column(Date, nullable=True, index=True)

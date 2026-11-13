@@ -101,7 +101,7 @@ export class TaskForm {
     inputEl.disabled = true;
     try {
       // Mặc định không để thời gian (due_date: null -> Vĩnh viễn ở cột Cần làm & kéo vào Lịch được)
-      const signature = JSON.stringify({ title, listId: this.listId, isImportant: this.isImportant, autoComplete: this.autoComplete });
+      const signature = JSON.stringify({ title, listId: this.listId, isImportant: this.isImportant });
       const payload = {
         title,
         client_request_id: this.pendingCreate?.signature === signature ? this.pendingCreate.id : newRequestId(),

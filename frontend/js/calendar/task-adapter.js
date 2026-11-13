@@ -17,7 +17,7 @@ export function adaptTaskForCalendar(task) {
 
   const startTimeRaw = task.start_time || task.due_time;
   const isAllDay = task.is_all_day !== false || !startTimeRaw;
-  const defaultColor = task.color || (task.auto_complete ? '#4F46E5' : '#0B8043');
+  const defaultColor = task.color || '#0B8043';
 
   if (isAllDay) {
     return {
@@ -28,7 +28,7 @@ export function adaptTaskForCalendar(task) {
       is_all_day: true,
       is_task: true,
       is_completed: !!task.is_completed,
-      auto_complete: !!task.auto_complete,
+      auto_complete: false,
       color: defaultColor,
       raw_task: task
     };
@@ -58,7 +58,7 @@ export function adaptTaskForCalendar(task) {
     is_all_day: false,
     is_task: true,
     is_completed: !!task.is_completed,
-    auto_complete: !!task.auto_complete,
+    auto_complete: false,
     color: defaultColor,
     raw_task: task
   };

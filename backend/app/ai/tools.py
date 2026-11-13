@@ -4,7 +4,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "create_event",
-            "description": "Tạo sự kiện. Mục trong một ngày không chỉ định nhóm lịch sẽ được lưu thành Task thống nhất và trả item_type=task; dùng task_id và các tool Task để sửa/xóa sau đó. Chỉ sự kiện qua nhiều ngày hoặc chỉ định nhóm lịch dùng Event cũ.",
+            "description": "Tạo Event tự hoàn thành khi hết giờ. Dùng khi người dùng yêu cầu sự kiện, tự động hoàn thành, sự kiện nhiều ngày hoặc nhóm lịch. Hoạt động thông thường trong một ngày có thể được lưu thành Task thủ công; xem item_type trong kết quả.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -216,14 +216,13 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "create_task",
-            "description": "Tạo mục thống nhất như form giao diện, hiển thị ở To Do, Dashboard và Calendar nếu có ngày. Dùng cho cả công việc và lịch học/lịch họp/sự kiện trong ngày. auto_complete=false cho việc tự tích hoàn thành; true cho sự kiện tự hoàn thành khi hết giờ.",
+            "description": "Tạo công việc hoàn thành thủ công, hiển thị ở To Do, Dashboard và Calendar nếu có ngày. Dùng create_event khi người dùng yêu cầu sự kiện tự hoàn thành khi hết giờ.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "title": {"type": "string", "description": "Tiêu đề công việc"},
                     "note": {"type": "string", "description": "Ghi chú chi tiết"},
                     "location": {"type": "string", "description": "Địa điểm hoặc liên kết họp"},
-                    "auto_complete": {"type": "boolean", "description": "True cho sự kiện tự hoàn thành khi hết giờ, false cho công việc cần tích hoàn thành"},
                     "reminder_minutes": {"type": "integer", "description": "Số phút nhắc trước giờ bắt đầu"},
                     "list_id": {"type": "integer", "description": "ID danh sách chứa task"},
                     "list_name": {"type": "string", "description": "Tên danh sách chứa task (nếu không biết list_id)"},
@@ -260,7 +259,6 @@ TOOLS = [
                     "title": {"type": "string"},
                     "note": {"type": "string"},
                     "location": {"type": "string"},
-                    "auto_complete": {"type": "boolean"},
                     "reminder_minutes": {"type": "integer"},
                     "due_date": {"type": "string"},
                     "due_time": {"type": "string"},

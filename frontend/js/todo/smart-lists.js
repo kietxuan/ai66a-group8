@@ -1,4 +1,4 @@
-import { iconMarkup } from "../utils/icons.js";
+import { iconMarkup, createIcon, resolveListIcon } from "../utils/icons.js";
 import { createElement } from "../utils/dom.js";
 import { api } from "../api.js";
 import { Toast } from "../components/toast.js";
@@ -249,7 +249,7 @@ export class SmartListsSidebar {
     ) {
       span.innerHTML = icon;
     } else {
-      span.textContent = icon || "☰";
+      span.replaceChildren(createIcon(resolveListIcon(icon)));
     }
     return span;
   }

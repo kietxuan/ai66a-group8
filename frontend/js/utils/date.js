@@ -19,6 +19,10 @@ export function businessNow(instant = new Date()) {
   return new Date(businessWallTime(instant.toISOString()));
 }
 
+export function isEventCompleted(event, now = businessNow()) {
+  return !event.is_cancelled && parseLocalDate(event.end_at).getTime() <= now.getTime();
+}
+
 export function businessWallTime(value) {
   if (typeof value !== 'string' || !/(Z|[+-]\d{2}:\d{2})$/.test(value)) return value;
   const date = new Date(value);

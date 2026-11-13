@@ -35,7 +35,7 @@ from app.api.v1.api import api_router
 async def background_scheduler_loop():
     """
     Vòng lặp chạy ngầm mỗi 45 giây:
-    1. Tự động đánh dấu hoàn thành (is_completed=True) cho các Sự kiện (auto_complete=True) đã hết giờ.
+    1. Dọn lựa chọn My Day cũ; Task chỉ hoàn thành khi người dùng đánh dấu.
     2. Tự động gửi Email thông báo nhắc lịch khi công việc/sự kiện sắp diễn ra theo cài đặt của người dùng.
     """
     while True:
@@ -51,9 +51,7 @@ async def background_scheduler_loop():
                     Task.due_date.isnot(None)
                 )
                 rows = (await session.execute(stmt)).all()
-                await task_service.evaluate_auto_complete(session, [task for task, _ in rows])
-                # Catch-up may have inserted a current/future successor; reminders use fresh rows.
-                rows = (await session.execute(stmt)).all()
+                await task_service.evaluate_daily_state(session, [task for task, _ in rows])
                 changed = False
 
                 for task, user in rows:

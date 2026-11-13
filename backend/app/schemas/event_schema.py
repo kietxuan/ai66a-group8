@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, computed_field
 from typing import Optional, List
 from datetime import datetime
 from app.schemas.validation import InputValidation
+from app.core.time import local_now, BUSINESS_TZ
 
 class EventReminderBase(BaseModel):
     minutes_before: int = Field(default=15, ge=0, le=10080)
@@ -68,6 +69,12 @@ class EventResponse(EventBase):
     reminders: List[EventReminderResponse] = []
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+    @computed_field
+    @property
+    def is_completed(self) -> bool:
+        end = self.end_at if self.end_at.tzinfo else self.end_at.replace(tzinfo=BUSINESS_TZ)
+        return not self.is_cancelled and end <= local_now()
 
     model_config = ConfigDict(from_attributes=True)
 

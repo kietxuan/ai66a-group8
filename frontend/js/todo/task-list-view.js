@@ -1,4 +1,4 @@
-import { iconMarkup } from "../utils/icons.js";
+import { iconMarkup, createIcon, resolveListIcon } from "../utils/icons.js";
 import { businessNow } from "../utils/date.js";
 import { createElement } from "../utils/dom.js";
 import {
@@ -1203,7 +1203,7 @@ export class TaskListView {
           innerHTML: INFINITY_SVG,
         });
       } else if (group.icon && group.icon !== "☰") {
-        iconEl = createElement("span", { textContent: group.icon });
+        iconEl = createIcon(resolveListIcon(group.icon));
       } else {
         iconEl = createElement("span", {
           style: { display: "inline-flex", alignItems: "center" },
