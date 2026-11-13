@@ -25,6 +25,32 @@ docker compose ps
 
 Frontend gọi API cùng origin qua Nginx (`/api/v1`). Backend chạy Alembic khi container khởi động. Trước khi thay đổi migration trên database có dữ liệu, hãy sao lưu; không dùng `docker compose down -v` để sửa lỗi migration.
 
+## Nhắc email cho Task và Event
+
+- Dùng chung bật/tắt và số phút trong Settings. Event không đặt mốc riêng sẽ kế thừa cài đặt này; mốc riêng đã có qua API/AI vẫn được giữ. API tạo Event với `reminders: []` tắt nhắc riêng mục đó.
+- Event cả ngày lấy mốc 08:00 giờ Việt Nam; Event nhiều ngày chỉ nhắc trước lúc bắt đầu. Event lặp nhắc từng lần, bỏ qua lần bị hủy và dùng giờ mới cho lần đã dời.
+- Migration `e4d20261114` thêm nhật ký `event_reminder_deliveries`; migration nối tiếp `f5e20261114` giữ `minutes_before` luôn là số nguyên và dùng cờ `use_user_default` để kế thừa Settings. Các hàng `NULL` từ e4 được chuyển sang cờ mới; mốc riêng và nhật ký gửi đã có được giữ nguyên. Không sửa lại lịch sử e4. Event cũ chưa có cấu hình được gắn nhắc theo Settings.
+- Các revision còn thiếu được nâng cấp trong cùng một transaction PostgreSQL: từ d3 lên head không công bố trạng thái `NULL` trung gian cho bản cũ. Đây là thay đổi bổ sung tương thích với trình đọc cũ, không phải bảo đảm mọi bản code bất kỳ đều quay lui được.
+- Dùng lại mail provider hiện có, không thêm API key. Chỉ ghi nhận thành công sau khi provider xác nhận; lỗi gửi được thử lại trong cửa sổ nhắc (đến 5 phút sau mốc bắt đầu). Khóa theo tài khoản và nhật ký bền giúp chống gửi trùng khi polling/chạy nền đồng thời; không bảo đảm exactly-once nếu tiến trình chết giữa lúc provider nhận mail và database ghi nhận.
+- Không bảo đảm nhắc đúng giờ khi máy tắt hoặc dịch vụ Free đang ngủ. Giữ `SCHEDULER_ENABLED=true` để chạy nền; mở web cũng kích hoạt kiểm tra qua API.
+
+Kiểm tra hồi quy: `node --test frontend/tests/*.test.mjs` và `python -m pytest tests -q` trong `backend`. Các ca PostgreSQL nhắc lịch/migration chỉ chạy khi đặt `REMINDER_TEST_DATABASE_URL` trỏ vào host QA riêng `planify-reminder-db`; không dùng database thật để chạy thử. Kiểm tra migration gồm nâng cấp từ d3 và e4, round-trip f5 → e4 → f5 không mất dữ liệu và rollback toàn transaction khi một revision thất bại.
+
+### Trước khi đưa thay đổi này lên main
+
+1. Sao lưu **database Neon đang được Render sử dụng**, không nhầm với PostgreSQL local. Trong Neon chọn đúng project → Branches → New branch → chọn parent tương ứng `DATABASE_URL` của Render → **Current data** (cả schema và dữ liệu) → đặt tên riêng, ví dụ `backup-before-deploy-20261114`. Không chọn Schema only, không đổi URL Render sang bản sao. Kiểm tra quota/chi phí trước khi tạo, giữ bản sao đến khi bản phát hành ổn định. [Hướng dẫn Neon](https://neon.com/docs/manage/branches).
+2. Nên có thêm file sao lưu độc lập bằng `pg_dump -Fc` qua kết nối **Direct/unpooled**. Dùng PostgreSQL client tương thích phiên bản server; mật khẩu/URL và file dump phải lưu riêng, ngoài Git. Kiểm tra archive bằng `pg_restore --list`, tốt hơn là thử restore vào database mới tách biệt, không ghi đè production. [Sao lưu Neon bằng pg_dump](https://neon.com/docs/manage/backup-pg-dump).
+3. Build đúng `Dockerfile.render`, chạy thử với PostgreSQL/Redis QA. `alembic check` phải không báo schema còn thiếu. Không dùng biến môi trường production cho bài kiểm tra gửi mail hoặc sửa dữ liệu.
+4. Chuẩn bị phương án quay lui **code cũ + toàn bộ migration hiện tại**. Image cũ nguyên trạng không chứa revision mới nên `alembic upgrade head` của nó có thể không nhận ra database; không chỉ bấm Rollback về artifact cũ trên Render. Không hạ/xóa bảng trên Neon để chữa lỗi code. [Cơ chế Rollback của Render](https://render.com/docs/rollbacks).
+
+Đóng gói source quay lui từ commit đang chạy ổn định (đọc mã commit trên Render, không đoán):
+
+```powershell
+./scripts/prepare-rollback.ps1 -BaseCommit MA_COMMIT_DANG_CHAY
+```
+
+Script chỉ xuất source commit đã có ở local và ghép bộ migration hiện tại vào thư mục `.local/rollback-.../source`; không sửa checkout, không push và không hạ database. Script in lệnh build image tương thích. Thư mục này là phương án dự phòng local, **chưa phải bản fallback đã phát hành trên Render**. Khi cần quay lui phải phát hành source tương thích này, giữ database hiện tại; việc khôi phục database từ bản sao cần đánh giá riêng vì có thể mất dữ liệu tạo sau mốc sao lưu.
+
 ## Deploy Render + Brevo (khuyến nghị cho bản demo)
 
 Image `Dockerfile.render` đóng gói frontend và FastAPI chung origin, chạy Alembic trước API, một worker, non-root, không `--reload`, lắng nghe `0.0.0.0:${PORT:-10000}`. Không thay đổi cách chạy Compose local. `render.yaml` là Blueprint chỉ tạo một Web Service Free, **không tạo database trả phí**. Credentials thật phải điền trên Render, không commit `.env`.

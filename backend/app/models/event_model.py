@@ -48,11 +48,27 @@ class EventReminder(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
+    # Keep the legacy integer readable by old application versions.
     minutes_before = Column(Integer, default=15, nullable=False)
+    use_user_default = Column(Boolean, default=False, server_default="false", nullable=False)
     is_sent = Column(Boolean, default=False, nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     event = relationship("Event", back_populates="reminders")
+
+
+class EventReminderDelivery(Base):
+    """A durable acknowledgement per occurrence/notification, not per series."""
+    __tablename__ = "event_reminder_deliveries"
+    __table_args__ = (Index("uq_event_reminder_delivery", "event_id", "occurrence_start", "scheduled_for", unique=True),)
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
+    reminder_id = Column(Integer, ForeignKey("event_reminders.id", ondelete="SET NULL"), nullable=True)
+    occurrence_start = Column(DateTime(timezone=True), nullable=False)
+    scheduled_for = Column(DateTime(timezone=True), nullable=False)
+    minutes_before = Column(Integer, nullable=False)
+    sent_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

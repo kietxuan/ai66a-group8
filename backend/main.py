@@ -27,6 +27,7 @@ from app.core.redis import redis_client
 from app.models.user_model import User
 from app.models.task_model import Task
 from app.helper.otp import send_reminder_email
+from app.services.event_reminder_service import event_reminder_service
 
 from app.api.v1.api import api_router
 
@@ -85,6 +86,18 @@ async def background_scheduler_loop():
 
                 if changed:
                     await session.commit()
+            async with AsyncSessionLocal() as session:
+                user_ids = (await session.execute(select(User.id).where(
+                    User.notify_enabled.is_(True), User.is_activate.is_(True)
+                ))).scalars().all()
+            for user_id in user_ids:
+                try:
+                    async with AsyncSessionLocal() as session:
+                        await event_reminder_service.send_due(session, user_id)
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    logger.warning("Event reminder check failed for user id=%s", user_id)
         except asyncio.CancelledError:
             break
         except Exception as e:

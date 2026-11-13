@@ -4,12 +4,15 @@ from datetime import datetime
 from app.schemas.validation import InputValidation
 
 class EventReminderBase(BaseModel):
-    minutes_before: int = Field(default=15, ge=0)
+    minutes_before: int = Field(default=15, ge=0, le=10080)
+    use_user_default: bool = False
 
 class EventReminderCreate(EventReminderBase):
     pass
 
 class EventReminderResponse(EventReminderBase):
+    # Preserve readability of legacy explicit offsets above the new input cap.
+    minutes_before: int
     id: int
     is_sent: bool
     created_at: datetime

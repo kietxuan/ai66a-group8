@@ -73,9 +73,13 @@ class CRUDEvent(CRUDBase[Event]):
             for rem in obj_in.reminders:
                 reminder_obj = EventReminder(
                     event_id=db_obj.id,
-                    minutes_before=rem.minutes_before
+                    minutes_before=rem.minutes_before,
+                    use_user_default=rem.use_user_default
                 )
                 db.add(reminder_obj)
+        elif obj_in.reminders is None:
+            # Omitted = shared settings; an explicit [] still disables this event.
+            db.add(EventReminder(event_id=db_obj.id, minutes_before=15, use_user_default=True))
 
         await db.commit()
         return await self.get_with_reminders(db, db_obj.id)
@@ -93,7 +97,7 @@ class CRUDEvent(CRUDBase[Event]):
                 await db.delete(r)
 
             for rem in obj_in.reminders:
-                new_rem = EventReminder(event_id=db_obj.id, minutes_before=rem.minutes_before)
+                new_rem = EventReminder(event_id=db_obj.id, minutes_before=rem.minutes_before, use_user_default=rem.use_user_default)
                 db.add(new_rem)
 
         db_obj.updated_at = datetime.now(timezone.utc)

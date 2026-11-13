@@ -51,6 +51,7 @@ def run_migrations_offline() -> None:
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
+        transaction_per_migration=False,
         dialect_opts={"paramstyle": "named"},
     )
 
@@ -60,7 +61,10 @@ def run_migrations_offline() -> None:
 def do_run_migrations(connection):
     context.configure(
         connection=connection,
-        target_metadata=target_metadata
+        target_metadata=target_metadata,
+        # Publish all pending Postgres revisions together. In particular, old
+        # readers must never observe the temporary NULL representation in e4.
+        transaction_per_migration=False,
     )
 
     with context.begin_transaction():

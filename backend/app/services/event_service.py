@@ -148,10 +148,10 @@ class EventService:
             await db.flush()
 
             reminders_to_add = event_in.reminders if event_in.reminders is not None else (
-                [EventReminderCreate(minutes_before=r.minutes_before) for r in event.reminders] if event.reminders else []
+                [EventReminderCreate(minutes_before=r.minutes_before, use_user_default=r.use_user_default) for r in event.reminders] if event.reminders else []
             )
             for rem in reminders_to_add:
-                db.add(EventReminder(event_id=exception_event.id, minutes_before=rem.minutes_before))
+                db.add(EventReminder(event_id=exception_event.id, minutes_before=rem.minutes_before, use_user_default=rem.use_user_default))
 
             event.updated_at = datetime.now(timezone.utc)
             await db.commit()
@@ -202,10 +202,10 @@ class EventService:
                 child.original_start += shift
 
             reminders_to_add = event_in.reminders if event_in.reminders is not None else (
-                [EventReminderCreate(minutes_before=r.minutes_before) for r in event.reminders] if event.reminders else []
+                [EventReminderCreate(minutes_before=r.minutes_before, use_user_default=r.use_user_default) for r in event.reminders] if event.reminders else []
             )
             for rem in reminders_to_add:
-                db.add(EventReminder(event_id=new_series.id, minutes_before=rem.minutes_before))
+                db.add(EventReminder(event_id=new_series.id, minutes_before=rem.minutes_before, use_user_default=rem.use_user_default))
 
             await db.commit()
             return await event_crud.get_with_reminders(db, new_series.id)

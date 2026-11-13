@@ -736,6 +736,10 @@ export const settingsPage = {
             ],
           ),
         ]),
+        createElement("p", {
+          style: { fontSize: "12px", color: "var(--color-text-secondary)", lineHeight: "1.6" },
+          textContent: "Áp dụng cho công việc và sự kiện; mốc nhắc riêng đã đặt cho từng mục được giữ nguyên. Sự kiện cả ngày dùng mốc 08:00 (giờ Việt Nam); sự kiện nhiều ngày chỉ nhắc khi bắt đầu. Lịch lặp được nhắc cho từng lần xuất hiện.",
+        }),
       ],
     );
 

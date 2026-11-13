@@ -19,7 +19,7 @@ def test_task_create_keeps_selected_category(monkeypatch):
         title="Việc học", list_id=2, category="Học tập", color="#8B5CF6"
     )))
 
-    created = db.add.call_args.args[0]
+    created = db.add.call_args_list[0].args[0]
     assert created.category == "Học tập"
     assert created.color == "#8B5CF6"
 
@@ -36,6 +36,6 @@ def test_event_create_keeps_selected_category(monkeypatch):
         end_at=start + timedelta(hours=1), category="Học tập", color="#8B5CF6"
     )))
 
-    created = db.add.call_args.args[0]
+    created = db.add.call_args_list[0].args[0]
     assert created.category == "Học tập"
     assert created.color == "#8B5CF6"

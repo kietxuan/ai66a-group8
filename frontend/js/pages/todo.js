@@ -583,6 +583,7 @@ export const todoPage = {
         if (updatedActive) {
           if (preserveDetail || this.taskDetailComponent.isDirty?.() || this.taskDetailComponent.isSaving) {
             // Keep the form's original revision
+            this.taskDetailComponent.syncSteps?.(updatedActive);
           } else {
             this.activeTask = updatedActive;
             this.taskDetailComponent.show(updatedActive);

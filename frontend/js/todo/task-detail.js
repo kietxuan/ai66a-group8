@@ -9,6 +9,7 @@ import { confirmDeleteItem } from '../utils/confirm-delete.js';
 import { revisionOptions } from '../utils/revision.js';
 import { isScheduleDismissal } from '../utils/api-error.js';
 import { getAvailableCategories, resolveCategoryForTask } from './task-item.js';
+import { TaskSteps } from './task-steps.js';
 
 export class TaskDetail {
   constructor(container, { onUpdate = null, onClose = null } = {}) {
@@ -25,17 +26,26 @@ export class TaskDetail {
   }
 
   hide() {
+    this.stepsComponent?.destroy();
+    this.stepsComponent = null;
     this.task = null;
     if (this.saveTimer) clearTimeout(this.saveTimer);
     this.container.innerHTML = '';
   }
 
   isDirty() {
-    return false;
+    return this.stepsComponent?.isDirty() || false;
   }
 
   canLeave() {
-    return true;
+    if (this.isSaving) { Toast.warning('Vui lòng chờ lưu bước con xong.'); return false; }
+    return !this.isDirty() || confirm('Bạn có bước con chưa lưu. Bạn có muốn bỏ thay đổi này không?');
+  }
+
+  get isSaving() { return this.stepsComponent?.isSaving || false; }
+
+  syncSteps(task) {
+    if (this.task?.id === task.id && this.stepsComponent?.setSteps(task.steps)) this.task.steps = [...(task.steps || [])];
   }
 
   destroy() {
@@ -80,6 +90,7 @@ export class TaskDetail {
     }
 
     const t = this.task;
+    this.stepsComponent?.destroy();
     const taskLists = store.get('taskLists') || [];
     const categories = getAvailableCategories();
     this.container.innerHTML = '';
@@ -108,8 +119,8 @@ export class TaskDetail {
         style: { fontSize: '20px', width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
         title: 'Đóng chi tiết',
         onclick: () => {
-          this.hide();
           if (this.onClose) this.onClose();
+          else if (this.canLeave()) this.hide();
         }
       })
     ]);
@@ -620,11 +631,14 @@ export class TaskDetail {
     panel.appendChild(titleGroup);
     panel.appendChild(checkRow);
     panel.appendChild(listAndCategoryGrid);
+    this.stepsComponent = new TaskSteps(t, { onChange: () => this.notifyChanged('steps', { preserveDetail: true }) });
+    panel.appendChild(this.stepsComponent.element);
     panel.appendChild(scheduleBox);
     panel.appendChild(locationInput);
     panel.appendChild(notesTextarea);
     panel.appendChild(actionsContainer);
 
     this.container.appendChild(panel);
+    this.stepsComponent.load();
   }
 }

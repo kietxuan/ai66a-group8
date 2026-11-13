@@ -452,6 +452,7 @@ export const dashboardPage = {
             }),
           ]),
         ]),
+        scoreCard,
       ],
     );
 
@@ -859,7 +860,6 @@ export const dashboardPage = {
     pageEl.appendChild(kpiGrid);
     pageEl.appendChild(chartsRow);
     pageEl.appendChild(secondaryRow);
-    pageEl.appendChild(scoreCard);
 
     requestAnimationFrame(() => {
       this.drawScoreRingCanvas(scoreCanvas, score);

@@ -12,6 +12,7 @@ from app.api.deps import get_current_user, get_current_developer
 from app.core.redis import get_redis
 from app.models.user_model import User
 from app.helper.otp import send_reminder_email
+from app.services.event_reminder_service import event_reminder_service
 
 router = APIRouter()
 
@@ -144,6 +145,8 @@ async def check_and_send_reminders(
 
     if triggered:
         await db.commit()
+
+    triggered.extend(await event_reminder_service.send_due(db, current_user.id))
 
     return {
         "notify_enabled": notify_enabled,

@@ -129,7 +129,7 @@ export class ReminderNotifier {
         .catch(() => null);
       if (serverCheck && Array.isArray(serverCheck.triggered)) {
         for (const item of serverCheck.triggered) {
-          const key = `srv-rem-${item.id}-${now.toISOString().slice(0, 10)}`;
+          const key = item.notification_key || `srv-rem-${item.id}-${now.toISOString().slice(0, 10)}`;
           if (!this.notifiedSet.has(key)) {
             this.markNotified(key);
             const emailTag = item.email_sent ? " (Đã gửi Email nhắc lịch)" : "";

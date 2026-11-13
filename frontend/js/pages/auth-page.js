@@ -40,8 +40,8 @@ export const authPage = {
           },
           [
             createElement("span", {
-              className: "auth-brand-icon",
-              textContent: "✨",
+              className: "auth-brand-icon planify-mark",
+              "data-icon": "calendar-days",
               "aria-hidden": "true",
             }),
             createElement("span", { textContent: "Planify Pro" }),
@@ -83,7 +83,7 @@ export const authPage = {
         [
           createElement("span", {
             className: "auth-invitation-mark",
-            textContent: "✦",
+            "data-icon": "calendar-days",
             "aria-hidden": "true",
           }),
           createElement("div", { className: "auth-invitation-copy" }, [

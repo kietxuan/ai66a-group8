@@ -17,6 +17,18 @@
   clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important;
 }
 .nav-icon .app-icon, .logo-icon .app-icon { --icon-size: 20px !important; }
+/* One planning identity across the public pages and workspace, using Lucide. */
+.sidebar-header .logo-icon.planify-mark,
+.auth-brand-icon.planify-mark,
+:root[data-theme] .landing-brand-icon.planify-mark {
+  flex-shrink: 0;
+  background: var(--color-accent);
+  color: #ffffff;
+  border-radius: 10px;
+  box-shadow: none;
+}
+.planify-mark .app-icon { --icon-size: 22px !important; }
+.auth-invitation-mark .app-icon { --icon-size: 32px !important; }
 .btn-icon, .dropdown-icon, .toast-icon { align-items: center; justify-content: center; }
 .btn-icon:not(.mobile-only) { display: inline-flex; }
 [role="status"] > .icon-spin { margin: 4px; }

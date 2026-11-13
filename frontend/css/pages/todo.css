@@ -1040,6 +1040,32 @@
   overflow: visible;
 }
 
+/* Checklist shared by the Task detail panel and edit modal. */
+.task-steps { display:flex; flex-direction:column; gap:10px; min-width:0; padding:14px; border:1px solid var(--color-border-light); border-radius:10px; background:var(--color-bg-secondary); }
+.task-step-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.task-step-heading h3 { margin:0; font-size:14px; font-weight:600; }
+.task-step-count { color:var(--color-text-secondary); font-size:12px; flex-shrink:0; font-variant-numeric:tabular-nums; }
+.task-step-progress { height:4px; border-radius:4px; background:var(--color-border-light); overflow:hidden; }
+.task-step-progress > span { display:block; height:100%; background:var(--color-accent); transition:width .15s; }
+.task-step-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:5px; }
+.task-step-row { display:flex; align-items:flex-start; justify-content:space-between; gap:6px; padding:6px 0; min-width:0; }
+.task-step-main { display:flex; align-items:flex-start; gap:9px; flex:1; min-width:0; cursor:pointer; font-size:13px; line-height:1.5; }
+.task-step-main > input { flex-shrink:0; width:16px; height:16px; margin-top:2px; accent-color:var(--color-accent); }
+.task-step-title { overflow-wrap:anywhere; min-width:0; }
+.task-step-row.is-completed .task-step-title { color:var(--color-text-tertiary); text-decoration:line-through; }
+.task-step-actions { display:flex; gap:2px; flex-shrink:0; }
+.task-step-actions .btn-icon { width:28px; height:28px; padding:4px; color:var(--color-text-secondary); }
+.task-step-actions .task-step-delete:hover { color:var(--color-danger); }
+.task-step-add { display:flex; align-items:center; gap:8px; min-width:0; }
+.task-step-add .input,.task-step-edit .input { min-width:0; width:100%; font-size:13px; }
+.task-step-add .input { flex:1; }
+.task-step-edit { flex-direction:column; align-items:stretch; }
+.task-step-edit-actions { display:flex; justify-content:flex-end; gap:6px; }
+.task-step-state { display:flex; align-items:center; gap:8px; color:var(--color-text-secondary); font-size:12px; }
+.task-step-error { display:flex; flex-direction:column; align-items:flex-start; gap:8px; color:var(--color-danger); font-size:12px; overflow-wrap:anywhere; }
+.task-step-empty,.task-step-hint { margin:0; color:var(--color-text-secondary); font-size:12px; line-height:1.5; }
+.task-steps button:disabled { opacity:.5; cursor:not-allowed; }
+
 /* Detail Panel */
 .task-detail-panel {
   width: var(--detail-panel-width);

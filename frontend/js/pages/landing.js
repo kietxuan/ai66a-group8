@@ -43,8 +43,8 @@ export const landingPage = {
     const brand = (className) =>
       createElement("div", { className }, [
         createElement("span", {
-          className: "landing-brand-icon",
-          textContent: "✦",
+          className: "landing-brand-icon planify-mark",
+          "data-icon": "calendar-days",
           "aria-hidden": "true",
         }),
         createElement("span", { textContent: "Planify Pro" }),
